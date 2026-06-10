@@ -120,10 +120,10 @@ public sealed class IndexerOptionsValidator :
     {
         foreach (var source in sources)
         {
-            if (!IsEnvironment(source.Environment))
+            if (!IsEnvironment(source.Name))
             {
                 failures.Add(
-                    $"NuGet source '{source.Name}' Environment must contain only letters, numbers, '.', '_', or '-'.");
+                    $"NuGet source Name '{source.Name}' must contain only letters, numbers, '.', '_', or '-'.");
             }
 
             if (!ConfigurationValidation.IsNuGetSource(source.ServiceIndex))
@@ -188,7 +188,7 @@ public sealed class IndexerOptionsValidator :
         }
 
         var configuredEnvironments = options.Environments
-            .Select(source => source.Environment)
+            .Select(source => source.Name)
             .Where(environment => !string.IsNullOrWhiteSpace(environment))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -205,7 +205,7 @@ public sealed class IndexerOptionsValidator :
             var count = packages.Count(package =>
                 string.Equals(
                     package.Environment,
-                    source.Environment,
+                    source.Name,
                     StringComparison.OrdinalIgnoreCase));
             if (source.MaxPackages > 0 && count > source.MaxPackages)
             {

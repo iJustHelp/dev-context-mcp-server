@@ -32,7 +32,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     Packages = packages
                         .Where(package => string.Equals(
                             package.Environment,
-                            source.Environment,
+                            source.Name,
                             StringComparison.OrdinalIgnoreCase))
                         .Select(package => new PackageSelectionDefinition(
                             package.PackageId,
@@ -44,7 +44,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 .Where(item => item.Packages.Length > 0)
                 .Select(item => new IndexSourceDefinition(
                     item.Source.Name,
-                    item.Source.Environment,
+                    item.Source.Name,
                     ResolveSource(item.Source.ServiceIndex),
                     item.Packages,
                     item.Source.MaxPackages))

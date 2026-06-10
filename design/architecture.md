@@ -133,11 +133,11 @@ Unchanged package content is not rewritten. `index_runs` intentionally records
 each execution, while canonical package, version, artifact, and symbol rows are
 not duplicated.
 
-Feed definitions come from normal .NET configuration. Exact package-selection
-policies come from an external folder and are joined by environment. Multiple
-feeds may share one environment; each matching feed is discovered and
-published once with the complete package set. Feeds with no matching package
-files are omitted so existing rows are not pruned.
+Feed definitions come from normal .NET configuration. Each feed name is also
+its environment slug. Exact package-selection policies come from an external
+folder and are joined to the feed with the matching environment. Each feed is
+discovered and published once with the complete package set. Feeds with no
+matching package files are omitted so existing rows are not pruned.
 
 ## Retrieval Flow
 

@@ -16,7 +16,7 @@ public sealed class IndexerOptionsValidatorTests
         var result = Validate(new IndexerOptions
         {
             NuGetSourcesPath = folder.Path,
-            Environments = [Feed("public", "nuget.org")]
+            Environments = [Feed("public")]
         });
 
         Assert.Equal(ValidateOptionsResult.Success, result);
@@ -31,8 +31,8 @@ public sealed class IndexerOptionsValidatorTests
             NuGetSourcesPath = folder.Path,
             Environments =
             [
-                Feed("qa", "internal"),
-                Feed("production", "Internal")
+                Feed("internal"),
+                Feed("Internal")
             ]
         });
 
@@ -51,8 +51,7 @@ public sealed class IndexerOptionsValidatorTests
             [
                 new NuGetEnvironmentOptions
                 {
-                    Name = "internal",
-                    Environment = "bad environment",
+                    Name = "bad environment",
                     ServiceIndex = "ftp://packages.example/index.json",
                     MaxPackages = 0
                 }
@@ -65,7 +64,7 @@ public sealed class IndexerOptionsValidatorTests
         });
 
         AssertFailure(result, "ServiceIndex URI");
-        AssertFailure(result, "Environment");
+        AssertFailure(result, "Name");
         AssertFailure(result, "MaxPackageBytes");
         AssertFailure(result, "MaxVersionsPerPackage");
         AssertFailure(result, "MaxPackages");
@@ -99,7 +98,7 @@ public sealed class IndexerOptionsValidatorTests
         var result = Validate(new IndexerOptions
         {
             NuGetSourcesPath = folder.Path,
-            Environments = [Feed("qa", "internal")]
+            Environments = [Feed("qa")]
         });
 
         AssertFailure(result, "Legacy.json");
@@ -115,7 +114,7 @@ public sealed class IndexerOptionsValidatorTests
         var result = Validate(new IndexerOptions
         {
             NuGetSourcesPath = folder.Path,
-            Environments = [Feed("qa", "internal")]
+            Environments = [Feed("qa")]
         });
 
         AssertFailure(result, "configured more than once");
@@ -128,7 +127,7 @@ public sealed class IndexerOptionsValidatorTests
         using var folder = PackageFolder.Create(
             ("A.json", Package("qa", "A")),
             ("B.json", Package("qa", "B")));
-        var feed = Feed("qa", "internal");
+        var feed = Feed("qa");
         feed.MaxPackages = 1;
 
         var result = Validate(new IndexerOptions
@@ -138,24 +137,6 @@ public sealed class IndexerOptionsValidatorTests
         });
 
         AssertFailure(result, "exceeding MaxPackages 1");
-    }
-
-    [Fact]
-    public void MultipleFeedsMayShareEnvironment()
-    {
-        using var folder = PackageFolder.Create(
-            ("Package.json", Package("qa", "Company.Package")));
-        var result = Validate(new IndexerOptions
-        {
-            NuGetSourcesPath = folder.Path,
-            Environments =
-            [
-                Feed("qa", "qa-primary"),
-                Feed("QA", "qa-secondary")
-            ]
-        });
-
-        Assert.Equal(ValidateOptionsResult.Success, result);
     }
 
     [Fact]
@@ -189,11 +170,10 @@ public sealed class IndexerOptionsValidatorTests
         new IndexerOptionsValidator(new NuGetPackageOptionsLoader())
             .Validate(null, options);
 
-    private static NuGetEnvironmentOptions Feed(string environment, string name) =>
+    private static NuGetEnvironmentOptions Feed(string name) =>
         new()
         {
             Name = name,
-            Environment = environment,
             ServiceIndex = "https://packages.example/v3/index.json",
             MaxPackages = 100
         };

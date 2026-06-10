@@ -63,7 +63,7 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, versions.Status);
             Assert.Equal("test", versions.ResolvedContext!.Environment);
-            Assert.Equal("fixture", versions.ResolvedContext.SourceId);
+            Assert.Equal("test", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
             Assert.Equal("1.2.3", versions.Data.RecommendedVersion);
             Assert.Equal("configured_recommendation", versions.Data.RecommendedVersionReason);
@@ -156,7 +156,7 @@ public sealed class NuGetRetrievalPipelineTests
                 template.UriTemplate.Contains("/symbol/", StringComparison.Ordinal));
 
             var resource = await server.Client.ReadResourceAsync(
-                "nuget://fixture/Fixture.Documentation/1.2.3/artifact/README.md",
+                "nuget://test/Fixture.Documentation/1.2.3/artifact/README.md",
                 cancellationToken: timeout.Token);
             var text = Assert.IsType<TextResourceContents>(Assert.Single(resource.Contents));
             Assert.Contains("Version 1.2.3", text.Text, StringComparison.Ordinal);
@@ -184,8 +184,7 @@ public sealed class NuGetRetrievalPipelineTests
             {
                 ["DevContextMcp:DatabasePath"] = databasePath,
                 ["DevContextMcp:NuGetSourcesPath"] = sourcesPath,
-                ["DevContextMcp:Environments:0:Name"] = "fixture",
-                ["DevContextMcp:Environments:0:Environment"] = "test",
+                ["DevContextMcp:Environments:0:Name"] = "test",
                 ["DevContextMcp:Environments:0:ServiceIndex"] = feed,
                 ["DevContextMcp:Environments:0:MaxPackages"] = "10",
                 ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000",

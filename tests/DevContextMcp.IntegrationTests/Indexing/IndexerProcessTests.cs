@@ -112,8 +112,7 @@ public sealed class IndexerProcessTests
         startInfo.ArgumentList.Add(IndexerAssemblyPath());
         startInfo.ArgumentList.Add($"--DevContextMcp:DatabasePath={databasePath}");
         startInfo.ArgumentList.Add($"--DevContextMcp:NuGetSourcesPath={sourcesPath}");
-        startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:Name=fixture");
-        startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:Environment=test");
+        startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:Name=test");
         startInfo.ArgumentList.Add(
             $"--DevContextMcp:Environments:0:ServiceIndex={feed}");
         startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:MaxPackages=10");

@@ -172,8 +172,7 @@ Indexer CLI configuration:
     "NuGetSourcesPath": "nuget-sources",
     "Environments": [
       {
-        "Environment": "production",
-        "Name": "internal",
+        "Name": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "MaxPackages": 100
       }
@@ -259,15 +258,14 @@ Indexer CLI after changing its `appsettings.json` or package files.
 | --- | --- |
 | `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
 | `NuGetSourcesPath` | External folder containing top-level package JSON files. Relative paths resolve from the Indexer CLI executable directory. The folder must exist and is not copied by the project. Files are loaded once at startup in filename order. |
-| `Environments` | NuGet feeds or local package folders to index. Multiple feeds may share an environment. The collection may be empty; the Indexer CLI then succeeds without doing work. |
+| `Environments` | NuGet feeds or local package folders to index. Each entry represents one uniquely named environment. The collection may be empty; the Indexer CLI then succeeds without doing work. |
 | `Indexing` | Download, archive-safety, and document-processing limits described below. |
 
 ### NuGet environment values
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `Name` | Stable, human-readable feed identity such as `nuget.org` or `internal-qa`. It appears in citations and `SourceId`. Names must be non-empty and unique case-insensitively. |
-| `Environment` | Selection label such as `production`, `qa`, or `public`. It is required, compared case-insensitively, and may contain only letters, numbers, `.`, `_`, or `-`. Multiple feeds may share an environment. |
+| `Name` | Environment slug and stable source identity, such as `production`, `qa`, or `public`. It is compared case-insensitively, appears in citations and `SourceId`, and may contain only letters, numbers, `.`, `_`, or `-`. Names must be unique. |
 | `ServiceIndex` | Absolute HTTP/HTTPS NuGet v3 service-index URL, or a local package-folder path. Relative local paths are resolved from the Indexer CLI working directory; use an absolute path for predictable deployments. |
 | `MaxPackages` | Maximum package files that may match this feed's environment. It must be positive; exceeding it fails startup. |
 
@@ -275,14 +273,14 @@ Indexer CLI after changing its `appsettings.json` or package files.
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `Environment` | Environment whose package policy is applied to every matching feed. It must reference a configured environment slug. |
+| `Environment` | Environment whose package policy is applied to the feed with the matching `Name`. It must reference a configured environment name. |
 | `PackageId` | Exact package ID to index. It is required and must be unique case-insensitively within its environment. |
 | `IncludePrerelease` | When `true`, discovery and metadata selection may include prerelease versions. Retrieval still requires its request-level `IncludePrerelease` flag before selecting a prerelease by fallback or recommendation. |
 | `IncludeUnlisted` | When `true`, metadata selection may include unlisted versions. |
 | `MaxVersionsPerPackage` | Maximum newest versions retained for each package after prerelease and unlisted filters. It must be positive. There is no unlimited value; use a sufficiently large number when all available versions are required. Lowering it prunes versions outside the retained set on the next successful feed publication. |
 
-Each feed is indexed and published once with all package files matching its
-environment. A feed with no matching files is skipped without pruning existing
+Each feed is indexed and published once with all package files whose
+`Environment` matches its `Name`. A feed with no matching files is skipped without pruning existing
 data.
 
 ### Indexing values

@@ -71,8 +71,7 @@ public sealed class IndexerRunnerTests
                 [
                     new NuGetEnvironmentOptions
                     {
-                        Name = "fixture",
-                        Environment = "test",
+                        Name = "test",
                         ServiceIndex = "fixture"
                     }
                 ]

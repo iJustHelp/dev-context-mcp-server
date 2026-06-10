@@ -109,7 +109,7 @@ Expected:
 
 - `status` is `ok`.
 - A match has `libraryId` equal to `nuget:public/Formula.SimpleRepo`.
-- `environment` is `public` and `sourceId` is `nuget.org`.
+- `environment` and `sourceId` are both `public`.
 - `displayName` is `Formula.SimpleRepo`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.
@@ -354,7 +354,7 @@ Expected:
 
 - `status` is `ok`.
 - A match has `libraryId` equal to `nuget:public/Formula.SimpleRepo`.
-- `environment` is `public` and `sourceId` is `nuget.org`.
+- `environment` and `sourceId` are both `public`.
 - `displayName` is `Formula.SimpleRepo`.
 - `recommendedVersion` is populated.
 - `confidence` is high for the exact ID match.

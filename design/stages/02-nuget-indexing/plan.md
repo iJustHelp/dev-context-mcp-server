@@ -68,7 +68,7 @@ Extend `IndexingOptions`:
 Add validation rules:
 
 - Source names must be unique.
-- Every NuGet source must declare a valid environment slug.
+- Every NuGet source name must be a valid environment slug.
 - A source must have a `ServiceIndex`.
 - A source must define at least one package prefix or explicit package id before indexing runs.
 - Size/count/time limits must be positive.

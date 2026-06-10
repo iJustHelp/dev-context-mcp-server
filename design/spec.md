@@ -94,8 +94,7 @@ Version parsing and ordering use `NuGet.Versioning`.
 
 NuGet feeds are configured with:
 
-- Stable source name.
-- Required environment slug.
+- A unique name used as both the environment slug and stable source identity.
 - NuGet v3 service index URL or approved local package folder.
 - Maximum package count.
 
@@ -106,11 +105,9 @@ from the Indexer CLI executable directory. Files are loaded once at startup in
 filename order and cannot be overridden field-by-field by environment variables
 or command-line arguments.
 
-Every package file for an environment applies to every feed in that
-environment. Each feed is discovered and atomically published once. A feed
-with no matching package files is skipped without pruning existing data.
-
-Repository roots may be configured for a later source-example indexing stage.
+Every package file applies to the feed whose name matches its environment.
+Each feed is discovered and atomically published once. A feed with no matching
+package files is skipped without pruning existing data.
 
 ### 7.2 Package processing
 
@@ -239,8 +236,7 @@ Indexer CLI:
     "NuGetSourcesPath": "nuget-sources",
     "Environments": [
       {
-        "Environment": "production",
-        "Name": "internal",
+        "Name": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "MaxPackages": 100
       }
