@@ -2,6 +2,7 @@ using DevContextMcp.Indexer.Core;
 using DevContextMcp.Indexer.Core.Abstractions;
 using DevContextMcp.Indexer.Core.Services;
 using DevContextMcp.Infrastructure;
+using DevContextMcp.Server.Core.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DevContextMcp.UnitTests.Architecture;
@@ -36,5 +37,19 @@ public sealed class IndexingRegistrationTests
         Assert.NotNull(provider.GetService<IIndexStore>());
         Assert.NotNull(provider.GetService<IPackageSourceClient>());
         Assert.NotNull(provider.GetService<IPackageProcessor>());
+        Assert.NotNull(provider.GetService<IContentHasher>());
+        Assert.NotNull(provider.GetService<IDocumentChunker>());
+        Assert.NotNull(provider.GetService<INuGetSourceAuthenticationProvider>());
+    }
+
+    [Fact]
+    public void InfrastructureRegistersServerDiagnosticPortImplementation()
+    {
+        var services = new ServiceCollection();
+
+        services.AddRetrievalInfrastructure();
+
+        using var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<ILocalDependencyCheck>());
     }
 }

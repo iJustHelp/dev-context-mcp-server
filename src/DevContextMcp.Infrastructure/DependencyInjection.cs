@@ -1,6 +1,6 @@
+using DevContextMcp.Server.Core.Diagnostics;
 using DevContextMcp.Server.Core.Retrieval.Abstractions;
 using DevContextMcp.Infrastructure.Diagnostics;
-using DevContextMcp.Infrastructure.Indexer.Abstractions;
 using DevContextMcp.Infrastructure.Indexer.NuGet;
 using DevContextMcp.Infrastructure.Indexer.Persistence;
 using DevContextMcp.Infrastructure.Indexer.Processing;

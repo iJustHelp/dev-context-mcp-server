@@ -1,4 +1,4 @@
-namespace DevContextMcp.Infrastructure.Diagnostics;
+namespace DevContextMcp.Server.Core.Diagnostics;
 
 /// <summary>
 /// Result from a local dependency readiness check.

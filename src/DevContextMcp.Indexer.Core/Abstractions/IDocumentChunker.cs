@@ -1,8 +1,8 @@
 using DevContextMcp.Indexer.Core.Models;
 
-namespace DevContextMcp.Infrastructure.Indexer.Abstractions;
+namespace DevContextMcp.Indexer.Core.Abstractions;
 
-internal interface IDocumentChunker
+public interface IDocumentChunker
 {
     IReadOnlyList<DocumentChunkRecord> Chunk(
         string path,

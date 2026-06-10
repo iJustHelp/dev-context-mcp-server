@@ -1,4 +1,4 @@
-namespace DevContextMcp.Infrastructure.Diagnostics;
+namespace DevContextMcp.Server.Core.Diagnostics;
 
 /// <summary>
 /// Checks local dependencies without contacting configured documentation sources.

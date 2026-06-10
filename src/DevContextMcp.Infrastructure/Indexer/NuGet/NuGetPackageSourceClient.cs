@@ -1,4 +1,3 @@
-using DevContextMcp.Infrastructure.Indexer.Abstractions;
 using DevContextMcp.Indexer.Core.Abstractions;
 using DevContextMcp.Indexer.Core.Models;
 using NuGet.Common;

@@ -1,3 +1,5 @@
+using DevContextMcp.Server.Core.Diagnostics;
+
 namespace DevContextMcp.Infrastructure.Diagnostics;
 
 internal sealed class LocalDependencyCheck : ILocalDependencyCheck

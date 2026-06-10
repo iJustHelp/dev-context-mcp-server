@@ -1,4 +1,4 @@
-using DevContextMcp.Infrastructure.Indexer.Abstractions;
+using DevContextMcp.Indexer.Core.Abstractions;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 

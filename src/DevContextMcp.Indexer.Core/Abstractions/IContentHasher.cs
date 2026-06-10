@@ -1,6 +1,6 @@
-namespace DevContextMcp.Infrastructure.Indexer.Abstractions;
+namespace DevContextMcp.Indexer.Core.Abstractions;
 
-internal interface IContentHasher
+public interface IContentHasher
 {
     string Hash(ReadOnlySpan<byte> content);
 

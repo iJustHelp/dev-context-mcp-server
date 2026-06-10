@@ -1,7 +1,7 @@
+using DevContextMcp.Server.Core.Diagnostics;
 using DevContextMcp.Server.Core.Retrieval.Services;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Tools;
-using DevContextMcp.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
