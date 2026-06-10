@@ -1,15 +1,14 @@
+using DevContextMcp.Server.Core.Retrieval.Abstractions;
 using DevContextMcp.Server.Core.Diagnostics;
 using DevContextMcp.Server.Core.Retrieval.Services;
-using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Tools;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Server.Diagnostics;
 
 internal sealed class StartupDiagnosticsHostedService(
-    IOptions<DevContextMcpOptions> options,
+    IRetrievalConfigurationProvider retrievalConfigurationProvider,
     ToolRegistrationCatalog toolCatalog,
     ILocalDependencyCheck localDependencyCheck,
     IResolveLibraryHandler resolveLibraryHandler,
@@ -30,8 +29,9 @@ internal sealed class StartupDiagnosticsHostedService(
             throw new InvalidOperationException("The registered MCP tool catalog is incomplete.");
         }
 
+        var settings = retrievalConfigurationProvider.GetSettings();
         var localResults = await localDependencyCheck.CheckAsync(
-            options.Value.DatabasePath,
+            settings.DatabasePath,
             cancellationToken);
 
         foreach (var result in localResults)
@@ -61,7 +61,7 @@ internal sealed class StartupDiagnosticsHostedService(
             "MCP documentation server startup checks completed. ToolCount={ToolCount}, LocalCheckCount={LocalCheckCount}, DatabasePath={DatabasePath}",
             toolCatalog.Names.Count,
             localResults.Count,
-            Path.GetFullPath(options.Value.DatabasePath));
+            settings.DatabasePath);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

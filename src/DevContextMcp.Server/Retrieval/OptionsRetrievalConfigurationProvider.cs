@@ -14,7 +14,7 @@ internal sealed class OptionsRetrievalConfigurationProvider(
         var retrieval = value.Retrieval;
 
         return new(
-            value.DatabasePath,
+            Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
             retrieval.EnvironmentOrder.ToArray(),
             retrieval.SourceOrder.ToArray(),
             new Dictionary<string, string>(

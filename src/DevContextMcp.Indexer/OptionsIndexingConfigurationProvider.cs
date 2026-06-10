@@ -16,7 +16,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
         var packages = packageOptionsLoader.Load(value.NuGetSourcesPath);
 
         return new(
-            value.DatabasePath,
+            Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
             new PackageProcessingLimits(
                 limits.MaxPackageBytes,
                 limits.MaxDocumentBytes,
