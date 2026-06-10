@@ -1,0 +1,32 @@
+using DevContextMcp.Indexer;
+using DevContextMcp.Indexer.Abstractions;
+using DevContextMcp.Indexer.Cli.Configuration;
+using DevContextMcp.Infrastructure;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+namespace DevContextMcp.Indexer.Cli;
+
+/// <summary>
+/// Indexer CLI composition and configuration registration.
+/// </summary>
+public static class DependencyInjection
+{
+    public static IServiceCollection AddIndexerCli(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<IValidateOptions<IndexerOptions>, IndexerOptionsValidator>();
+        services.AddOptions<IndexerOptions>()
+            .Bind(configuration.GetSection(IndexerOptions.SectionName))
+            .ValidateOnStart();
+
+        services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
+        services.AddSingleton<IndexerRunner>();
+        services.AddIndexer();
+        services.AddIndexingInfrastructure();
+
+        return services;
+    }
+}

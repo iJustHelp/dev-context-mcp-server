@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="NuGet.Packaging" />
+    <PackageReference Include="NuGet.Protocol" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DevContextMcp.Server.Core\DevContextMcp.Server.Core.csproj" />
+    <ProjectReference Include="..\DevContextMcp.Indexer\DevContextMcp.Indexer.csproj" />
+  </ItemGroup>
+</Project>
