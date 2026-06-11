@@ -1,4 +1,5 @@
 using DevContextMcp.Indexer;
+using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
 using DevContextMcp.Infrastructure.Indexer.Persistence;
 using Microsoft.Data.Sqlite;
@@ -29,6 +30,11 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Equal(1, first.Indexed);
             Assert.Equal(1, first.Changed);
             Assert.Equal(0, first.Unchanged);
+            Assert.Equal(
+                [new PackageIdentityKey(FixtureNuGetPackage.PackageId, FixtureNuGetPackage.Version)],
+                first.Added);
+            Assert.Empty(first.Updated);
+            Assert.Empty(first.Deleted);
 
             await using var connection = new SqliteConnection(
                 $"Data Source={databasePath};Pooling=False");
@@ -48,14 +54,29 @@ public sealed class NuGetIndexingPipelineTests
             var second = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
             Assert.Equal(0, second.Changed);
             Assert.Equal(1, second.Unchanged);
+            Assert.Empty(second.Added);
+            Assert.Empty(second.Updated);
+            Assert.Empty(second.Deleted);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
             Assert.Equal(2L, await ScalarAsync(connection, "SELECT COUNT(*) FROM index_runs;"));
+
+            FixtureNuGetPackage.Create(feed, readmeText: "Updated fixture documentation.");
+            var updated = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+
+            Assert.Empty(updated.Added);
+            Assert.Equal(
+                [new PackageIdentityKey(FixtureNuGetPackage.PackageId, FixtureNuGetPackage.Version)],
+                updated.Updated);
+            Assert.Empty(updated.Deleted);
 
             FixtureNuGetPackage.ReplaceWithUnsafeArchive(feed);
             var failed = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
 
             Assert.Equal("failed", failed.Status);
             Assert.Single(failed.Errors);
+            Assert.Empty(failed.Added);
+            Assert.Empty(failed.Updated);
+            Assert.Empty(failed.Deleted);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
             Assert.True(await ScalarAsync(
                 connection,
@@ -150,13 +171,27 @@ public sealed class NuGetIndexingPipelineTests
                     .GetRequiredService<IIndexCoordinator>()
                     .IndexAllAsync(CancellationToken.None));
                 Assert.Equal(2, summary.Indexed);
+                Assert.Equal(
+                    [
+                        new PackageIdentityKey(
+                            FixtureNuGetPackage.PackageId,
+                            FixtureNuGetPackage.Version),
+                        new PackageIdentityKey(
+                            secondPackageId,
+                            FixtureNuGetPackage.Version)
+                    ],
+                    summary.Added);
             }
 
             File.Delete(Path.Combine(sourcesPath, $"test.{secondPackageId}.json"));
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                await provider.GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None);
+                var summary = Assert.Single(await provider
+                    .GetRequiredService<IIndexCoordinator>()
+                    .IndexAllAsync(CancellationToken.None));
+                Assert.Equal(
+                    [new PackageIdentityKey(secondPackageId, FixtureNuGetPackage.Version)],
+                    summary.Deleted);
             }
 
             await using var connection = new SqliteConnection(

@@ -189,6 +189,7 @@ Indexer CLI configuration:
 {
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
+    "ReportPath": "logs/indexer-report.log",
     "NuGetSourcesPath": "nuget-sources",
     "Environments": [
       {
@@ -277,6 +278,7 @@ Indexer CLI after changing its `appsettings.json` or package files.
 | Setting | Meaning and rules |
 | --- | --- |
 | `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the Indexer CLI executable directory. |
+| `ReportPath` | File that receives the same per-source index reports written to the console. Reports are appended. Relative paths are resolved from the Indexer CLI executable directory. |
 | `NuGetSourcesPath` | External folder containing top-level package JSON files. Relative paths resolve from the Indexer CLI executable directory. The folder must exist and is not copied by the project. Files are loaded once at startup in filename order. |
 | `Environments` | NuGet feeds or local package folders to index. Each entry represents one uniquely named environment. The collection may be empty; the Indexer CLI then succeeds without doing work. |
 | `Indexing` | Download, archive-safety, and document-processing limits described below. |

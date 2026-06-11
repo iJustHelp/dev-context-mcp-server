@@ -26,6 +26,7 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
+        services.AddSingleton<IIndexerReportWriter, FileIndexerReportWriter>();
         services.AddSingleton<IndexerRunner>();
         services.AddIndexer();
         services.AddIndexingInfrastructure();

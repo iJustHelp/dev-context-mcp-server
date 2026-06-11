@@ -55,15 +55,18 @@ internal sealed class IndexCoordinator(
                 cancellationToken);
 
             return new(
-                source.Name,
-                "failed",
-                startedAt,
-                completedAt,
-                0,
-                0,
-                0,
-                0,
-                [discoveryError]);
+                SourceName: source.Name,
+                Status: "failed",
+                StartedAt: startedAt,
+                CompletedAt: completedAt,
+                Discovered: 0,
+                Indexed: 0,
+                Changed: 0,
+                Unchanged: 0,
+                Added: [],
+                Updated: [],
+                Deleted: [],
+                Errors: [discoveryError]);
         }
 
         var indexedPackages = new List<PackageIndexData>(candidates.Count);
@@ -119,14 +122,17 @@ internal sealed class IndexCoordinator(
             : errors.Count > 0 ? "partial_success" : "succeeded";
 
         return new(
-            source.Name,
-            status,
-            startedAt,
-            DateTimeOffset.UtcNow,
-            candidates.Count,
-            indexedPackages.Count,
-            publish.Changed,
-            publish.Unchanged,
-            errors);
+            SourceName: source.Name,
+            Status: status,
+            StartedAt: startedAt,
+            CompletedAt: DateTimeOffset.UtcNow,
+            Discovered: candidates.Count,
+            Indexed: indexedPackages.Count,
+            Changed: publish.Changed,
+            Unchanged: publish.Unchanged,
+            Added: publish.Added,
+            Updated: publish.Updated,
+            Deleted: publish.Deleted,
+            Errors: errors);
     }
 }

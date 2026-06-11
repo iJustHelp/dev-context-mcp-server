@@ -101,7 +101,8 @@ internal sealed class SqliteIndexStore : IIndexStore
         var sourceId = StableId(source.Name, source.ServiceIndex);
         await UpsertSourceAsync(connection, transaction, sourceId, source, cancellationToken);
 
-        var changed = 0;
+        var added = new List<PackageIdentityKey>();
+        var updated = new List<PackageIdentityKey>();
         var unchanged = 0;
         foreach (var package in packages)
         {
@@ -120,6 +121,15 @@ internal sealed class SqliteIndexStore : IIndexStore
                 continue;
             }
 
+            if (existingHash is null)
+            {
+                added.Add(identity);
+            }
+            else
+            {
+                updated.Add(identity);
+            }
+
             await DeleteVersionAsync(connection, transaction, versionId, cancellationToken);
             await UpsertLibraryAsync(
                 connection,
@@ -136,12 +146,12 @@ internal sealed class SqliteIndexStore : IIndexStore
                 versionId,
                 package,
                 cancellationToken);
-            changed++;
         }
 
+        IReadOnlyList<PackageIdentityKey> deleted = [];
         if (pruneMissing)
         {
-            await PruneMissingVersionsAsync(
+            deleted = await PruneMissingVersionsAsync(
                 connection,
                 transaction,
                 sourceId,
@@ -156,6 +166,7 @@ internal sealed class SqliteIndexStore : IIndexStore
             cancellationToken);
 
         var completedAt = DateTimeOffset.UtcNow;
+        var changed = added.Count + updated.Count;
         var status = packages.Count == 0 && errors.Count > 0
             ? "failed"
             : errors.Count > 0 ? "partial_success" : "succeeded";
@@ -190,7 +201,12 @@ internal sealed class SqliteIndexStore : IIndexStore
             cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
-        return new(changed, unchanged);
+        return new(
+            changed,
+            unchanged,
+            SortIdentities(added),
+            SortIdentities(updated),
+            SortIdentities(deleted));
     }
 
     private static async Task InsertPackageAsync(
@@ -386,7 +402,7 @@ internal sealed class SqliteIndexStore : IIndexStore
         }
     }
 
-    private static async Task PruneMissingVersionsAsync(
+    private static async Task<IReadOnlyList<PackageIdentityKey>> PruneMissingVersionsAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
         string sourceId,
@@ -396,14 +412,14 @@ internal sealed class SqliteIndexStore : IIndexStore
         var retained = retainedPackages
             .Select(identity => identity.ToStableId(sourceId))
             .ToHashSet(StringComparer.Ordinal);
-        var existing = new List<string>();
+        var existing = new List<(string VersionId, PackageIdentityKey Identity)>();
 
         await using (var command = connection.CreateCommand())
         {
             command.Transaction = transaction;
             command.CommandText =
                 """
-                SELECT library_versions.id
+                SELECT library_versions.id, libraries.package_id, library_versions.version
                 FROM library_versions
                 INNER JOIN libraries ON libraries.id = library_versions.library_id
                 WHERE libraries.source_id = $sourceId;
@@ -413,15 +429,34 @@ internal sealed class SqliteIndexStore : IIndexStore
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                existing.Add(reader.GetString(0));
+                existing.Add((
+                    reader.GetString(0),
+                    new PackageIdentityKey(reader.GetString(1), reader.GetString(2))));
             }
         }
 
-        foreach (var versionId in existing.Where(id => !retained.Contains(id)))
+        var deleted = new List<PackageIdentityKey>();
+        foreach (var item in existing.Where(item => !retained.Contains(item.VersionId)))
         {
-            await DeleteVersionAsync(connection, transaction, versionId, cancellationToken);
+            await DeleteVersionAsync(
+                connection,
+                transaction,
+                item.VersionId,
+                cancellationToken);
+            deleted.Add(item.Identity);
         }
+
+        return deleted;
     }
+
+    private static IReadOnlyList<PackageIdentityKey> SortIdentities(
+        IEnumerable<PackageIdentityKey> identities) =>
+        identities
+            .OrderBy(identity => identity.PackageId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(identity => identity.PackageId, StringComparer.Ordinal)
+            .ThenBy(identity => identity.Version, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(identity => identity.Version, StringComparer.Ordinal)
+            .ToArray();
 
     private static async Task DeleteVersionAsync(
         SqliteConnection connection,

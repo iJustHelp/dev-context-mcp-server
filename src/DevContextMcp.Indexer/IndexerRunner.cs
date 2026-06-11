@@ -9,7 +9,8 @@ namespace DevContextMcp.Indexer;
 internal sealed class IndexerRunner(
     IOptions<IndexerOptions> options,
     IIndexCoordinator indexCoordinator,
-    ILogger<IndexerRunner> logger)
+    ILogger<IndexerRunner> logger,
+    IIndexerReportWriter reportWriter)
 {
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
@@ -24,7 +25,7 @@ internal sealed class IndexerRunner(
             var summaries = await indexCoordinator.IndexAllAsync(cancellationToken);
             foreach (var summary in summaries)
             {
-                LogSummary(summary);
+                await LogSummaryAsync(summary, cancellationToken);
             }
 
             return summaries.All(summary =>
@@ -41,7 +42,9 @@ internal sealed class IndexerRunner(
         }
     }
 
-    private void LogSummary(IndexRunSummary summary)
+    private async Task LogSummaryAsync(
+        IndexRunSummary summary,
+        CancellationToken cancellationToken)
     {
         var logLevel = summary.Status switch
         {
@@ -49,16 +52,38 @@ internal sealed class IndexerRunner(
             "partial_success" => LogLevel.Warning,
             _ => LogLevel.Error
         };
+        var report = FormatSummary(summary);
 
-        logger.Log(
-            logLevel,
-            "NuGet index run completed.\r\nSource: {SourceName}\r\nStatus: {Status}\r\nDiscovered: {Discovered}\r\nIndexed: {Indexed}\r\nChanged: {Changed}\r\nUnchanged: {Unchanged}\r\nErrors: {ErrorCount}",
-            summary.SourceName,
-            summary.Status,
-            summary.Discovered,
-            summary.Indexed,
-            summary.Changed,
-            summary.Unchanged,
-            summary.Errors.Count);
+        logger.Log(logLevel, "{IndexerReport}", report);
+        await reportWriter.WriteAsync(report, cancellationToken);
     }
+
+    private static string FormatSummary(IndexRunSummary summary) =>
+        $"""
+        Source: {summary.SourceName}
+        Status: {summary.Status}
+        NuGets
+            Total: {summary.Discovered}
+            Indexed: {summary.Indexed}
+            Errors: {summary.Errors.Count}
+            Added ({summary.Added.Count}):
+        {FormatPackages(summary.Added)}
+            Updated ({summary.Updated.Count}):
+        {FormatPackages(summary.Updated)}
+            Deleted ({summary.Deleted.Count}):
+        {FormatPackages(summary.Deleted)}
+        """;
+
+    private static string FormatPackages(
+        IReadOnlyList<PackageIdentityKey> packages) =>
+        packages.Count == 0
+            ? "        (none)"
+            : string.Join(
+                Environment.NewLine,
+                packages
+                    .OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(package => package.PackageId, StringComparer.Ordinal)
+                    .ThenBy(package => package.Version, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(package => package.Version, StringComparer.Ordinal)
+                    .Select(package => $"        {package.PackageId} {package.Version}"));
 }

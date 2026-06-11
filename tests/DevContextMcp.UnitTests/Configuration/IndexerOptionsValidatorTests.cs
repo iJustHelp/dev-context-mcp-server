@@ -140,6 +140,19 @@ public sealed class IndexerOptionsValidatorTests
     }
 
     [Fact]
+    public void EmptyReportPathFails()
+    {
+        using var folder = PackageFolder.Create();
+        var result = Validate(new IndexerOptions
+        {
+            ReportPath = " ",
+            NuGetSourcesPath = folder.Path
+        });
+
+        AssertFailure(result, "ReportPath");
+    }
+
+    [Fact]
     public void LoaderResolvesRelativePathsAndCachesFilenameOrderedFiles()
     {
         var name = $"nuget-options-{Guid.NewGuid():N}";
