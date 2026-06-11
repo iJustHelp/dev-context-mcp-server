@@ -6,6 +6,10 @@ public interface IIndexStore
 {
     Task InitializeAsync(string databasePath, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<IndexedLibrary>> GetIndexedLibrariesAsync(
+        string databasePath,
+        CancellationToken cancellationToken);
+
     Task<IndexPublishResult> PublishSourceAsync(
         string databasePath,
         IndexSourceDefinition source,

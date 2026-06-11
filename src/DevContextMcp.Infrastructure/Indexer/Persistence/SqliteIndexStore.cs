@@ -4,12 +4,62 @@ using System.Text;
 using DevContextMcp.Indexer.Core.Infrastructure;
 using DevContextMcp.Indexer.Core.Models;
 using Microsoft.Data.Sqlite;
+using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
 internal sealed class SqliteIndexStore : IIndexStore
 {
     private const int SchemaVersion = 3;
+
+    public async Task<IReadOnlyList<IndexedLibrary>> GetIndexedLibrariesAsync(
+        string databasePath,
+        CancellationToken cancellationToken)
+    {
+        var resolvedPath = ResolveDatabasePath(databasePath);
+        await using var connection = CreateConnection(resolvedPath);
+        await connection.OpenAsync(cancellationToken);
+
+        var rows = new List<IndexedLibraryRow>();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT l.package_id, s.environment, lv.version
+            FROM library_versions lv
+            INNER JOIN libraries l ON l.id = lv.library_id
+            INNER JOIN sources s ON s.id = l.source_id;
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            rows.Add(new(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2)));
+        }
+
+        return rows
+            .GroupBy(row => row.PackageId, StringComparer.OrdinalIgnoreCase)
+            .Select(packageGroup => new IndexedLibrary(
+                SelectStoredCasing(packageGroup.Select(row => row.PackageId)),
+                packageGroup
+                    .GroupBy(row => row.Environment, StringComparer.OrdinalIgnoreCase)
+                    .Select(environmentGroup => new IndexedLibraryEnvironment(
+                        SelectStoredCasing(environmentGroup.Select(row => row.Environment)),
+                        environmentGroup
+                            .Select(row => row.Version)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderByDescending(version => NuGetVersion.Parse(version))
+                            .ThenBy(version => version, StringComparer.Ordinal)
+                            .ToArray()))
+                    .OrderBy(environment => environment.Environment, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(environment => environment.Environment, StringComparer.Ordinal)
+                    .ToArray()))
+            .OrderBy(library => library.PackageId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(library => library.PackageId, StringComparer.Ordinal)
+            .ToArray();
+    }
 
     public async Task InitializeAsync(
         string databasePath,
@@ -573,6 +623,12 @@ internal sealed class SqliteIndexStore : IIndexStore
             .ThenBy(identity => identity.Version, StringComparer.Ordinal)
             .ToArray();
 
+    private static string SelectStoredCasing(IEnumerable<string> values) =>
+        values
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(value => value, StringComparer.Ordinal)
+            .First();
+
     private static async Task DeleteVersionAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -798,6 +854,11 @@ internal sealed class SqliteIndexStore : IIndexStore
         var value = string.Join('\n', values);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     }
+
+    private sealed record IndexedLibraryRow(
+        string PackageId,
+        string Environment,
+        string Version);
 
     private const string SchemaSql =
         """

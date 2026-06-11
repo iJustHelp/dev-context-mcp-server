@@ -9,7 +9,7 @@ internal sealed class IndexCoordinator(
     IPackageProcessor packageProcessor,
     IIndexStore indexStore) : IIndexCoordinator
 {
-    public async Task<IReadOnlyList<IndexRunSummary>> IndexAllAsync(
+    public async Task<IndexRunResult> IndexAllAsync(
         CancellationToken cancellationToken)
     {
         var settings = configurationProvider.GetSettings();
@@ -21,7 +21,11 @@ internal sealed class IndexCoordinator(
             summaries.Add(await IndexSourceAsync(settings, source, cancellationToken));
         }
 
-        return summaries;
+        var indexedLibraries = await indexStore.GetIndexedLibrariesAsync(
+            settings.DatabasePath,
+            cancellationToken);
+
+        return new(summaries, indexedLibraries);
     }
 
     private async Task<IndexRunSummary> IndexSourceAsync(
@@ -129,7 +133,10 @@ internal sealed class IndexCoordinator(
             Status: status,
             StartedAt: startedAt,
             CompletedAt: DateTimeOffset.UtcNow,
-            Discovered: candidates.Count,
+            Discovered: candidates
+                .Select(candidate => candidate.PackageId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count(),
             Indexed: indexedPackages.Count,
             Changed: publish.Changed,
             Unchanged: publish.Unchanged,

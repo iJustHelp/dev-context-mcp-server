@@ -23,7 +23,8 @@ public sealed class NuGetIndexingPipelineTests
             using var provider = CreateProvider(feed, databasePath);
             var coordinator = provider.GetRequiredService<IIndexCoordinator>();
 
-            var first = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+            var firstResult = await coordinator.IndexAllAsync(CancellationToken.None);
+            var first = Assert.Single(firstResult.Summaries);
 
             Assert.Equal("succeeded", first.Status);
             Assert.Equal(1, first.Discovered);
@@ -35,6 +36,11 @@ public sealed class NuGetIndexingPipelineTests
                 first.Added);
             Assert.Empty(first.Updated);
             Assert.Empty(first.Deleted);
+            var firstLibrary = Assert.Single(firstResult.IndexedLibraries);
+            Assert.Equal(FixtureNuGetPackage.PackageId, firstLibrary.PackageId);
+            var firstEnvironment = Assert.Single(firstLibrary.Environments);
+            Assert.Equal("test", firstEnvironment.Environment);
+            Assert.Equal([FixtureNuGetPackage.Version], firstEnvironment.Versions);
 
             await using var connection = new SqliteConnection(
                 $"Data Source={databasePath};Pooling=False");
@@ -51,7 +57,8 @@ public sealed class NuGetIndexingPipelineTests
                 connection,
                 "SELECT COUNT(*) FROM document_chunks_fts WHERE document_chunks_fts MATCH 'fixture';") > 0);
 
-            var second = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+            var second = Assert.Single(
+                (await coordinator.IndexAllAsync(CancellationToken.None)).Summaries);
             Assert.Equal(0, second.Changed);
             Assert.Equal(1, second.Unchanged);
             Assert.Empty(second.Added);
@@ -61,7 +68,8 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Equal(2L, await ScalarAsync(connection, "SELECT COUNT(*) FROM index_runs;"));
 
             FixtureNuGetPackage.Create(feed, readmeText: "Updated fixture documentation.");
-            var updated = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+            var updated = Assert.Single(
+                (await coordinator.IndexAllAsync(CancellationToken.None)).Summaries);
 
             Assert.Empty(updated.Added);
             Assert.Equal(
@@ -70,13 +78,15 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Empty(updated.Deleted);
 
             FixtureNuGetPackage.ReplaceWithUnsafeArchive(feed);
-            var failed = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+            var failedResult = await coordinator.IndexAllAsync(CancellationToken.None);
+            var failed = Assert.Single(failedResult.Summaries);
 
             Assert.Equal("failed", failed.Status);
             Assert.Single(failed.Errors);
             Assert.Empty(failed.Added);
             Assert.Empty(failed.Updated);
             Assert.Empty(failed.Deleted);
+            Assert.Single(failedResult.IndexedLibraries);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
             Assert.True(await ScalarAsync(
                 connection,
@@ -144,6 +154,72 @@ public sealed class NuGetIndexingPipelineTests
     }
 
     [Fact]
+    public async Task IndexedLibraryInventoryGroupsCaseInsensitivelyAndSortsVersions()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            $"mcp-doc-inventory-{Guid.NewGuid():N}");
+        var databasePath = Path.Combine(root, "docs.db");
+
+        try
+        {
+            var store = new SqliteIndexStore();
+            await store.InitializeAsync(databasePath, CancellationToken.None);
+
+            await using (var connection = new SqliteConnection(
+                             $"Data Source={databasePath};Pooling=False"))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    """
+                    INSERT INTO sources (id, name, environment, service_index)
+                    VALUES
+                        ('source-a', 'qa-a', 'QA', 'fixture-a'),
+                        ('source-b', 'qa-b', 'qa', 'fixture-b'),
+                        ('source-c', 'prod', 'prod', 'fixture-c');
+
+                    INSERT INTO libraries (id, source_id, package_id, normalized_package_id)
+                    VALUES
+                        ('library-a', 'source-a', 'Demo.Cities', 'demo.cities'),
+                        ('library-b', 'source-b', 'demo.cities', 'demo.cities'),
+                        ('library-c', 'source-c', 'Demo.Cities', 'demo.cities');
+
+                    INSERT INTO library_versions (
+                        id, library_id, version, content_hash, is_listed, is_prerelease,
+                        is_deprecated, indexed_at)
+                    VALUES
+                        ('version-a', 'library-a', '1.0.0', 'a', 1, 0, 0, '2026-01-01'),
+                        ('version-b', 'library-b', '1.0.0', 'b', 1, 0, 0, '2026-01-01'),
+                        ('version-c', 'library-b', '1.0.0-beta.1', 'c', 1, 1, 0, '2026-01-01'),
+                        ('version-d', 'library-c', '2.0.0', 'd', 1, 0, 0, '2026-01-01');
+                    """;
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var inventory = await store.GetIndexedLibrariesAsync(
+                databasePath,
+                CancellationToken.None);
+
+            var library = Assert.Single(inventory);
+            Assert.Equal("Demo.Cities", library.PackageId);
+            Assert.Equal(["prod", "QA"], library.Environments
+                .Select(environment => environment.Environment));
+            Assert.Equal(["2.0.0"], library.Environments[0].Versions);
+            Assert.Equal(
+                ["1.0.0", "1.0.0-beta.1"],
+                library.Environments[1].Versions);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task PackageFilesPublishTogetherAndControlPruning()
     {
         const string secondPackageId = "Fixture.Second";
@@ -167,9 +243,9 @@ public sealed class NuGetIndexingPipelineTests
         {
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                var summary = Assert.Single(await provider
+                var summary = Assert.Single((await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Equal(2, summary.Indexed);
                 Assert.Equal(
                     [
@@ -186,9 +262,9 @@ public sealed class NuGetIndexingPipelineTests
             File.Delete(Path.Combine(sourcesPath, $"test.{secondPackageId}.json"));
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                var summary = Assert.Single(await provider
+                var summary = Assert.Single((await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Equal(
                     [new PackageIdentityKey(secondPackageId, FixtureNuGetPackage.Version)],
                     summary.Deleted);
@@ -206,8 +282,8 @@ public sealed class NuGetIndexingPipelineTests
                 $"test.{FixtureNuGetPackage.PackageId}.json"));
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                Assert.Empty(await provider.GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                Assert.Empty((await provider.GetRequiredService<IIndexCoordinator>()
+                    .IndexAllAsync(CancellationToken.None)).Summaries);
             }
 
             Assert.Equal(
@@ -248,9 +324,10 @@ public sealed class NuGetIndexingPipelineTests
         {
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                var summary = Assert.Single(await provider
+                var summary = Assert.Single((await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None)).Summaries);
+                Assert.Equal(2, summary.Discovered);
                 Assert.Equal(3, summary.Indexed);
             }
 
@@ -265,9 +342,10 @@ public sealed class NuGetIndexingPipelineTests
 
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                var summary = Assert.Single(await provider
+                var result = await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None);
+                var summary = Assert.Single(result.Summaries);
 
                 Assert.Equal("succeeded", summary.Status);
                 Assert.Equal(0, summary.Discovered);
@@ -281,6 +359,16 @@ public sealed class NuGetIndexingPipelineTests
                             FixtureNuGetPackage.Version)
                     ],
                     summary.Deleted);
+                Assert.DoesNotContain(
+                    result.IndexedLibraries,
+                    library => library.PackageId.Equals(
+                        FixtureNuGetPackage.PackageId,
+                        StringComparison.OrdinalIgnoreCase));
+                Assert.Contains(
+                    result.IndexedLibraries,
+                    library => library.PackageId.Equals(
+                        retainedPackageId,
+                        StringComparison.OrdinalIgnoreCase));
             }
 
             await using var connection = new SqliteConnection(
@@ -300,9 +388,9 @@ public sealed class NuGetIndexingPipelineTests
 
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
-                var repeated = Assert.Single(await provider
+                var repeated = Assert.Single((await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Empty(repeated.Deleted);
             }
         }
@@ -359,9 +447,9 @@ public sealed class NuGetIndexingPipelineTests
                 feed,
                 databasePath,
                 sourcesPath: sourcesPath);
-            var summary = Assert.Single(await updatedProvider
+            var summary = Assert.Single((await updatedProvider
                 .GetRequiredService<IIndexCoordinator>()
-                .IndexAllAsync(CancellationToken.None));
+                .IndexAllAsync(CancellationToken.None)).Summaries);
 
             Assert.Equal(1, summary.Discovered);
             Assert.Equal(1, summary.Indexed);
@@ -436,9 +524,10 @@ public sealed class NuGetIndexingPipelineTests
                        environment: "prod",
                        sourcesPath: prodSources))
             {
-                var summary = Assert.Single(await provider
+                var result = await provider
                     .GetRequiredService<IIndexCoordinator>()
-                    .IndexAllAsync(CancellationToken.None));
+                    .IndexAllAsync(CancellationToken.None);
+                var summary = Assert.Single(result.Summaries);
                 Assert.Equal(
                     [
                         new PackageIdentityKey(
@@ -446,6 +535,10 @@ public sealed class NuGetIndexingPipelineTests
                             FixtureNuGetPackage.Version)
                     ],
                     summary.Deleted);
+                var library = Assert.Single(result.IndexedLibraries);
+                Assert.Equal(FixtureNuGetPackage.PackageId, library.PackageId);
+                var environment = Assert.Single(library.Environments);
+                Assert.Equal("qa", environment.Environment);
             }
 
             await using var connection = new SqliteConnection(

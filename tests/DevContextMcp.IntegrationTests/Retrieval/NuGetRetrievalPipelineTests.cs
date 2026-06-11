@@ -38,9 +38,14 @@ public sealed class NuGetRetrievalPipelineTests
         {
             using var provider = CreateProvider(feed, databasePath);
             var coordinator = provider.GetRequiredService<IIndexCoordinator>();
-            var indexed = Assert.Single(await coordinator.IndexAllAsync(CancellationToken.None));
+            var indexResult = await coordinator.IndexAllAsync(CancellationToken.None);
+            var indexed = Assert.Single(indexResult.Summaries);
             Assert.Equal("succeeded", indexed.Status);
             Assert.Equal(3, indexed.Indexed);
+            var indexedLibrary = Assert.Single(indexResult.IndexedLibraries);
+            Assert.Equal(
+                ["3.0.0-beta.1", "2.0.0", "1.2.3"],
+                Assert.Single(indexedLibrary.Environments).Versions);
 
             var exact = await provider.GetRequiredService<IResolveLibraryHandler>()
                 .HandleAsync(
