@@ -90,8 +90,8 @@ npx -y @modelcontextprotocol/inspector dotnet run --project .\src\DevContextMcp.
 ```
 
 The host loads `appsettings.json` from its executable directory, independent of
-the caller's working directory. Configure an absolute `DatabasePath` when the
-index should live outside the repository.
+the caller's working directory. Relative `DatabasePath` values are also
+resolved from the executable directory.
 
 To inspect HTTP mode, start the server separately with the HTTP command above,
 select **Streamable HTTP** in Inspector, and connect to
@@ -241,7 +241,7 @@ Indexer CLI after changing its `appsettings.json` or package files.
 | `Transport` | Selects one MCP transport for the process. Allowed lowercase values are `stdio` and `http`. The default is `stdio`. |
 | `Http:Url` | Base address used in HTTP mode. It must be an absolute `http://` loopback URL such as `http://127.0.0.1:5034`, with no path, query, fragment, or credentials. It is validated even when `Transport` is `stdio`. |
 | `Http:Path` | Streamable HTTP endpoint path mapped under `Http:Url`. It must start with `/` and cannot contain a query or fragment. The default is `/mcp`. |
-| `DatabasePath` | SQLite index opened read-only by the Host. It must point to the same database written by the Indexer. Relative paths are resolved from the process working directory, so an absolute path is recommended. |
+| `DatabasePath` | SQLite index opened read-only by the Host. It must point to the same database written by the Indexer. Relative paths are resolved from the Host executable directory. |
 | `RecommendedVersions` | Optional package-to-version map. Use `Company.Package` for a package-wide recommendation or `nuget:qa/Company.Package` for an environment-specific recommendation. Keys are case-insensitive and values must be semantic versions such as `2.8.1` or `2.9.0-beta.1`. |
 | `Retrieval:EnvironmentOrder` | Case-insensitive precedence for legacy IDs such as `nuget:Company.Package`. Each value must be a slug containing only letters, numbers, `.`, `_`, or `-`. Environments not listed here sort after listed environments by ordinal name. |
 | `Retrieval:SourceOrder` | Case-insensitive feed precedence within an environment. Source names not listed here sort after listed sources by ordinal name. Empty and duplicate values are rejected. |
@@ -256,7 +256,7 @@ Indexer CLI after changing its `appsettings.json` or package files.
 
 | Setting | Meaning and rules |
 | --- | --- |
-| `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the process working directory. |
+| `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the Indexer CLI executable directory. |
 | `NuGetSourcesPath` | External folder containing top-level package JSON files. Relative paths resolve from the Indexer CLI executable directory. The folder must exist and is not copied by the project. Files are loaded once at startup in filename order. |
 | `Environments` | NuGet feeds or local package folders to index. Each entry represents one uniquely named environment. The collection may be empty; the Indexer CLI then succeeds without doing work. |
 | `Indexing` | Download, archive-safety, and document-processing limits described below. |
@@ -325,11 +325,10 @@ The Indexer CLI must first index a version before the Host can select it.
 
 ### Paths, upgrades, and credentials
 
-Give both processes the same preferably absolute `DatabasePath`. Although the
-JSON file is loaded from the executable directory, relative database and local
-feed paths are resolved from the process working directory.
-`NuGetSourcesPath` is the exception: relative values resolve from the Indexer
-CLI executable directory.
+Give both processes the same `DatabasePath`. Relative database paths resolve
+from each process's executable directory. Relative local feed paths still
+resolve from the Indexer CLI working directory, while relative
+`NuGetSourcesPath` values resolve from the Indexer CLI executable directory.
 
 After upgrading an existing database, run the Indexer CLI before the Host so it
 can apply the current schema migration.
