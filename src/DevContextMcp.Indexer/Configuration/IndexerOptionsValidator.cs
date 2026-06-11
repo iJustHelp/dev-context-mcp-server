@@ -35,10 +35,6 @@ public sealed class IndexerOptionsValidator :
             "DevContextMcp:DatabasePath",
             failures);
         ConfigurationValidation.ValidatePath(
-            options.ReportPath,
-            "DevContextMcp:ReportPath",
-            failures);
-        ConfigurationValidation.ValidatePath(
             options.NuGetSourcesPath,
             "DevContextMcp:NuGetSourcesPath",
             failures);

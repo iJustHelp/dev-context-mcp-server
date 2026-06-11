@@ -17,8 +17,7 @@ public sealed class IndexerRunnerTests
         var executor = new IndexerRunner(
             Options.Create(new IndexerOptions()),
             coordinator,
-            NullLogger<IndexerRunner>.Instance,
-            new CapturingReportWriter());
+            NullLogger<IndexerRunner>.Instance);
 
         var succeeded = await executor.RunAsync(CancellationToken.None);
 
@@ -69,7 +68,6 @@ public sealed class IndexerRunnerTests
     public async Task SummaryListsSortedPackageChangesAndEmptySections()
     {
         var logger = new CapturingLogger();
-        var reportWriter = new CapturingReportWriter();
         var summary = new IndexRunSummary(
             "fixture",
             "succeeded",
@@ -86,67 +84,26 @@ public sealed class IndexerRunnerTests
             [new PackageIdentityKey("Updated.Package", "3.0.0")],
             [],
             []);
-        var runner = CreateRunner(
-            new StubCoordinator([summary]),
-            logger,
-            reportWriter);
+        var runner = CreateRunner(new StubCoordinator([summary]), logger);
 
         var succeeded = await runner.RunAsync(CancellationToken.None);
 
         Assert.True(succeeded);
         var message = Assert.Single(logger.Messages);
-        Assert.Contains(
-            $"Added (2):{Environment.NewLine}        Alpha.Package 1.0.0{Environment.NewLine}        Zulu.Package 2.0.0",
-            message);
-        Assert.Contains(
-            $"Updated (1):{Environment.NewLine}        Updated.Package 3.0.0",
-            message);
-        Assert.Contains(
-            $"Deleted (0):{Environment.NewLine}        (none)",
-            message);
-        Assert.DoesNotContain("\r\nChanged:", message);
-        Assert.DoesNotContain("\r\nUnchanged:", message);
-        Assert.Equal(message, Assert.Single(reportWriter.Reports));
-    }
-
-    [Fact]
-    public async Task FileReportWriterAppendsReportsToConfiguredPath()
-    {
-        var root = Path.Combine(
-            AppContext.BaseDirectory,
-            $"indexer-report-{Guid.NewGuid():N}");
-        var relativePath = Path.Combine(
-            Path.GetFileName(root),
-            "reports",
-            "indexer.log");
-        var expectedPath = Path.GetFullPath(relativePath, AppContext.BaseDirectory);
-        var writer = new FileIndexerReportWriter(
-            Options.Create(new IndexerOptions { ReportPath = relativePath }));
-
-        try
-        {
-            await writer.WriteAsync("first report", CancellationToken.None);
-            await writer.WriteAsync("second report", CancellationToken.None);
-
-            var content = await File.ReadAllTextAsync(expectedPath);
-            Assert.Equal(
-                $"first report{Environment.NewLine}{Environment.NewLine}"
-                + $"second report{Environment.NewLine}{Environment.NewLine}",
-                content);
-        }
-        finally
-        {
-            if (Directory.Exists(root))
-            {
-                Directory.Delete(root, recursive: true);
-            }
-        }
+        Assert.Contains("Added (2):", message);
+        Assert.Contains("Alpha.Package 1.0.0", message);
+        Assert.Contains("Zulu.Package 2.0.0", message);
+        Assert.Contains("Updated (1):", message);
+        Assert.Contains("Updated.Package 3.0.0", message);
+        Assert.Contains("Deleted (0):", message);
+        Assert.Contains("(none)", message);
+        Assert.DoesNotContain("Changed:", message);
+        Assert.DoesNotContain("Unchanged:", message);
     }
 
     private static IndexerRunner CreateRunner(
         IIndexCoordinator coordinator,
-        ILogger<IndexerRunner>? logger = null,
-        IIndexerReportWriter? reportWriter = null) =>
+        ILogger<IndexerRunner>? logger = null) =>
         new(
             Options.Create(new IndexerOptions
             {
@@ -160,8 +117,7 @@ public sealed class IndexerRunnerTests
                 ]
             }),
             coordinator,
-            logger ?? NullLogger<IndexerRunner>.Instance,
-            reportWriter ?? new CapturingReportWriter());
+            logger ?? NullLogger<IndexerRunner>.Instance);
 
     private static IndexRunSummary Summary(string status) =>
         new(
@@ -229,16 +185,4 @@ public sealed class IndexerRunnerTests
         }
     }
 
-    private sealed class CapturingReportWriter : IIndexerReportWriter
-    {
-        public List<string> Reports { get; } = [];
-
-        public Task WriteAsync(
-            string report,
-            CancellationToken cancellationToken)
-        {
-            Reports.Add(report);
-            return Task.CompletedTask;
-        }
-    }
 }

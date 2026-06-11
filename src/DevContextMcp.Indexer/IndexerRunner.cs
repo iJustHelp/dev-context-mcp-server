@@ -9,8 +9,7 @@ namespace DevContextMcp.Indexer;
 internal sealed class IndexerRunner(
     IOptions<IndexerOptions> options,
     IIndexCoordinator indexCoordinator,
-    ILogger<IndexerRunner> logger,
-    IIndexerReportWriter reportWriter)
+    ILogger<IndexerRunner> logger)
 {
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
@@ -25,7 +24,7 @@ internal sealed class IndexerRunner(
             var summaries = await indexCoordinator.IndexAllAsync(cancellationToken);
             foreach (var summary in summaries)
             {
-                await LogSummaryAsync(summary, cancellationToken);
+                LogSummary(summary);
             }
 
             return summaries.All(summary =>
@@ -42,9 +41,7 @@ internal sealed class IndexerRunner(
         }
     }
 
-    private async Task LogSummaryAsync(
-        IndexRunSummary summary,
-        CancellationToken cancellationToken)
+    private void LogSummary(IndexRunSummary summary)
     {
         var logLevel = summary.Status switch
         {
@@ -55,31 +52,27 @@ internal sealed class IndexerRunner(
         var report = FormatSummary(summary);
 
         logger.Log(logLevel, "{IndexerReport}", report);
-        await reportWriter.WriteAsync(report, cancellationToken);
     }
 
     private static string FormatSummary(IndexRunSummary summary) =>
-        $"""
-        Source: {summary.SourceName}
+        $@"
+        Environment: {summary.SourceName}
         Status: {summary.Status}
         NuGets
             Total: {summary.Discovered}
             Indexed: {summary.Indexed}
             Errors: {summary.Errors.Count}
-            Added ({summary.Added.Count}):
-        {FormatPackages(summary.Added)}
-            Updated ({summary.Updated.Count}):
-        {FormatPackages(summary.Updated)}
-            Deleted ({summary.Deleted.Count}):
-        {FormatPackages(summary.Deleted)}
-        """;
+            Added ({summary.Added.Count}): {FormatPackages(summary.Added)}
+            Updated ({summary.Updated.Count}): {FormatPackages(summary.Updated)}
+            Deleted ({summary.Deleted.Count}):{FormatPackages(summary.Deleted)}
+        ";
 
     private static string FormatPackages(
         IReadOnlyList<PackageIdentityKey> packages) =>
         packages.Count == 0
-            ? "        (none)"
+            ? ""
             : string.Join(
-                Environment.NewLine,
+                "; ",
                 packages
                     .OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(package => package.PackageId, StringComparer.Ordinal)

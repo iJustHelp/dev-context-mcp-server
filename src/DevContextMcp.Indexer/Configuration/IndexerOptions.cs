@@ -9,8 +9,6 @@ public sealed class IndexerOptions
 
     public string DatabasePath { get; set; } = "data/docs.db";
 
-    public string ReportPath { get; set; } = "logs/indexer-report.log";
-
     public string NuGetSourcesPath { get; set; } = "nuget-sources";
 
     public List<NuGetEnvironmentOptions> Environments { get; set; } = [];
