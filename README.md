@@ -10,7 +10,7 @@ executing package code.
 
 ## Prerequisites
 
-- .NET SDK 10.0.204 or a compatible 10.0 patch selected by `global.json`.
+- The .NET SDK selected by `global.json`.
 
 ## Build and test
 
@@ -19,6 +19,26 @@ dotnet restore .\DevContextMcp.slnx
 dotnet build .\DevContextMcp.slnx --no-restore
 dotnet test .\DevContextMcp.slnx --no-build --no-restore
 ```
+
+## Create Windows distributions
+
+Run the distribution script from the repository root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\dist.ps1
+```
+
+It publishes self-contained `win-x64` builds under
+`artifacts\dist\win-x64`, creates separate `server` and `indexer` folders, and
+produces one ZIP archive for each application. Extract both ZIPs into the same
+parent directory to share the generated `data` layout. Run `run-server.cmd`
+and `run-indexer.cmd` from the distribution root; the launchers set the working
+directory required by relative local-feed paths.
+
+If the SDK selected by `global.json` is unavailable, the script downloads the
+official Microsoft installer and caches that SDK under `artifacts\tools\dotnet`.
+This requires internet access on the first run but does not require
+administrator access or modify the machine-wide .NET installation.
 
 ## Run the Indexer CLI
 
