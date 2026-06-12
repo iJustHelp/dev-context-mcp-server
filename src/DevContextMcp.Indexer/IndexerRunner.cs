@@ -22,7 +22,12 @@ internal sealed class IndexerRunner(
         try
         {
             var result = await indexCoordinator.IndexAllAsync(cancellationToken);
-            foreach (var summary in result.Summaries.Where(ShouldLogSummary))
+            var changedSummaries = result.Summaries.Where(summary =>
+                summary.Added.Count > 0 ||
+                summary.Updated.Count > 0 ||
+                summary.Deleted.Count > 0);
+            
+            foreach (var summary in changedSummaries)
             {
                 LogSummary(summary);
             }
@@ -51,16 +56,9 @@ internal sealed class IndexerRunner(
             "partial_success" => LogLevel.Warning,
             _ => LogLevel.Error
         };
-        logger.LogInformation("---------------------------------------------");
         var report = FormatSummary(summary);
         logger.Log(logLevel, "{IndexerReport}", report);
     }
-
-    private static bool ShouldLogSummary(IndexRunSummary summary) =>
-        summary.Errors.Count > 0 ||
-        summary.Added.Count > 0 ||
-        summary.Updated.Count > 0 ||
-        summary.Deleted.Count > 0;
 
     private static string FormatSummary(IndexRunSummary summary) =>
         $@"
@@ -87,18 +85,13 @@ internal sealed class IndexerRunner(
                     .ThenBy(package => package.Version, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(package => package.Version, StringComparer.Ordinal)
                     .Select(package => $"        {package.PackageId} {package.Version}"));
+     
 
     private void LogIndexedLibraries(IReadOnlyList<IndexedLibrary> libraries)
     {
-        logger.LogInformation("{IndexedLibraryReport}", FormatIndexedLibraries(libraries));
-        logger.LogInformation("---------------------------------------------");
-    }
-
-    private static string FormatIndexedLibraries(IReadOnlyList<IndexedLibrary> libraries)
-    {
         if (libraries.Count == 0)
         {
-            return $"{Environment.NewLine}Indexed libraries{Environment.NewLine}{Environment.NewLine}(none)";
+            return;
         }
 
         var blocks = libraries.Select(library =>
@@ -110,7 +103,8 @@ internal sealed class IndexerRunner(
                     $"    {environment.Environment} ({environment.Versions.Count}): " +
                     string.Join(", ", environment.Versions))));
 
-        return $"{Environment.NewLine}Indexed libraries{Environment.NewLine}{Environment.NewLine}" +
+        var report = $"{Environment.NewLine}Indexed libraries{Environment.NewLine}{Environment.NewLine}" +
             string.Join($"{Environment.NewLine}{Environment.NewLine}", blocks);
+        logger.LogInformation("{IndexedLibraryReport}", report += $"{Environment.NewLine}-----------------------------------------------------------------------------");
     }
 }
