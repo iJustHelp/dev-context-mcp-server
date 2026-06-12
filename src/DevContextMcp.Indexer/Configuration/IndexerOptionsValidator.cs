@@ -41,8 +41,10 @@ public sealed class IndexerOptionsValidator :
         ValidateLimits(options.Indexing, failures);
         ValidateSourceNames(options, failures);
         ValidateEnvironments(options.Environments, failures);
+        ValidateDocumentation(options.Documentation, failures);
 
-        if (!string.IsNullOrWhiteSpace(options.NuGetSourcesPath))
+        if (options.Environments.Count > 0
+            && !string.IsNullOrWhiteSpace(options.NuGetSourcesPath))
         {
             ValidatePackages(options, failures);
         }
@@ -50,6 +52,78 @@ public sealed class IndexerOptionsValidator :
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static void ValidateDocumentation(
+        DocumentationOptions? documentation,
+        List<string> failures)
+    {
+        if (documentation is null)
+        {
+            return;
+        }
+
+        ConfigurationValidation.ValidatePath(
+            documentation.RootPath,
+            "DevContextMcp:Documentation:RootPath",
+            failures);
+        if (!string.IsNullOrWhiteSpace(documentation.RootPath))
+        {
+            try
+            {
+                var path = Path.GetFullPath(
+                    documentation.RootPath,
+                    AppContext.BaseDirectory);
+                if (!Directory.Exists(path))
+                {
+                    failures.Add(
+                        $"DevContextMcp:Documentation:RootPath directory '{path}' does not exist.");
+                }
+            }
+            catch (Exception exception) when (
+                exception is ArgumentException
+                    or NotSupportedException
+                    or PathTooLongException)
+            {
+                // ValidatePath reports the malformed path.
+            }
+        }
+
+        if (documentation.Extensions.Count == 0)
+        {
+            failures.Add(
+                "DevContextMcp:Documentation:Extensions must contain at least one extension.");
+            return;
+        }
+
+        var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var configured in documentation.Extensions)
+        {
+            var extension = configured.Trim();
+            if (extension.Length == 0
+                || extension.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || extension.Contains('*', StringComparison.Ordinal)
+                || extension.Contains('?', StringComparison.Ordinal)
+                || extension.Contains(Path.DirectorySeparatorChar)
+                || extension.Contains(Path.AltDirectorySeparatorChar))
+            {
+                failures.Add(
+                    $"Documentation extension '{configured}' is invalid.");
+                continue;
+            }
+
+            extension = extension.StartsWith('.') ? extension : $".{extension}";
+            if (extension.Length == 1)
+            {
+                failures.Add(
+                    $"Documentation extension '{configured}' is invalid.");
+            }
+            else if (!normalized.Add(extension))
+            {
+                failures.Add(
+                    $"Documentation extension '{configured}' is configured more than once.");
+            }
+        }
     }
 
     private static void ValidateLimits(IndexingOptions options, List<string> failures)

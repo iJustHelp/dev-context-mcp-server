@@ -16,7 +16,9 @@ internal sealed class ListVersionsHandler(
         Guard.NotBlank(request.LibraryId, nameof(request.LibraryId));
         if (!LibraryId.TryParse(request.LibraryId, out var libraryId))
         {
-            return NotFound("invalid_library_id", "The library ID must use the 'nuget:' prefix.");
+            return NotFound(
+                "invalid_library_id",
+                "The library ID must use the 'nuget:' or 'docs:' prefix.");
         }
 
         var settings = configurationProvider.GetSettings();
@@ -51,6 +53,26 @@ internal sealed class ListVersionsHandler(
             }
 
             var selection = resolution.Selection!;
+            if (selection.Library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new ListVersionsResponse
+                {
+                    Status = ToolResultStatus.Ok,
+                    Data = new ListVersionsResult(),
+                    ResolvedContext = new ResolvedContext
+                    {
+                        LibraryId = "docs:company-docs",
+                        SourceId = "company-docs"
+                    },
+                    Warnings =
+                    [
+                        RetrievalHandlerSupport.Warning(
+                            "version_not_applicable",
+                            "Company documentation is versionless.")
+                    ]
+                };
+            }
+
             var versions = selection.Versions
                 .Where(version => request.IncludePrerelease || !version.Prerelease)
                 .Select(version => (Record: version, Parsed: Parse(version.Version)))

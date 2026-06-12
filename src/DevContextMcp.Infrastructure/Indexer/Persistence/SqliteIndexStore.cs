@@ -10,7 +10,10 @@ namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
 internal sealed class SqliteIndexStore : IIndexStore
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
+    private const string DocumentationLibraryId = "company-docs";
+    private const string DocumentationDisplayName = "Company Docs";
+    private const string DocumentationVersion = "current";
 
     public async Task<IReadOnlyList<IndexedLibrary>> GetIndexedLibrariesAsync(
         string databasePath,
@@ -27,7 +30,8 @@ internal sealed class SqliteIndexStore : IIndexStore
             SELECT l.package_id, s.environment, lv.version
             FROM library_versions lv
             INNER JOIN libraries l ON l.id = lv.library_id
-            INNER JOIN sources s ON s.id = l.source_id;
+            INNER JOIN sources s ON s.id = l.source_id
+            WHERE l.kind = 'nuget';
             """;
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -120,6 +124,15 @@ internal sealed class SqliteIndexStore : IIndexStore
                     connection,
                     transaction,
                     MigrationV3Sql,
+                    cancellationToken);
+            }
+
+            if (version <= 3)
+            {
+                await ExecuteNonQueryAsync(
+                    connection,
+                    transaction,
+                    MigrationV4Sql,
                     cancellationToken);
             }
 
@@ -266,6 +279,141 @@ internal sealed class SqliteIndexStore : IIndexStore
             SortIdentities(deleted));
     }
 
+    public async Task<IndexPublishResult> PublishDocumentationAsync(
+        string databasePath,
+        DocumentationSourceDefinition source,
+        DateTimeOffset startedAt,
+        DocumentationIndexData documentation,
+        CancellationToken cancellationToken)
+    {
+        var resolvedPath = ResolveDatabasePath(databasePath);
+        await using var connection = CreateConnection(resolvedPath);
+        await connection.OpenAsync(cancellationToken);
+        await ExecuteNonQueryAsync(
+            connection,
+            null,
+            "PRAGMA foreign_keys = ON;",
+            cancellationToken);
+        await using var transaction = connection.BeginTransaction();
+
+        var sourceId = StableId("docs", DocumentationLibraryId);
+        var libraryId = StableId(sourceId, DocumentationLibraryId);
+        var versionId = StableId(sourceId, DocumentationLibraryId, DocumentationVersion);
+        var existingHash = await GetContentHashAsync(
+            connection,
+            transaction,
+            versionId,
+            cancellationToken);
+        var identity = new PackageIdentityKey(
+            DocumentationLibraryId,
+            DocumentationVersion);
+
+        await UpsertSourceAsync(
+            connection,
+            transaction,
+            sourceId,
+            DocumentationLibraryId,
+            string.Empty,
+            source.RootPath,
+            "docs",
+            cancellationToken);
+        await UpsertLibraryAsync(
+            connection,
+            transaction,
+            libraryId,
+            sourceId,
+            DocumentationLibraryId,
+            "docs",
+            DocumentationDisplayName,
+            cancellationToken);
+
+        var changed = 0;
+        var unchanged = 0;
+        IReadOnlyList<PackageIdentityKey> added = [];
+        IReadOnlyList<PackageIdentityKey> updated = [];
+        if (string.Equals(existingHash, documentation.ContentHash, StringComparison.Ordinal))
+        {
+            unchanged = 1;
+        }
+        else
+        {
+            if (existingHash is null)
+            {
+                added = [identity];
+            }
+            else
+            {
+                updated = [identity];
+            }
+
+            changed = 1;
+            await DeleteVersionAsync(connection, transaction, versionId, cancellationToken);
+            await InsertPackageAsync(
+                connection,
+                transaction,
+                sourceId,
+                libraryId,
+                versionId,
+                new PackageIndexData(
+                    DocumentationLibraryId,
+                    DocumentationVersion,
+                    documentation.ContentHash,
+                    DocumentationDisplayName,
+                    "Internal company documentation and standards.",
+                    null,
+                    null,
+                    "company documentation standards",
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    null,
+                    documentation.Artifacts,
+                    documentation.Documents,
+                    [],
+                    [],
+                    []),
+                cancellationToken);
+        }
+
+        await RefreshSourceLibrarySearchAsync(
+            connection,
+            transaction,
+            sourceId,
+            cancellationToken);
+        var completedAt = DateTimeOffset.UtcNow;
+        await InsertRunAsync(
+            connection,
+            transaction,
+            StableId(
+                sourceId,
+                startedAt.ToString("O", CultureInfo.InvariantCulture),
+                Guid.NewGuid().ToString("N")),
+            sourceId,
+            "succeeded",
+            startedAt,
+            completedAt,
+            documentation.Artifacts.Count,
+            changed,
+            unchanged,
+            [],
+            cancellationToken);
+        await ExecuteAsync(
+            connection,
+            transaction,
+            """
+            UPDATE sources
+            SET last_indexed_at = $lastIndexedAt
+            WHERE id = $sourceId;
+            """,
+            [("$lastIndexedAt", completedAt.ToString("O")), ("$sourceId", sourceId)],
+            cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(changed, unchanged, added, updated, []);
+    }
+
     private static async Task InsertPackageAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -317,8 +465,10 @@ internal sealed class SqliteIndexStore : IIndexStore
                 connection,
                 transaction,
                 """
-                INSERT INTO artifacts (id, library_version_id, path, kind, content_hash, size)
-                VALUES ($id, $versionId, $path, $kind, $contentHash, $size);
+                INSERT INTO artifacts (
+                    id, library_version_id, path, kind, content_hash, size, content)
+                VALUES (
+                    $id, $versionId, $path, $kind, $contentHash, $size, $content);
                 """,
                 [
                     ("$id", artifactId),
@@ -326,7 +476,8 @@ internal sealed class SqliteIndexStore : IIndexStore
                     ("$path", artifact.Path),
                     ("$kind", artifact.Kind),
                     ("$contentHash", artifact.ContentHash),
-                    ("$size", artifact.Size)
+                    ("$size", artifact.Size),
+                    ("$content", artifact.Content)
                 ],
                 cancellationToken);
         }
@@ -675,22 +826,43 @@ internal sealed class SqliteIndexStore : IIndexStore
         string sourceId,
         IndexSourceDefinition source,
         CancellationToken cancellationToken) =>
+        UpsertSourceAsync(
+            connection,
+            transaction,
+            sourceId,
+            source.Name,
+            source.Environment,
+            source.ServiceIndex,
+            "nuget",
+            cancellationToken);
+
+    private static Task UpsertSourceAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string sourceId,
+        string name,
+        string environment,
+        string serviceIndex,
+        string kind,
+        CancellationToken cancellationToken) =>
         ExecuteAsync(
             connection,
             transaction,
             """
-            INSERT INTO sources (id, name, environment, service_index)
-            VALUES ($id, $name, $environment, $serviceIndex)
+            INSERT INTO sources (id, name, environment, service_index, kind)
+            VALUES ($id, $name, $environment, $serviceIndex, $kind)
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 environment = excluded.environment,
-                service_index = excluded.service_index;
+                service_index = excluded.service_index,
+                kind = excluded.kind;
             """,
             [
                 ("$id", sourceId),
-                ("$name", source.Name),
-                ("$environment", source.Environment),
-                ("$serviceIndex", source.ServiceIndex)
+                ("$name", name),
+                ("$environment", environment),
+                ("$serviceIndex", serviceIndex),
+                ("$kind", kind)
             ],
             cancellationToken);
 
@@ -701,19 +873,45 @@ internal sealed class SqliteIndexStore : IIndexStore
         string sourceId,
         string packageId,
         CancellationToken cancellationToken) =>
+        UpsertLibraryAsync(
+            connection,
+            transaction,
+            libraryId,
+            sourceId,
+            packageId,
+            "nuget",
+            packageId,
+            cancellationToken);
+
+    private static Task UpsertLibraryAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string libraryId,
+        string sourceId,
+        string packageId,
+        string kind,
+        string displayName,
+        CancellationToken cancellationToken) =>
         ExecuteAsync(
             connection,
             transaction,
             """
-            INSERT INTO libraries (id, source_id, package_id, normalized_package_id)
-            VALUES ($id, $sourceId, $packageId, $normalizedPackageId)
-            ON CONFLICT(id) DO UPDATE SET package_id = excluded.package_id;
+            INSERT INTO libraries (
+                id, source_id, package_id, normalized_package_id, kind, display_name)
+            VALUES (
+                $id, $sourceId, $packageId, $normalizedPackageId, $kind, $displayName)
+            ON CONFLICT(id) DO UPDATE SET
+                package_id = excluded.package_id,
+                kind = excluded.kind,
+                display_name = excluded.display_name;
             """,
             [
                 ("$id", libraryId),
                 ("$sourceId", sourceId),
                 ("$packageId", packageId),
-                ("$normalizedPackageId", packageId.Trim().ToLowerInvariant())
+                ("$normalizedPackageId", packageId.Trim().ToLowerInvariant()),
+                ("$kind", kind),
+                ("$displayName", displayName)
             ],
             cancellationToken);
 
@@ -867,6 +1065,7 @@ internal sealed class SqliteIndexStore : IIndexStore
             name TEXT NOT NULL,
             environment TEXT NOT NULL,
             service_index TEXT NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'nuget',
             last_indexed_at TEXT NULL
         );
 
@@ -875,6 +1074,8 @@ internal sealed class SqliteIndexStore : IIndexStore
             source_id TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
             package_id TEXT NOT NULL,
             normalized_package_id TEXT NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'nuget',
+            display_name TEXT NULL,
             UNIQUE(source_id, normalized_package_id)
         );
 
@@ -905,6 +1106,7 @@ internal sealed class SqliteIndexStore : IIndexStore
             kind TEXT NOT NULL,
             content_hash TEXT NOT NULL,
             size INTEGER NOT NULL,
+            content TEXT NULL,
             UNIQUE(library_version_id, path)
         );
 
@@ -1049,6 +1251,25 @@ internal sealed class SqliteIndexStore : IIndexStore
         UPDATE sources
         SET environment = name
         WHERE environment = '';
+        """;
+
+    private const string MigrationV4Sql =
+        """
+        ALTER TABLE sources
+            ADD COLUMN kind TEXT NOT NULL DEFAULT 'nuget';
+
+        ALTER TABLE libraries
+            ADD COLUMN kind TEXT NOT NULL DEFAULT 'nuget';
+
+        ALTER TABLE libraries
+            ADD COLUMN display_name TEXT NULL;
+
+        UPDATE libraries
+        SET display_name = package_id
+        WHERE display_name IS NULL;
+
+        ALTER TABLE artifacts
+            ADD COLUMN content TEXT NULL;
         """;
 
     private static async Task RefreshAllLibrarySearchAsync(

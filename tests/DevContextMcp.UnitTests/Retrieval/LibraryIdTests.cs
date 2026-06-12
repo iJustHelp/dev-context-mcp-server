@@ -32,4 +32,16 @@ public sealed class LibraryIdTests
     {
         Assert.False(LibraryId.TryParse(value, out _));
     }
+
+    [Fact]
+    public void ParsesDocumentationLibraryId()
+    {
+        Assert.True(LibraryId.TryParse(
+            "docs:company-docs",
+            out var libraryId));
+        Assert.Equal("docs", libraryId.Kind);
+        Assert.Equal("company-docs", libraryId.PackageId);
+        Assert.Null(libraryId.Environment);
+        Assert.Equal("docs:company-docs", libraryId.ToString());
+    }
 }

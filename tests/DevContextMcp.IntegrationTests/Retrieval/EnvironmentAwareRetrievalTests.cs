@@ -64,13 +64,19 @@ public sealed class EnvironmentAwareRetrievalTests
             Assert.Equal(2, all.Data!.Matches.Count);
 
             var qaMatch = Assert.Single(all.Data.Matches, match =>
-                match.Environment.Equals("qa", StringComparison.OrdinalIgnoreCase));
+                string.Equals(
+                    match.Environment,
+                    "qa",
+                    StringComparison.OrdinalIgnoreCase));
             Assert.Equal($"nuget:qa/{FixtureNuGetPackage.PackageId}", qaMatch.LibraryId);
             Assert.Equal("qa", qaMatch.SourceId);
             Assert.Equal("2.1.0", qaMatch.RecommendedVersion);
 
             var productionMatch = Assert.Single(all.Data.Matches, match =>
-                match.Environment.Equals("production", StringComparison.OrdinalIgnoreCase));
+                string.Equals(
+                    match.Environment,
+                    "production",
+                    StringComparison.OrdinalIgnoreCase));
             Assert.Equal("production", productionMatch.SourceId);
             Assert.Equal("1.0.0", productionMatch.RecommendedVersion);
 

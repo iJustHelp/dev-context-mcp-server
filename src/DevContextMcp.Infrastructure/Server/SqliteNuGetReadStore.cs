@@ -8,7 +8,7 @@ namespace DevContextMcp.Infrastructure.Server;
 
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
-    private const int RequiredSchemaVersion = 3;
+    private const int RequiredSchemaVersion = 4;
 
     public async Task<IReadOnlyList<LibraryCandidateRecord>> SearchLibrariesAsync(
         string databasePath,
@@ -25,6 +25,8 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 """
                 SELECT
                     l.id,
+                    l.kind,
+                    COALESCE(l.display_name, l.package_id),
                     s.name,
                     s.environment,
                     l.package_id,
@@ -57,17 +59,19 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                var packageId = reader.GetString(3);
+                var packageId = reader.GetString(5);
                 candidates[reader.GetString(0)] = new(
                     reader.GetString(0),
                     reader.GetString(1),
                     reader.GetString(2),
+                    reader.GetString(3),
+                    NullIfEmpty(reader.GetString(4)),
                     packageId,
-                    GetNullableString(reader, 4),
-                    GetNullableString(reader, 5),
-                    reader.GetInt64(6) != 0,
-                    reader.GetInt64(7) != 0,
+                    GetNullableString(reader, 6),
+                    reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
                     reader.GetInt64(8) != 0,
+                    reader.GetInt64(9) != 0,
+                    reader.GetInt64(10) != 0,
                     packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
                     packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
                     0);
@@ -82,6 +86,8 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 """
                 SELECT
                     l.id,
+                    l.kind,
+                    COALESCE(l.display_name, l.package_id),
                     s.name,
                     s.environment,
                     l.package_id,
@@ -117,18 +123,20 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             while (await reader.ReadAsync(cancellationToken))
             {
                 var libraryId = reader.GetString(0);
-                var packageId = reader.GetString(3);
+                var packageId = reader.GetString(5);
                 var textScore = Math.Max(0.35, 0.75 - (position++ * 0.02));
                 var record = new LibraryCandidateRecord(
                     libraryId,
                     reader.GetString(1),
                     reader.GetString(2),
+                    reader.GetString(3),
+                    NullIfEmpty(reader.GetString(4)),
                     packageId,
-                    GetNullableString(reader, 4),
-                    GetNullableString(reader, 5),
-                    reader.GetInt64(6) != 0,
-                    reader.GetInt64(7) != 0,
+                    GetNullableString(reader, 6),
+                    reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
                     reader.GetInt64(8) != 0,
+                    reader.GetInt64(9) != 0,
+                    reader.GetInt64(10) != 0,
                     packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
                     packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
                     textScore);
@@ -146,6 +154,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
 
     public async Task<IReadOnlyList<ResolvedLibraryRecord>> FindLibrariesAsync(
         string databasePath,
+        string kind,
         string packageId,
         CancellationToken cancellationToken)
     {
@@ -153,7 +162,14 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         await using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT l.id, s.name, s.environment, l.package_id, lv.description
+            SELECT
+                l.id,
+                l.kind,
+                COALESCE(l.display_name, l.package_id),
+                s.name,
+                s.environment,
+                l.package_id,
+                lv.description
             FROM libraries l
             INNER JOIN sources s ON s.id = l.source_id
             LEFT JOIN library_versions lv ON lv.id = (
@@ -167,9 +183,11 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                     candidate.version DESC
                 LIMIT 1
             )
-            WHERE l.normalized_package_id = lower($packageId)
+            WHERE l.kind = $kind
+              AND l.normalized_package_id = lower($packageId)
             ORDER BY s.name;
             """;
+        command.Parameters.AddWithValue("$kind", kind);
         command.Parameters.AddWithValue("$packageId", packageId);
 
         var values = new List<ResolvedLibraryRecord>();
@@ -181,7 +199,9 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 reader.GetString(1),
                 reader.GetString(2),
                 reader.GetString(3),
-                GetNullableString(reader, 4)));
+                NullIfEmpty(reader.GetString(4)),
+                reader.GetString(5),
+                GetNullableString(reader, 6)));
         }
 
         return values;
@@ -199,7 +219,8 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             SELECT EXISTS(
                 SELECT 1
                 FROM sources
-                WHERE environment = $environment COLLATE NOCASE
+                WHERE kind = 'nuget'
+                  AND environment = $environment COLLATE NOCASE
             );
             """;
         command.Parameters.AddWithValue("$environment", environment);
@@ -471,6 +492,35 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             isSymbol: true,
             cancellationToken);
 
+    public async Task<ResourceDocumentRecord?> ReadDocumentationAsync(
+        string databasePath,
+        string path,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(databasePath, cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT a.content
+            FROM artifacts a
+            INNER JOIN library_versions lv ON lv.id = a.library_version_id
+            INNER JOIN libraries l ON l.id = lv.library_id
+            WHERE l.kind = 'docs'
+              AND l.normalized_package_id = 'company-docs'
+              AND lv.version = 'current'
+              AND a.path = $path
+              AND a.content IS NOT NULL
+            LIMIT 1;
+            """;
+        command.Parameters.AddWithValue("$path", path);
+        var content = await command.ExecuteScalarAsync(cancellationToken);
+        return content is null or DBNull
+            ? null
+            : new ResourceDocumentRecord(
+                Convert.ToString(content, CultureInfo.InvariantCulture)!,
+                MimeType(path));
+    }
+
     private static async Task<ResourceDocumentRecord?> ReadResourceAsync(
         string databasePath,
         string sql,
@@ -593,6 +643,15 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
 
     private static string? GetNullableString(SqliteDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+
+    private static string? NullIfEmpty(string value) =>
+        value.Length == 0 ? null : value;
+
+    private static string MimeType(string path) =>
+        Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase)
+        || Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase)
+            ? "text/markdown"
+            : "text/plain";
 
     private static DateTimeOffset? ParseDate(string? value) =>
         DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed)

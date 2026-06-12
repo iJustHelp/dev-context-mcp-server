@@ -13,9 +13,10 @@ internal sealed class IndexerRunner(
 {
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
     {
-        if (options.Value.Environments.Count == 0)
+        if (options.Value.Environments.Count == 0
+            && options.Value.Documentation is null)
         {
-            logger.LogInformation("No NuGet environments are configured; indexing was skipped.");
+            logger.LogInformation("No indexing sources are configured; indexing was skipped.");
             return true;
         }
 
@@ -23,6 +24,8 @@ internal sealed class IndexerRunner(
         {
             var result = await indexCoordinator.IndexAllAsync(cancellationToken);
             var changedSummaries = result.Summaries.Where(summary =>
+                !summary.Status.Equals("succeeded", StringComparison.Ordinal)
+                ||
                 summary.Added.Count > 0 ||
                 summary.Updated.Count > 0 ||
                 summary.Deleted.Count > 0);
@@ -89,11 +92,6 @@ internal sealed class IndexerRunner(
 
     private void LogIndexedLibraries(IReadOnlyList<IndexedLibrary> libraries)
     {
-        if (libraries.Count == 0)
-        {
-            return;
-        }
-
         var blocks = libraries.Select(library =>
             $"{library.PackageId} versions ({library.Environments.Sum(environment => environment.Versions.Count)})" +
             Environment.NewLine +
@@ -104,7 +102,9 @@ internal sealed class IndexerRunner(
                     string.Join(", ", environment.Versions))));
 
         var report = $"{Environment.NewLine}Indexed libraries{Environment.NewLine}{Environment.NewLine}" +
-            string.Join($"{Environment.NewLine}{Environment.NewLine}", blocks);
+            (libraries.Count == 0
+                ? "(none)"
+                : string.Join($"{Environment.NewLine}{Environment.NewLine}", blocks));
         logger.LogInformation("{IndexedLibraryReport}", report += $"{Environment.NewLine}-----------------------------------------------------------------------------");
     }
 }

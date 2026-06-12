@@ -7,6 +7,7 @@ internal sealed class IndexCoordinator(
     IIndexingConfigurationProvider configurationProvider,
     IPackageSourceClient sourceClient,
     IPackageProcessor packageProcessor,
+    IDocumentationSourceReader documentationReader,
     IIndexStore indexStore) : IIndexCoordinator
 {
     public async Task<IndexRunResult> IndexAllAsync(
@@ -15,10 +16,19 @@ internal sealed class IndexCoordinator(
         var settings = configurationProvider.GetSettings();
         await indexStore.InitializeAsync(settings.DatabasePath, cancellationToken);
 
-        var summaries = new List<IndexRunSummary>(settings.Sources.Count);
+        var summaries = new List<IndexRunSummary>(
+            settings.Sources.Count + (settings.Documentation is null ? 0 : 1));
         foreach (var source in settings.Sources)
         {
             summaries.Add(await IndexSourceAsync(settings, source, cancellationToken));
+        }
+
+        if (settings.Documentation is not null)
+        {
+            summaries.Add(await IndexDocumentationAsync(
+                settings,
+                settings.Documentation,
+                cancellationToken));
         }
 
         var indexedLibraries = await indexStore.GetIndexedLibrariesAsync(
@@ -26,6 +36,66 @@ internal sealed class IndexCoordinator(
             cancellationToken);
 
         return new(summaries, indexedLibraries);
+    }
+
+    private async Task<IndexRunSummary> IndexDocumentationAsync(
+        IndexingSettings settings,
+        DocumentationSourceDefinition source,
+        CancellationToken cancellationToken)
+    {
+        var startedAt = DateTimeOffset.UtcNow;
+        try
+        {
+            var documentation = await documentationReader.ReadAsync(
+                source,
+                settings.Limits,
+                cancellationToken);
+            var publish = await indexStore.PublishDocumentationAsync(
+                settings.DatabasePath,
+                source,
+                startedAt,
+                documentation,
+                cancellationToken);
+
+            return new(
+                SourceName: "company-docs",
+                Status: "succeeded",
+                StartedAt: startedAt,
+                CompletedAt: DateTimeOffset.UtcNow,
+                Discovered: documentation.Artifacts.Count,
+                Indexed: documentation.Artifacts.Count,
+                Changed: publish.Changed,
+                Unchanged: publish.Unchanged,
+                Added: publish.Added,
+                Updated: publish.Updated,
+                Deleted: publish.Deleted,
+                Errors: []);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            var error = new IndexRunError(
+                "documentation_index_failed",
+                exception.Message,
+                "company-docs",
+                null);
+            return new(
+                SourceName: "company-docs",
+                Status: "failed",
+                StartedAt: startedAt,
+                CompletedAt: DateTimeOffset.UtcNow,
+                Discovered: 0,
+                Indexed: 0,
+                Changed: 0,
+                Unchanged: 0,
+                Added: [],
+                Updated: [],
+                Deleted: [],
+                Errors: [error]);
+        }
     }
 
     private async Task<IndexRunSummary> IndexSourceAsync(

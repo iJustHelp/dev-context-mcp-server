@@ -46,7 +46,7 @@ public sealed class NuGetIndexingPipelineTests
                 $"Data Source={databasePath};Pooling=False");
             await connection.OpenAsync();
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
-            Assert.Equal(3L, await ScalarAsync(connection, "PRAGMA user_version;"));
+            Assert.Equal(4L, await ScalarAsync(connection, "PRAGMA user_version;"));
             Assert.Equal(
                 "test",
                 await TextScalarAsync(connection, "SELECT environment FROM sources;"));
@@ -123,6 +123,20 @@ public sealed class NuGetIndexingPipelineTests
                         service_index TEXT NOT NULL,
                         last_indexed_at TEXT NULL
                     );
+                    CREATE TABLE libraries (
+                        id TEXT PRIMARY KEY,
+                        source_id TEXT NOT NULL,
+                        package_id TEXT NOT NULL,
+                        normalized_package_id TEXT NOT NULL
+                    );
+                    CREATE TABLE artifacts (
+                        id TEXT PRIMARY KEY,
+                        library_version_id TEXT NOT NULL,
+                        path TEXT NOT NULL,
+                        kind TEXT NOT NULL,
+                        content_hash TEXT NOT NULL,
+                        size INTEGER NOT NULL
+                    );
                     INSERT INTO sources (id, name, service_index)
                     VALUES ('stable-source-id', 'qa-feed', 'https://packages.example/v3/index.json');
                     PRAGMA user_version = 2;
@@ -136,7 +150,7 @@ public sealed class NuGetIndexingPipelineTests
             await using var migrated = new SqliteConnection(
                 $"Data Source={databasePath};Mode=ReadOnly;Pooling=False");
             await migrated.OpenAsync();
-            Assert.Equal(3L, await ScalarAsync(migrated, "PRAGMA user_version;"));
+            Assert.Equal(4L, await ScalarAsync(migrated, "PRAGMA user_version;"));
             Assert.Equal(
                 "stable-source-id",
                 await TextScalarAsync(migrated, "SELECT id FROM sources;"));
