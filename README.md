@@ -209,7 +209,7 @@ Indexer CLI configuration:
 {
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
-    "NuGetSourcesPath": "nuget-sources",
+    "NugetsPath": "nugets",
     "Environments": [
       {
         "Name": "production",
@@ -230,8 +230,8 @@ Indexer CLI configuration:
 }
 ```
 
-Create one top-level JSON file per package in the external
-`nuget-sources` folder:
+Create one JSON file per package anywhere under the external `nugets` folder.
+Subfolders can organize definitions by environment or another convention:
 
 ```json
 {
@@ -285,7 +285,7 @@ Environment variables and command-line arguments override JSON values.
 Collection entries use a zero-based index. `TimeSpan` values use `hh:mm:ss`,
 so `00:02:00` means two minutes. Invalid values fail startup rather than
 silently falling back. Overrides may change `Environments` and
-`NuGetSourcesPath`; package policy fields are owned only by the external JSON
+`NugetsPath`; package policy fields are owned only by the external JSON
 files.
 
 Configuration is read when the process starts. Restart the Host or rerun the
@@ -314,7 +314,7 @@ Indexer CLI after changing its `appsettings.json` or package files.
 | Setting | Meaning and rules |
 | --- | --- |
 | `DatabasePath` | SQLite index created and updated by the Indexer CLI. Use exactly the same path as the Host. Relative paths are resolved from the Indexer CLI executable directory. |
-| `NuGetSourcesPath` | External folder containing top-level package JSON files. Relative paths resolve from the Indexer CLI executable directory. The folder must exist and is not copied by the project. Files are loaded once at startup in filename order. |
+| `NugetsPath` | External folder containing package JSON files. Relative paths resolve from the Indexer CLI executable directory. The folder must exist and is not copied by the project. Files are loaded recursively once at startup in full-path order. |
 | `Environments` | NuGet feeds or local package folders to index. Each entry represents one uniquely named environment. The collection may be empty; the Indexer CLI then succeeds without doing work. |
 | `Indexing` | Download, archive-safety, and document-processing limits described below. |
 
@@ -393,7 +393,7 @@ The Indexer CLI must first index a version before the Host can select it.
 Give both processes the same `DatabasePath`. Relative database paths resolve
 from each process's executable directory. Relative local feed paths still
 resolve from the Indexer CLI working directory, while relative
-`NuGetSourcesPath` values resolve from the Indexer CLI executable directory.
+`NugetsPath` values resolve from the Indexer CLI executable directory.
 
 After upgrading an existing database, run the Indexer CLI before the Host so it
 can apply the current schema migration.

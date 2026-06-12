@@ -273,7 +273,10 @@ public sealed class NuGetIndexingPipelineTests
                     summary.Added);
             }
 
-            File.Delete(Path.Combine(sourcesPath, $"test.{secondPackageId}.json"));
+            File.Delete(Path.Combine(
+                sourcesPath,
+                "test",
+                $"{secondPackageId}.json"));
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
                 var summary = Assert.Single((await provider
@@ -291,7 +294,8 @@ public sealed class NuGetIndexingPipelineTests
 
             File.Delete(Path.Combine(
                 sourcesPath,
-                $"test.{FixtureNuGetPackage.PackageId}.json"));
+                "test",
+                $"{FixtureNuGetPackage.PackageId}.json"));
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
                 Assert.Empty((await provider.GetRequiredService<IIndexCoordinator>()
@@ -702,7 +706,7 @@ public sealed class NuGetIndexingPipelineTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["DevContextMcp:DatabasePath"] = databasePath,
-                ["DevContextMcp:NuGetSourcesPath"] = sourcesPath,
+                ["DevContextMcp:NugetsPath"] = sourcesPath,
                 ["DevContextMcp:Environments:0:Name"] = environment,
                 ["DevContextMcp:Environments:0:ServiceIndex"] = feed,
                 ["DevContextMcp:Environments:0:MaxPackages"] = "10",
