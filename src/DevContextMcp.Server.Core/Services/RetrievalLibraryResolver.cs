@@ -30,12 +30,14 @@ internal sealed class RetrievalLibraryResolver(
 
         var libraries = await store.FindLibrariesAsync(
             databasePath,
+            libraryId.Kind,
             libraryId.PackageId,
             cancellationToken);
         var matchingLibraries = libraryId.Environment is null
             ? libraries
             : libraries
-                .Where(library => library.Environment.Equals(
+                .Where(library => string.Equals(
+                    library.Environment,
                     libraryId.Environment,
                     StringComparison.OrdinalIgnoreCase))
                 .ToArray();
@@ -51,9 +53,15 @@ internal sealed class RetrievalLibraryResolver(
                 databasePath,
                 library.LibraryId,
                 cancellationToken);
+            if (library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
+            {
+                candidates.Add(new(library, versions, null));
+                continue;
+            }
+
             var recommendation = RecommendedVersionSelector.Find(
                 recommendedVersions,
-                library.Environment,
+                library.Environment!,
                 library.PackageId);
             candidates.Add(new(
                 library,
@@ -80,8 +88,12 @@ internal sealed class RetrievalLibraryResolver(
         return new(LibraryResolutionStatus.Resolved, selected);
     }
 
-    internal static int OrderIndex(IReadOnlyList<string> order, string value)
+    internal static int OrderIndex(IReadOnlyList<string> order, string? value)
     {
+        if (value is null)
+        {
+            return int.MaxValue;
+        }
         for (var index = 0; index < order.Count; index++)
         {
             if (order[index].Equals(value, StringComparison.OrdinalIgnoreCase))

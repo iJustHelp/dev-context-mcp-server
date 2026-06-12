@@ -1,7 +1,7 @@
 # MCP Documentation Server
 
 A .NET 10 Model Context Protocol server for helping coding agents discover and
-correctly use internal NuGet packages, including generated API-client packages.
+correctly use internal NuGet packages and company documentation.
 
 Stage 3 adds version-aware NuGet retrieval over the SQLite/FTS5 index. The
 server can resolve packages, select versions, query README and XML
@@ -53,6 +53,22 @@ It exits `0` after a successful run or when no sources are configured. It exits
 `1` after a failed, partially successful, invalid, or canceled run. Use an
 external scheduler for recurring indexing, and run only one Indexer CLI process
 against a SQLite database at a time.
+
+To index one local directory as the versionless `docs:company-docs` library,
+add the optional section below to the Indexer configuration. Files are scanned
+recursively; hidden directories, links, reparse points, and extensions outside
+the allowlist are skipped.
+
+```json
+{
+  "DevContextMcp": {
+    "Documentation": {
+      "RootPath": "C:\\company\\docs",
+      "Extensions": [ ".md", ".txt" ]
+    }
+  }
+}
+```
 
 ## Run over stdio
 
@@ -125,11 +141,14 @@ After connecting:
 3. Call `query_docs` or `get_symbol` with a concrete version.
 4. Open **Resources** to read cited artifact and symbol URIs.
 
+For company documentation, resolve or directly query `docs:company-docs`.
+Package versions and symbol lookup do not apply to this library.
+
 ## Tools
 
-- `resolve_library`: find indexed NuGet packages by ID or descriptive text,
-  optionally within one environment.
-- `query_docs`: retrieve ranked, version-isolated documentation evidence.
+- `resolve_library`: find indexed NuGet packages or company documentation by
+  ID or descriptive text.
+- `query_docs`: retrieve ranked documentation evidence.
 - `get_symbol`: inspect a public type or member, including XML documentation.
 - `list_versions`: list indexed semantic versions and the recommendation.
 
@@ -143,6 +162,7 @@ Tool citations can be read through these MCP resource templates:
 ```text
 nuget://{source}/{packageId}/{version}/artifact/{path}
 nuget://{source}/{packageId}/{version}/symbol/{qualifiedName}
+docs://company-docs/{path}
 ```
 
 Resources are served only from the local index; retrieval never contacts the

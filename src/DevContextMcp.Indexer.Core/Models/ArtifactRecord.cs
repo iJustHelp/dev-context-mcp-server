@@ -4,4 +4,5 @@ public sealed record ArtifactRecord(
     string Path,
     string Kind,
     string ContentHash,
-    long Size);
+    long Size,
+    string? Content = null);

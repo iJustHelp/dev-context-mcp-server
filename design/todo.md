@@ -1,3 +1,3 @@
-1. Change report to show name of library
-2. Log Indexer in file
-3. Support git library to share company standards.
+1. Change report to show name of library - done
+2. Log Indexer in file - done
+3. Index internal docs with company standards

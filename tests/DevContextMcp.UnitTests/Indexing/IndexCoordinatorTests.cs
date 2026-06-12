@@ -21,6 +21,7 @@ public sealed class IndexCoordinatorTests
             new StubConfigurationProvider(source),
             new FailingPackageSourceClient(),
             new UnexpectedPackageProcessor(),
+            new UnexpectedDocumentationSourceReader(),
             store);
 
         var result = await coordinator.IndexAllAsync(CancellationToken.None);
@@ -53,6 +54,7 @@ public sealed class IndexCoordinatorTests
                 new("Beta.Package", "1.0.0", true, false, null)
             ]),
             new UnexpectedPackageProcessor(),
+            new UnexpectedDocumentationSourceReader(),
             new CapturingIndexStore());
 
         var result = await coordinator.IndexAllAsync(CancellationToken.None);
@@ -120,6 +122,17 @@ public sealed class IndexCoordinatorTests
             throw new InvalidOperationException("Processor should not be called.");
     }
 
+    private sealed class UnexpectedDocumentationSourceReader :
+        IDocumentationSourceReader
+    {
+        public Task<DocumentationIndexData> ReadAsync(
+            DocumentationSourceDefinition source,
+            PackageProcessingLimits limits,
+            CancellationToken cancellationToken) =>
+            throw new InvalidOperationException(
+                "Documentation reader should not be called.");
+    }
+
     private sealed class CapturingIndexStore : IIndexStore
     {
         public IndexSourceDefinition? PublishedSource { get; private set; }
@@ -147,5 +160,13 @@ public sealed class IndexCoordinatorTests
             PublishedSource = source;
             return Task.FromResult(new IndexPublishResult(0, 0, [], [], []));
         }
+
+        public Task<IndexPublishResult> PublishDocumentationAsync(
+            string databasePath,
+            DocumentationSourceDefinition source,
+            DateTimeOffset startedAt,
+            DocumentationIndexData documentation,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new IndexPublishResult(0, 0, [], [], []));
     }
 }

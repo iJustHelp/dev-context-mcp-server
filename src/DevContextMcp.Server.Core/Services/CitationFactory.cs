@@ -16,6 +16,9 @@ internal sealed class CitationFactory : ICitationFactory
         string qualifiedName) =>
         $"nuget://{Escape(source)}/{Escape(packageId)}/{Escape(version)}/symbol/{Escape(qualifiedName)}";
 
+    public string DocumentationUri(string path) =>
+        $"docs://company-docs/{EscapePath(path)}";
+
     private static string Escape(string value) => Uri.EscapeDataString(value);
 
     private static string EscapePath(string path) => Escape(path.Replace('\\', '/'));

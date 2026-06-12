@@ -12,7 +12,7 @@ public sealed class QueryDocsTool(IQueryDocsHandler handler)
         Name = "query_docs",
         UseStructuredContent = true,
         OutputSchemaType = typeof(QueryDocsResponse))]
-    [Description("Finds version-aware documentation and examples for one internal library.")]
+    [Description("Finds indexed documentation and examples for one internal library.")]
     public Task<QueryDocsResponse> QueryDocsAsync(
         [Description("Stable library identifier returned by resolve_library.")] string libraryId,
         [Description("Concrete implementation question to answer from indexed evidence.")] string question,

@@ -19,4 +19,11 @@ public interface IIndexStore
         IReadOnlyList<IndexRunError> errors,
         bool pruneMissing,
         CancellationToken cancellationToken);
+
+    Task<IndexPublishResult> PublishDocumentationAsync(
+        string databasePath,
+        DocumentationSourceDefinition source,
+        DateTimeOffset startedAt,
+        DocumentationIndexData documentation,
+        CancellationToken cancellationToken);
 }

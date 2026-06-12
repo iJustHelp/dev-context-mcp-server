@@ -52,10 +52,45 @@ internal sealed class ResolveLibraryHandler(
 
             foreach (var candidate in rawCandidates.Where(candidate =>
                          request.Environment is null
-                         || candidate.Environment.Equals(
+                         || string.Equals(
+                             candidate.Environment,
                              request.Environment,
                              StringComparison.OrdinalIgnoreCase)))
             {
+                var environmentIndex = RetrievalLibraryResolver.OrderIndex(
+                    settings.EnvironmentOrder,
+                    candidate.Environment);
+                var sourceIndex = RetrievalLibraryResolver.OrderIndex(
+                    settings.SourceOrder,
+                    candidate.SourceName);
+                var score = candidate.ExactId
+                    ? 1.0
+                    : candidate.PrefixId ? 0.9 : candidate.TextScore;
+                if (candidate.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add(new(
+                        new LibraryMatch
+                        {
+                            LibraryId = new LibraryId(
+                                candidate.PackageId,
+                                null,
+                                "docs").ToString(),
+                            Kind = "docs",
+                            DisplayName = candidate.DisplayName,
+                            Environment = null,
+                            SourceId = candidate.SourceName,
+                            RecommendedVersion = null,
+                            Description = candidate.Description,
+                            Confidence = Math.Clamp(score, 0, 1)
+                        },
+                        candidate.PackageId,
+                        null,
+                        environmentIndex,
+                        sourceIndex,
+                        false));
+                    continue;
+                }
+
                 if (!request.IncludePrerelease
                     && candidate.LatestPrerelease
                     && !candidate.LatestListed)
@@ -69,7 +104,7 @@ internal sealed class ResolveLibraryHandler(
                     timeout.Token);
                 var recommendation = RecommendedVersionSelector.Find(
                     settings.RecommendedVersions,
-                    candidate.Environment,
+                    candidate.Environment!,
                     candidate.PackageId);
                 var resolution = versionResolver.Resolve(
                     versions,
@@ -82,15 +117,6 @@ internal sealed class ResolveLibraryHandler(
                     continue;
                 }
 
-                var environmentIndex = RetrievalLibraryResolver.OrderIndex(
-                    settings.EnvironmentOrder,
-                    candidate.Environment);
-                var sourceIndex = RetrievalLibraryResolver.OrderIndex(
-                    settings.SourceOrder,
-                    candidate.SourceName);
-                var score = candidate.ExactId
-                    ? 1.0
-                    : candidate.PrefixId ? 0.9 : candidate.TextScore;
                 if (recommendation is not null
                     && versions.Any(version =>
                         version.Version.Equals(recommendation, StringComparison.OrdinalIgnoreCase)))
@@ -120,7 +146,7 @@ internal sealed class ResolveLibraryHandler(
                             candidate.PackageId,
                             candidate.Environment).ToString(),
                         Kind = "nuget",
-                        DisplayName = candidate.PackageId,
+                        DisplayName = candidate.DisplayName,
                         Environment = candidate.Environment,
                         SourceId = candidate.SourceName,
                         RecommendedVersion = resolution.Version.Version,
@@ -136,7 +162,7 @@ internal sealed class ResolveLibraryHandler(
 
             var selected = matches
                 .GroupBy(match =>
-                    $"{match.PackageId.ToUpperInvariant()}\n{match.Environment.ToUpperInvariant()}",
+                    $"{match.PackageId.ToUpperInvariant()}\n{match.Environment?.ToUpperInvariant()}",
                     StringComparer.Ordinal)
                 .Select(group => group
                     .OrderByDescending(item => item.RecommendationAvailable)
@@ -161,7 +187,7 @@ internal sealed class ResolveLibraryHandler(
                     [
                         RetrievalHandlerSupport.Error(
                             "library_not_found",
-                            $"No indexed NuGet package matched '{request.Query}'.")
+                            $"No indexed library matched '{request.Query}'.")
                     ]
                 }
                 : new ResolveLibraryResponse
@@ -206,7 +232,7 @@ internal sealed class ResolveLibraryHandler(
     private sealed record RankedLibraryMatch(
         LibraryMatch Match,
         string PackageId,
-        string Environment,
+        string? Environment,
         int EnvironmentIndex,
         int SourceIndex,
         bool RecommendationAvailable);

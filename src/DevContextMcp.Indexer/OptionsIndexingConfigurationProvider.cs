@@ -13,7 +13,9 @@ internal sealed class OptionsIndexingConfigurationProvider(
     {
         var value = options.Value;
         var limits = value.Indexing;
-        var packages = packageOptionsLoader.Load(value.NuGetSourcesPath);
+        var packages = value.Environments.Count == 0
+            ? []
+            : packageOptionsLoader.Load(value.NuGetSourcesPath);
 
         return new(
             Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
@@ -60,8 +62,22 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     item.Packages,
                     item.DeletedPackageIds,
                     item.Source.MaxPackages))
-                .ToArray());
+                .ToArray(),
+            value.Documentation is null
+                ? null
+                : new DocumentationSourceDefinition(
+                    Path.GetFullPath(
+                        value.Documentation.RootPath,
+                        AppContext.BaseDirectory),
+                    value.Documentation.Extensions
+                        .Select(NormalizeExtension)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase)));
     }
+
+    private static string NormalizeExtension(string extension) =>
+        extension.Trim().StartsWith('.')
+            ? extension.Trim()
+            : $".{extension.Trim()}";
 
     private static string ResolveSource(string source)
     {

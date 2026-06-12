@@ -74,11 +74,19 @@ public sealed class IndexerOptionsValidatorTests
     public void MissingFolderAndMalformedFileFailWithPaths()
     {
         var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-        var missing = Validate(new IndexerOptions { NuGetSourcesPath = missingPath });
+        var missing = Validate(new IndexerOptions
+        {
+            NuGetSourcesPath = missingPath,
+            Environments = [Feed("qa")]
+        });
         AssertFailure(missing, missingPath);
 
         using var folder = PackageFolder.Create(("Broken.json", "{"));
-        var malformed = Validate(new IndexerOptions { NuGetSourcesPath = folder.Path });
+        var malformed = Validate(new IndexerOptions
+        {
+            NuGetSourcesPath = folder.Path,
+            Environments = [Feed("qa")]
+        });
         AssertFailure(malformed, "Broken.json");
     }
 
@@ -200,6 +208,51 @@ public sealed class IndexerOptionsValidatorTests
         {
             Directory.Delete(path, recursive: true);
         }
+    }
+
+    [Fact]
+    public void DocumentationConfigurationRequiresExistingRootAndValidExtensions()
+    {
+        var missingPath = Path.Combine(
+            Path.GetTempPath(),
+            $"missing-docs-{Guid.NewGuid():N}");
+        var missing = Validate(new IndexerOptions
+        {
+            Documentation = new DocumentationOptions
+            {
+                RootPath = missingPath,
+                Extensions = [".md"]
+            }
+        });
+        AssertFailure(missing, "does not exist");
+
+        using var folder = PackageFolder.Create();
+        var invalid = Validate(new IndexerOptions
+        {
+            Documentation = new DocumentationOptions
+            {
+                RootPath = folder.Path,
+                Extensions = [".md", "MD", "*"]
+            }
+        });
+        AssertFailure(invalid, "configured more than once");
+        AssertFailure(invalid, "is invalid");
+    }
+
+    [Fact]
+    public void DocumentationOnlyConfigurationSucceeds()
+    {
+        using var folder = PackageFolder.Create();
+        var result = Validate(new IndexerOptions
+        {
+            Documentation = new DocumentationOptions
+            {
+                RootPath = folder.Path,
+                Extensions = [".md", ".txt"]
+            }
+        });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
     }
 
     private static ValidateOptionsResult Validate(IndexerOptions options) =>

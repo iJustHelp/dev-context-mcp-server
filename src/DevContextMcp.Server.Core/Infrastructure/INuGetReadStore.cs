@@ -12,6 +12,7 @@ public interface INuGetReadStore
 
     Task<IReadOnlyList<ResolvedLibraryRecord>> FindLibrariesAsync(
         string databasePath,
+        string kind,
         string packageId,
         CancellationToken cancellationToken);
 
@@ -62,5 +63,10 @@ public interface INuGetReadStore
         string packageId,
         string version,
         string qualifiedName,
+        CancellationToken cancellationToken);
+
+    Task<ResourceDocumentRecord?> ReadDocumentationAsync(
+        string databasePath,
+        string path,
         CancellationToken cancellationToken);
 }
