@@ -18,6 +18,7 @@ internal sealed class IndexCoordinator(
 
         var summaries = new List<IndexRunSummary>(
             settings.Sources.Count + (settings.Documentation is null ? 0 : 1));
+        IReadOnlyList<string> indexedDocuments = [];
         foreach (var source in settings.Sources)
         {
             summaries.Add(await IndexSourceAsync(settings, source, cancellationToken));
@@ -25,20 +26,22 @@ internal sealed class IndexCoordinator(
 
         if (settings.Documentation is not null)
         {
-            summaries.Add(await IndexDocumentationAsync(
+            var documentationResult = await IndexDocumentationAsync(
                 settings,
                 settings.Documentation,
-                cancellationToken));
+                cancellationToken);
+            summaries.Add(documentationResult.Summary);
+            indexedDocuments = documentationResult.Paths;
         }
 
         var indexedLibraries = await indexStore.GetIndexedLibrariesAsync(
             settings.DatabasePath,
             cancellationToken);
 
-        return new(summaries, indexedLibraries);
+        return new(summaries, indexedLibraries, indexedDocuments);
     }
 
-    private async Task<IndexRunSummary> IndexDocumentationAsync(
+    private async Task<DocumentationIndexResult> IndexDocumentationAsync(
         IndexingSettings settings,
         DocumentationSourceDefinition source,
         CancellationToken cancellationToken)
@@ -58,18 +61,22 @@ internal sealed class IndexCoordinator(
                 cancellationToken);
 
             return new(
-                SourceName: "company-docs",
-                Status: "succeeded",
-                StartedAt: startedAt,
-                CompletedAt: DateTimeOffset.UtcNow,
-                Discovered: documentation.Artifacts.Count,
-                Indexed: documentation.Artifacts.Count,
-                Changed: publish.Changed,
-                Unchanged: publish.Unchanged,
-                Added: publish.Added,
-                Updated: publish.Updated,
-                Deleted: publish.Deleted,
-                Errors: []);
+                new(
+                    SourceName: "company-docs",
+                    Status: "succeeded",
+                    StartedAt: startedAt,
+                    CompletedAt: DateTimeOffset.UtcNow,
+                    Discovered: documentation.Artifacts.Count,
+                    Indexed: documentation.Artifacts.Count,
+                    Changed: publish.Changed,
+                    Unchanged: publish.Unchanged,
+                    Added: publish.Added,
+                    Updated: publish.Updated,
+                    Deleted: publish.Deleted,
+                    Errors: []),
+                documentation.Artifacts
+                    .Select(artifact => artifact.Path)
+                    .ToArray());
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -83,18 +90,20 @@ internal sealed class IndexCoordinator(
                 "company-docs",
                 null);
             return new(
-                SourceName: "company-docs",
-                Status: "failed",
-                StartedAt: startedAt,
-                CompletedAt: DateTimeOffset.UtcNow,
-                Discovered: 0,
-                Indexed: 0,
-                Changed: 0,
-                Unchanged: 0,
-                Added: [],
-                Updated: [],
-                Deleted: [],
-                Errors: [error]);
+                new(
+                    SourceName: "company-docs",
+                    Status: "failed",
+                    StartedAt: startedAt,
+                    CompletedAt: DateTimeOffset.UtcNow,
+                    Discovered: 0,
+                    Indexed: 0,
+                    Changed: 0,
+                    Unchanged: 0,
+                    Added: [],
+                    Updated: [],
+                    Deleted: [],
+                    Errors: [error]),
+                []);
         }
     }
 
@@ -208,4 +217,8 @@ internal sealed class IndexCoordinator(
             Deleted: publish.Deleted,
             Errors: errors);
     }
+
+    private sealed record DocumentationIndexResult(
+        IndexRunSummary Summary,
+        IReadOnlyList<string> Paths);
 }

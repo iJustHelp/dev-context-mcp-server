@@ -201,6 +201,47 @@ public sealed class IndexCoordinatorTests
         VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task IndexAllAsync_DocumentationSucceeds_ReturnsIndexedDocumentPaths()
+    {
+        var documentationSource = new DocumentationSourceDefinition(
+            "docs",
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".md" });
+        SetupCommon(new(
+            DatabasePath,
+            CreateLimits(),
+            [],
+            documentationSource));
+        var documentation = new DocumentationIndexData(
+            "hash",
+            [
+                new ArtifactRecord("api.md", "company_document", "a", 1),
+                new ArtifactRecord("nested/design.md", "company_document", "b", 1)
+            ],
+            []);
+        _documentationReader
+            .Setup(reader => reader.ReadAsync(
+                documentationSource,
+                It.IsAny<PackageProcessingLimits>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documentation);
+        _indexStore
+            .Setup(store => store.PublishDocumentationAsync(
+                DatabasePath,
+                documentationSource,
+                It.IsAny<DateTimeOffset>(),
+                documentation,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(EmptyPublishResult());
+
+        var actual = await _target.IndexAllAsync(CancellationToken.None);
+
+        Assert.Equal(["api.md", "nested/design.md"], actual.IndexedDocuments);
+        var summary = Assert.Single(actual.Summaries);
+        Assert.Equal("company-docs", summary.SourceName);
+        Assert.Equal(2, summary.Indexed);
+    }
+
     private void SetupCommon(IndexingSettings settings)
     {
         _configurationProvider

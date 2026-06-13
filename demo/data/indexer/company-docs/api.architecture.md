@@ -36,6 +36,7 @@ Each API solution contains the following projects:
 
 - Unit-test service behavior through service interfaces and mocked repository
   contracts.
+- Use company test template to create and mock all unit tests.
 - Test controllers for routing, validation, authorization, and response
   mapping.
 - Add integration tests for repository queries and database mappings.
