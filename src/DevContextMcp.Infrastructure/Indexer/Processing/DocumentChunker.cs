@@ -5,6 +5,10 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.Processing;
 
+/// <summary>
+/// Splits documentation into searchable, size-bounded records while preserving
+/// XML member names and natural text boundaries when possible.
+/// </summary>
 internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 {
     public IReadOnlyList<DocumentChunkRecord> Chunk(
@@ -35,6 +39,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 
             if (members.Length == 0)
             {
+                // Some XML documentation files are incomplete or use a nonstandard
+                // shape. Index their raw text instead of silently dropping them.
                 return ChunkText(path, "xml_documentation", content, maxCharacters);
             }
 
@@ -61,6 +67,7 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
         catch (Exception exception) when (
             exception is InvalidOperationException or System.Xml.XmlException)
         {
+            // Malformed XML can still contain useful documentation text.
             return ChunkText(path, "xml_documentation", content, maxCharacters);
         }
     }
@@ -96,6 +103,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
             var length = Math.Min(maxCharacters, remaining.Length);
             if (length < remaining.Length)
             {
+                // Prefer a nearby paragraph, sentence, or word boundary, but do
+                // not create a very small chunk just to avoid a hard split.
                 var boundary = remaining.LastIndexOfAny(
                     ['\n', '.', ' ', ';', ','],
                     length - 1,
@@ -117,6 +126,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                 path,
                 kind,
                 memberName,
+                // The index is global to the document so ordering remains stable
+                // when one section or XML member produces multiple chunks.
                 chunks.Count,
                 chunk,
                 hasher.Hash(Encoding.UTF8.GetBytes(chunk))));
@@ -126,6 +137,7 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
     private static IReadOnlyList<string> SplitSections(string content)
     {
         var normalized = content.ReplaceLineEndings("\n");
+        // Blank lines and Markdown headings are useful retrieval boundaries.
         var sections = normalized.Split(
             ["\n\n", "\n#"],
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
