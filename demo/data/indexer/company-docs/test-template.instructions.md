@@ -1,106 +1,259 @@
-# Use these templates when generating or extending unit tests 
+# Unit Test Generation Standard
 
-## Core Structure Requirements
-- Use Moq when the class under test receives interface collaborators through
-  constructor dependency injection.
-- Do not introduce Moq when the class under test has no injected collaborators,
-  such as pure functions, static validators, value objects, or simple in-memory
-  stream wrappers.
-- All injected interface collaborators must be `private readonly Mock<...>`
-  fields named with an `_` prefix (for example, `_testService`) and initialized
-  with `new()`.
-- Always declare `_target` as a private readonly field on the test class.
-- Instantiate `_target` inside the test class constructor after initializing private readonly `Mock<>` fields (one per dependency).
-- Act should be a single statement invoking a method on `_target`.
-- Use `actual` for the result variable in the act section.
-- Always use default parameters for mock setups unless a specific value is required for the test.
-- Add verification for every expected mock call in the assert section.
-- Use `Times.Once`, `Times.Exactly`, or another precise count for expected
-  interactions.
-- Use `Times.Never` for collaborator methods that must not be called.
-- Call `VerifyNoOtherCalls()` on every mock after all expected and forbidden
-  interactions have been verified.
-- Use `It.IsAny<>()` for parameters unless a specific value is required for the test.
-- Use `It.Is<>()` when an argument's content is part of the behavior under test.
- 
-## Test Commenting
-- Add `arrange`, `act`, `assert` comments in each test method.
-- Add a comment above each test method name to explain the test's purpose.  
-Pattern: // Purpose:   
-Example:
-``` csharp
- // Purpose: propagates failure when underlying exporter load fails
- [Fact]
- public async Task GetProofsAsync_WhenLoadByRawFileIdFails_ReturnsFailureStatus()
+Use this standard when generating or extending unit tests. Every requirement
+in this document is mandatory.
+
+## Required Test Stack
+
+- Use xUnit for test methods.
+- Use Moq for interface collaborators received through constructor dependency
+  injection.
+- Do not introduce Moq for pure functions, static validators, value objects, or
+  other classes without injected collaborators.
+
+## Required Test Class Structure
+
+- Declare every injected collaborator as a `private readonly Mock<T>` field.
+- Prefix mock field names with `_` and initialize them with `new()`.
+- Declare the system under test as a `private readonly` field named `_target`.
+- Construct `_target` in the test class constructor after initializing its
+  mock dependencies.
+- Keep reusable constants and fixture values at class level when they are
+  shared by multiple tests.
+
+```csharp
+public sealed class OrderServiceTests
+{
+    private readonly Mock<IOrderRepository> _repository = new();
+    private readonly Mock<INotificationService> _notifications = new();
+    private readonly OrderService _target;
+
+    public OrderServiceTests()
+    {
+        _target = new OrderService(
+            _repository.Object,
+            _notifications.Object);
+    }
+}
 ```
 
-## Test Naming Convention
-Pattern: MethodUnderTest_Condition_ExpectedResult  
+## Required Test Naming
+
+Name tests with this pattern:
+
+`MethodUnderTest_Condition_ExpectedResult`
+
 Examples:
-- `ProcessAsync_MobileDeposit_SuccessUpdatesMobileDepositRepository`
-- `ProcessAsync_WhenCreateFails_ReturnsFailureStatus`
-- `ProcessTellerDrawerAsync_WhenBranchNotAvailable_ReturnsFailure`
 
+- `GetAsync_OrderExists_ReturnsOrder`
+- `CreateAsync_WhenRepositoryFails_ReturnsFailure`
+- `DeleteAsync_OrderNotFound_DoesNotSendNotification`
 
-## Mock Formula.SimpleRepo
-Use following interfaces definitions from [SimpleRepo](https://github.com/NephosIntegration/Formula.SimpleRepo)
+## Required Test Comments and Layout
 
-- `IReadOnlyRepository<TModel>` for read-only operations
+- Add a `// Purpose:` comment immediately above every `[Fact]` or `[Theory]`.
+- Add `// arrange`, `// act`, and `// assert` comments inside every test.
+- Keep the act section to one statement that invokes `_target`.
+- Name the returned value `actual`.
 
-``` csharp
-
-namespace Formula.SimpleRepo;
-
-public interface IReadOnlyRepository<TModel> : IBuilder
+```csharp
+// Purpose: returns the existing order
+[Fact]
+public async Task GetAsync_OrderExists_ReturnsOrder()
 {
-    IBasicQuery<TModel> Basic { get; }
-    List<string> GetIdFields();
-    Hashtable GetPopulatedIdFields(object value);
+    // arrange
 
-    Task<IEnumerable<TModel>> GetAsync(List<Constraint> finalConstraints, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetAsync(Hashtable constraints, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetAsync(JObject json, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetAsync(string json, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<TModel> GetAsync(object id, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetAsync(IDbTransaction transaction = null, int? commandTimeout = null);
+    // act
+    var actual = await _target.GetAsync(orderId, CancellationToken.None);
 
-    [Obsolete("Use GetPagedListAsync")]
-    Task<IEnumerable<TModel>> GetListPagedAsync(int pageNumber, int rowsPerPage, string conditions, string orderby, object parameters = null, IDbTransaction transaction = null, int? commandTimeout = null);
-    [Obsolete("Use GetPagedListAsync")]
-    Task<IEnumerable<TModel>> GetListPagedAsync(int pageNumber, int rowsPerPage, Hashtable constraints, string orderBy = null, object parameters = null, IDbTransaction transaction = null, int? commandTimeout = null);
-    [Obsolete("Use GetPagedListAsync")]
-    Task<IEnumerable<TModel>> GetListPagedAsync(int pageNumber, int rowsPerPage, List<Constraint> constraints, string orderBy, object parameters = null, IDbTransaction transaction = null, int? commandTimeout = null);
-    [Obsolete("Use GetPagedListAsync")]
-    Task<IEnumerable<TModel>> GetListPagedAsync(int pageNumber, int rowsPerPage, JObject constraints, string orderBy, object parameters = null, IDbTransaction transaction = null, int? commandTimeout = null);
-
-    Task<IEnumerable<TModel>> GetPagedListAsync(int pageNumber, int rowsPerPage, string conditions, string orderby, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetPagedListAsync(int pageNumber, int rowsPerPage, Hashtable constraints, string orderBy = null, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetPagedListAsync(int pageNumber, int rowsPerPage, List<Constraint> constraints, string orderBy, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<IEnumerable<TModel>> GetPagedListAsync(int pageNumber, int rowsPerPage, JObject constraints, string orderBy, IDbTransaction transaction = null, int? commandTimeout = null);
-
-    Task<int> GetRecordCountAsync(Hashtable constraints, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<int> GetRecordCountAsync(string conditions = "", object parameters = null, IDbTransaction transaction = null, int? commandTimeout = null);
-    Task<int> GetRecordCountAsync(object whereConditions, IDbTransaction transaction = null, int? commandTimeout = null);
-
-    void ClearParameters();
-    void AddParameter(string name, object value);
+    // assert
 }
-``` 
+```
 
-- `IRepository<TModel>` for read-write operations   
+## Required Mock Setup
 
-``` csharp
+- Use default or broad argument matchers unless an exact value is part of the
+  behavior under test.
+- Use `It.IsAny<T>()` for arguments whose content is not relevant.
+- Use `It.Is<T>()` when the argument value or shape is part of the assertion.
+- Match cancellation tokens with `It.IsAny<CancellationToken>()` unless token
+  identity or cancellation behavior is under test.
+- Configure only interactions required by the scenario.
 
-namespace Formula.SimpleRepo;
+## Required Verification
 
-public interface IRepository<TModel> : IReadOnlyRepository<TModel>
+- Verify every expected collaborator call in the assert section.
+- Use a precise call count such as `Times.Once`, `Times.Exactly`, or
+  `Times.Never`.
+- Verify forbidden calls with `Times.Never`.
+- Call `VerifyNoOtherCalls()` on every mock after expected and forbidden calls
+  have been verified.
+- A private helper may group `VerifyNoOtherCalls()` calls when the test class
+  has multiple mocks.
+
+```csharp
+private void VerifyNoOtherCalls()
 {
-    new IBasicCRUD<T> Basic { get; }
-
-    Task<int?> InsertAsync(T entityToInsert, IDbTransaction transaction = null, int? commandTimeout = null);
-
-    Task<int> UpdateAsync(T entityToUpdate, IDbTransaction transaction = null, int? commandTimeout = null, CancellationToken? token = null);
-
-    Task<int> DeleteAsync(object id, IDbTransaction transaction = null, int? commandTimeout = null);
+    _repository.VerifyNoOtherCalls();
+    _notifications.VerifyNoOtherCalls();
 }
+```
+
+## Template: Successful Async Dependency Call
+
+```csharp
+// Purpose: returns the order loaded from the repository
+[Fact]
+public async Task GetAsync_OrderExists_ReturnsOrder()
+{
+    // arrange
+    const int orderId = 42;
+    var expected = new Order(orderId);
+    _repository
+        .Setup(repository => repository.GetAsync(
+            It.IsAny<int>(),
+            It.IsAny<CancellationToken>()))
+        .ReturnsAsync(expected);
+
+    // act
+    var actual = await _target.GetAsync(orderId, CancellationToken.None);
+
+    // assert
+    Assert.Same(expected, actual);
+    _repository.Verify(
+        repository => repository.GetAsync(
+            orderId,
+            It.IsAny<CancellationToken>()),
+        Times.Once);
+    VerifyNoOtherCalls();
+}
+```
+
+## Template: Failure or Exception Result
+
+Use the result template when the dependency returns a failure value:
+
+```csharp
+// Purpose: returns failure when the repository cannot create the order
+[Fact]
+public async Task CreateAsync_WhenRepositoryFails_ReturnsFailure()
+{
+    // arrange
+    var request = new CreateOrderRequest();
+    _repository
+        .Setup(repository => repository.CreateAsync(
+            It.IsAny<Order>(),
+            It.IsAny<CancellationToken>()))
+        .ReturnsAsync(OperationResult.Failure("repository_error"));
+
+    // act
+    var actual = await _target.CreateAsync(request, CancellationToken.None);
+
+    // assert
+    Assert.False(actual.IsSuccess);
+    _repository.Verify(
+        repository => repository.CreateAsync(
+            It.Is<Order>(order => order is not null),
+            It.IsAny<CancellationToken>()),
+        Times.Once);
+    VerifyNoOtherCalls();
+}
+```
+
+Use `Assert.ThrowsAsync<TException>` when the expected behavior is to propagate
+or throw an exception:
+
+```csharp
+// Purpose: propagates the repository exception
+[Fact]
+public async Task GetAsync_WhenRepositoryThrows_PropagatesException()
+{
+    // arrange
+    var expected = new InvalidOperationException("failure");
+    _repository
+        .Setup(repository => repository.GetAsync(
+            It.IsAny<int>(),
+            It.IsAny<CancellationToken>()))
+        .ThrowsAsync(expected);
+
+    // act
+    var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        _target.GetAsync(42, CancellationToken.None));
+
+    // assert
+    Assert.Same(expected, actual);
+    _repository.Verify(
+        repository => repository.GetAsync(
+            42,
+            It.IsAny<CancellationToken>()),
+        Times.Once);
+    VerifyNoOtherCalls();
+}
+```
+
+## Template: Dependency Must Not Be Called
+
+```csharp
+// Purpose: rejects an invalid request without calling dependencies
+[Fact]
+public async Task CreateAsync_InvalidRequest_DoesNotCallDependencies()
+{
+    // arrange
+    var request = new CreateOrderRequest();
+
+    // act
+    var actual = await _target.CreateAsync(request, CancellationToken.None);
+
+    // assert
+    Assert.False(actual.IsSuccess);
+    _repository.Verify(
+        repository => repository.CreateAsync(
+            It.IsAny<Order>(),
+            It.IsAny<CancellationToken>()),
+        Times.Never);
+    _notifications.Verify(
+        notifications => notifications.SendAsync(
+            It.IsAny<Order>(),
+            It.IsAny<CancellationToken>()),
+        Times.Never);
+    VerifyNoOtherCalls();
+}
+```
+
+## Formula.SimpleRepo Mocking Workflow
+
+Do not copy or invent `Formula.SimpleRepo` interfaces or method signatures.
+Resolve the exact API from the indexed NuGet package before generating a mock
+setup or verification:
+
+1. Call `resolve_library` with `Formula.SimpleRepo`.
+2. Call `list_versions` and select the version used by the target project. If
+   the project version is unknown, use the recommended stable version.
+3. Call `get_symbol` for the exact repository type or member being mocked,
+   such as `IReadOnlyRepository<TModel>`, `IRepository<TModel>`, `GetAsync`, or
+   `InsertAsync`.
+4. Call `query_docs` when usage guidance or a complete example is required.
+5. Generate Moq setup and verification expressions only from the returned
+   signature and cite the DevContext evidence.
+
+If DevContext returns `not_found` or `insufficient_evidence`, state that the
+signature could not be verified. Do not generate a guessed repository API.
+
+## Formula.SimpleRepo Example Shape
+
+Adapt this shape only after replacing the placeholder member and arguments
+with a signature verified for the selected package version:
+
+```csharp
+_repository
+    .Setup(repository => repository.VerifiedMemberAsync(
+        It.IsAny<VerifiedArgumentType>()))
+    .ReturnsAsync(expected);
+
+_repository.Verify(
+    repository => repository.VerifiedMemberAsync(
+        It.Is<VerifiedArgumentType>(value => value == expectedArgument)),
+    Times.Once);
+
+_repository.VerifyNoOtherCalls();
 ```

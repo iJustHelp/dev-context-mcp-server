@@ -198,6 +198,9 @@ Host configuration:
       "QueryTimeout": "00:00:05",
       "MinimumEvidenceScore": 0.15,
       "AmbiguousSymbolLimit": 10
+    },
+    "ToolLogging": {
+      "MaxPayloadBytes": 32768
     }
   }
 }
@@ -308,6 +311,7 @@ Indexer CLI after changing its `appsettings.json` or package files.
 | `Retrieval:QueryTimeout` | Maximum duration of each retrieval operation, including SQLite queries. A timeout returns a structured tool error instead of waiting indefinitely. |
 | `Retrieval:MinimumEvidenceScore` | Lowest accepted `query_docs` relevance score, from `0` through `1`. Higher values return less, stronger evidence; lower values accept weaker matches. |
 | `Retrieval:AmbiguousSymbolLimit` | Maximum number of symbol candidates returned when `get_symbol` cannot select one unambiguous symbol. It must be positive. |
+| `ToolLogging:MaxPayloadBytes` | Maximum UTF-8 size of each Debug request or response payload before it is replaced by a valid JSON envelope containing a bounded preview, the original byte count, and a truncation flag. It must be positive and defaults to 32768. |
 
 ### Indexer root values
 
@@ -321,6 +325,22 @@ Indexer CLI after changing its `appsettings.json` or package files.
 The Server and Indexer use Serilog for console and daily rolling file logs.
 Files are written to `data/logs/server-YYYYMMDD.log` and
 `data/logs/indexer-YYYYMMDD.log`, retain 14 files, and roll at 10 MB.
+
+Server tool request and response payloads are logged at `Debug` and are disabled
+by the default `Information` level. Enable only these events by adding the
+following Serilog override:
+
+```json
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Override": {
+        "DevContextMcp.Server.Tools": "Debug"
+      }
+    }
+  }
+}
+```
 
 ### NuGet environment values
 
