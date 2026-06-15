@@ -13,9 +13,9 @@ internal sealed class OptionsIndexingConfigurationProvider(
     {
         var value = options.Value;
         var limits = value.Indexing;
-        var packages = value.Environments.Count == 0
+        var packages = value.NugetPackages.Count == 0
             ? []
-            : packageOptionsLoader.Load(value.NugetsPath);
+            : packageOptionsLoader.Load(value.IndexerSource.NugetsPath);
 
         return new(
             Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
@@ -27,14 +27,14 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 limits.MaxCompressionRatio,
                 limits.MaxDocumentChars,
                 limits.PackageDownloadTimeout),
-            value.Environments
+            value.NugetPackages
                 .Select(source => new
                 {
                     Source = source,
                     Packages = packages
                         .Where(package => string.Equals(
                             package.Environment,
-                            source.Name,
+                            source.Environment,
                             StringComparison.OrdinalIgnoreCase))
                         .Where(package => !package.Delete)
                         .Select(package => new PackageSelectionDefinition(
@@ -46,7 +46,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     DeletedPackageIds = packages
                         .Where(package => string.Equals(
                             package.Environment,
-                            source.Name,
+                            source.Environment,
                             StringComparison.OrdinalIgnoreCase))
                         .Where(package => package.Delete)
                         .Select(package => package.PackageId)
@@ -57,19 +57,19 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     || item.DeletedPackageIds.Length > 0)
                 .Select(item => new IndexSourceDefinition(
                     item.Source.Name,
-                    item.Source.Name,
+                    item.Source.Environment,
                     ResolveSource(item.Source.ServiceIndex),
                     item.Packages,
                     item.DeletedPackageIds,
                     item.Source.MaxPackages))
                 .ToArray(),
-            value.Documentation is null
+            value.IndexerSource.Documentations is null
                 ? null
                 : new DocumentationSourceDefinition(
                     Path.GetFullPath(
-                        value.Documentation.RootPath,
+                        value.IndexerSource.Documentations.RootPath,
                         AppContext.BaseDirectory),
-                    value.Documentation.Extensions
+                    value.IndexerSource.Documentations.Extensions
                         .Select(NormalizeExtension)
                         .ToHashSet(StringComparer.OrdinalIgnoreCase)));
     }

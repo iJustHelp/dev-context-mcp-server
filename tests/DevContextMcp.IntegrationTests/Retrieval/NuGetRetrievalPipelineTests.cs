@@ -188,10 +188,11 @@ public sealed class NuGetRetrievalPipelineTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["DevContextMcp:DatabasePath"] = databasePath,
-                ["DevContextMcp:NugetsPath"] = sourcesPath,
-                ["DevContextMcp:Environments:0:Name"] = "test",
-                ["DevContextMcp:Environments:0:ServiceIndex"] = feed,
-                ["DevContextMcp:Environments:0:MaxPackages"] = "10",
+                ["DevContextMcp:IndexerSource:NugetsPath"] = sourcesPath,
+                ["DevContextMcp:NugetPackages:0:Name"] = "test",
+                ["DevContextMcp:NugetPackages:0:Environment"] = "test",
+                ["DevContextMcp:NugetPackages:0:ServiceIndex"] = feed,
+                ["DevContextMcp:NugetPackages:0:MaxPackages"] = "10",
                 ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000",
                 [$"DevContextMcp:RecommendedVersions:{FixtureNuGetPackage.PackageId}"] = "1.2.3"
             })

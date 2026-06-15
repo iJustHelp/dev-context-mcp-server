@@ -8,7 +8,7 @@
 
 ## Run Indexing
 
-Configure feeds and `NugetsPath` in
+Configure `NugetPackages` and `IndexerSource:NugetsPath` in
 `src/DevContextMcp.Indexer/appsettings.json`, then create one JSON file per
 package in that external folder or its subfolders. Relative folder paths resolve from the built
 Indexer CLI executable directory. The Indexer CLI and Host must use the same

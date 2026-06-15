@@ -94,7 +94,8 @@ Version parsing and ordering use `NuGet.Versioning`.
 
 NuGet feeds are configured with:
 
-- A unique name used as both the environment slug and stable source identity.
+- A unique source name used as the stable source identity.
+- A separate environment slug used in qualified library IDs and filtering.
 - NuGet v3 service index URL or approved local package folder.
 - Maximum package count.
 
@@ -105,7 +106,7 @@ Relative package-folder paths resolve from the Indexer CLI executable directory.
 Files are loaded recursively once at startup in full-path order and cannot be
 overridden field-by-field by environment variables or command-line arguments.
 
-Every package file applies to the feed whose name matches its environment.
+Every package file applies to feeds whose environment matches its environment.
 Each feed is discovered and atomically published once. A feed with no matching
 package files is skipped without deleting existing data. Indexed packages and
 versions are deleted only by a matching package file with `Delete` set to
@@ -236,10 +237,17 @@ Indexer CLI:
 {
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
-    "NugetsPath": "nugets",
-    "Environments": [
+    "IndexerSource": {
+      "NugetsPath": "nugets",
+      "Documentations": {
+        "RootPath": "C:\\company\\docs",
+        "Extensions": [ ".md", ".txt" ]
+      }
+    },
+    "NugetPackages": [
       {
-        "Name": "production",
+        "Name": "companyProduction",
+        "Environment": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "MaxPackages": 100
       }

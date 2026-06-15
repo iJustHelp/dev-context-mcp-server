@@ -61,34 +61,23 @@ flowchart LR
 Run only one Indexer process against a database at a time. The Server can stay
 independent of feeds and credentials because it never refreshes data itself.
 
-## Repository Layout
+- [Product specification](design/spec.md)
+- [Solution architecture](design/architecture.md)
 
-| Path | Responsibility |
-| --- | --- |
-| `src/DevContextMcp.Server.Core` | MCP contracts, retrieval models, version resolution, ranking, citations, and handler interfaces. |
-| `src/DevContextMcp.Indexer.Core` | Source-neutral indexing models, ports, and orchestration. |
-| `src/DevContextMcp.Infrastructure` | NuGet access, safe archive processing, metadata symbol extraction, SQLite persistence, and FTS5 retrieval. |
-| `src/DevContextMcp.Indexer` | One-shot indexer executable, configuration, validation, and reporting. |
-| `src/DevContextMcp.Server` | Retrieval-only MCP host, tools, resources, transports, diagnostics, and logging. |
-| `tests/DevContextMcp.UnitTests` | Unit and architecture tests. |
-| `tests/DevContextMcp.IntegrationTests` | End-to-end indexing, retrieval, startup, stdio, and HTTP tests. |
-| `demo/data` | Ready-to-use package policies, local feeds, and company-document examples. |
-| `demo/nuget-apps` | Source projects used to build the demo packages. |
-| `design` | Product specification, architecture, stage plans, and test notes. |
-| `scripts/dist.ps1` | Windows self-contained distribution builder. |
+> Solution was desinged and implemented with Codex AI agent using specs and plans defined in [design folder](./design/).
 
-The dependency direction is intentionally narrow:
+## Indexer
 
-```text
-Server.Core  -> no project references
-Indexer.Core -> no project references
-Infrastructure -> Server.Core + Indexer.Core
-Server -> Server.Core + Infrastructure
-Indexer -> Indexer.Core + Infrastructure
-```
+### Configuration
 
-Architecture tests enforce these boundaries and ensure the Server does not
-compose index-writing services.
+`appsettings.json` has folling configuration settings
+
+`DatabasePath` - SQLite database path shared with server
+
+
+## Demo
+
+[Demo folder](./demo/) has
 
 ## Quick Start
 
@@ -256,18 +245,21 @@ A minimal configuration looks like this:
 {
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
-    "NugetsPath": "nugets",
-    "Environments": [
+    "IndexerSource": {
+      "NugetsPath": "nugets",
+      "Documentations": {
+        "RootPath": "C:\\company\\docs",
+        "Extensions": [ ".md", ".txt" ]
+      }
+    },
+    "NugetPackages": [
       {
-        "Name": "production",
+        "Name": "companyProduction",
+        "Environment": "production",
         "ServiceIndex": "https://packages.example/v3/index.json",
         "MaxPackages": 100
       }
     ],
-    "Documentation": {
-      "RootPath": "C:\\company\\docs",
-      "Extensions": [ ".md", ".txt" ]
-    },
     "Indexing": {
       "MaxPackageBytes": 104857600,
       "MaxDocumentBytes": 20971520,
@@ -281,13 +273,16 @@ A minimal configuration looks like this:
 }
 ```
 
-Each environment is either an absolute HTTP/HTTPS NuGet v3 service index or a
-local directory containing `.nupkg` files. Its `Name` is the environment slug
-used in library IDs and citations.
+Each NuGet package source is either an absolute HTTP/HTTPS NuGet v3 service
+index or a local directory containing `.nupkg` files. `Name` is the unique
+source identity used by citations and MCP `SourceId`. `Environment` is stored
+separately and used in library IDs such as
+`nuget:production/Company.Foundation`.
 
 ### Package policy files
 
-Create one JSON file per exact package ID anywhere below `NugetsPath`:
+Create one JSON file per exact package ID anywhere below
+`IndexerSource:NugetsPath`:
 
 ```json
 {
@@ -299,9 +294,9 @@ Create one JSON file per exact package ID anywhere below `NugetsPath`:
 }
 ```
 
-Files are loaded recursively and matched to the environment with the same
-name. The version limit controls what is selected on that run; lowering it
-does not remove versions already stored in the index.
+Files are loaded recursively and matched to each NuGet source by
+`Environment`. The version limit controls what is selected on that run;
+lowering it does not remove versions already stored in the index.
 
 Deletion is explicit. Keep a tombstone file to remove every indexed version of
 a package from one environment:
@@ -320,8 +315,8 @@ tombstone is the deletion mechanism.
 
 ### Company documentation
 
-The optional `Documentation` section indexes one directory recursively as
-`docs:company-docs`.
+The optional `IndexerSource:Documentations` section indexes one directory
+recursively as `docs:company-docs`.
 
 - Only configured extensions are included.
 - Hidden entries, dot-prefixed entries, links, and reparse points are skipped.

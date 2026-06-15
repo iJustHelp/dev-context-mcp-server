@@ -133,15 +133,15 @@ Unchanged package content is not rewritten. `index_runs` intentionally records
 each execution, while canonical package, version, artifact, and symbol rows are
 not duplicated.
 
-Feed definitions come from normal .NET configuration. Each feed name is also
-its environment slug. Exact package-selection policies come from an external
-folder and are joined to the feed with the matching environment. Each feed is
-discovered and published once with the complete active package set. Package
-deletion tombstones are applied in the same transaction without contacting the
-feed. Existing package and version rows are never pruned because configuration,
-feed contents, or version limits changed; only an explicit `Delete: true`
-tombstone removes indexed NuGet data. Feeds with no matching package files are
-omitted so existing rows remain unchanged.
+Feed definitions come from normal .NET configuration. Each feed has a unique
+source name and a separate environment slug. Exact package-selection policies
+come from an external folder and are joined to feeds with the matching
+environment. Each feed is discovered and published once with the complete
+active package set. Package deletion tombstones are applied in the same
+transaction without contacting the feed. Existing package and version rows are
+never pruned because configuration, feed contents, or version limits changed;
+only an explicit `Delete: true` tombstone removes indexed NuGet data. Feeds
+with no matching package files are omitted so existing rows remain unchanged.
 
 ## Retrieval Flow
 

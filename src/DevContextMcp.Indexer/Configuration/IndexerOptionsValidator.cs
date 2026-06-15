@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
 
@@ -14,15 +15,19 @@ public sealed class IndexerOptionsValidator :
         RegexOptions.CultureInvariant);
 
     private readonly INuGetPackageOptionsLoader _packageOptionsLoader;
+    private readonly IConfiguration? _configuration;
 
     public IndexerOptionsValidator()
-        : this(new NuGetPackageOptionsLoader())
+        : this(new NuGetPackageOptionsLoader(), null)
     {
     }
 
-    internal IndexerOptionsValidator(INuGetPackageOptionsLoader packageOptionsLoader)
+    internal IndexerOptionsValidator(
+        INuGetPackageOptionsLoader packageOptionsLoader,
+        IConfiguration? configuration = null)
     {
         _packageOptionsLoader = packageOptionsLoader;
+        _configuration = configuration;
     }
 
     public ValidateOptionsResult Validate(string? name, IndexerOptions options)
@@ -34,24 +39,45 @@ public sealed class IndexerOptionsValidator :
             options.DatabasePath,
             "DevContextMcp:DatabasePath",
             failures);
-        ConfigurationValidation.ValidatePath(
-            options.NugetsPath,
-            "DevContextMcp:NugetsPath",
-            failures);
+        ValidateObsoleteConfiguration(failures);
         ValidateLimits(options.Indexing, failures);
-        ValidateSourceNames(options, failures);
-        ValidateEnvironments(options.Environments, failures);
-        ValidateDocumentation(options.Documentation, failures);
+        ValidateSourceNames(options.NugetPackages, failures);
+        ValidateSources(options.NugetPackages, failures);
+        ValidateDocumentation(options.IndexerSource.Documentations, failures);
 
-        if (options.Environments.Count > 0
-            && !string.IsNullOrWhiteSpace(options.NugetsPath))
+        if (options.NugetPackages.Count > 0)
         {
-            ValidatePackages(options, failures);
+            ConfigurationValidation.ValidatePath(
+                options.IndexerSource.NugetsPath,
+                "DevContextMcp:IndexerSource:NugetsPath",
+                failures);
+            if (!string.IsNullOrWhiteSpace(options.IndexerSource.NugetsPath))
+            {
+                ValidatePackages(options, failures);
+            }
         }
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);
+    }
+
+    private void ValidateObsoleteConfiguration(List<string> failures)
+    {
+        if (_configuration is null)
+        {
+            return;
+        }
+
+        var root = _configuration.GetSection(IndexerOptions.SectionName);
+        foreach (var obsoleteKey in new[] { "NugetsPath", "Documentation", "Environments" })
+        {
+            if (root.GetSection(obsoleteKey).Exists())
+            {
+                failures.Add(
+                    $"DevContextMcp:{obsoleteKey} is obsolete; use the new IndexerSource or NugetPackages configuration.");
+            }
+        }
     }
 
     private static void ValidateDocumentation(
@@ -65,7 +91,7 @@ public sealed class IndexerOptionsValidator :
 
         ConfigurationValidation.ValidatePath(
             documentation.RootPath,
-            "DevContextMcp:Documentation:RootPath",
+            "DevContextMcp:IndexerSource:Documentations:RootPath",
             failures);
         if (!string.IsNullOrWhiteSpace(documentation.RootPath))
         {
@@ -77,7 +103,7 @@ public sealed class IndexerOptionsValidator :
                 if (!Directory.Exists(path))
                 {
                     failures.Add(
-                        $"DevContextMcp:Documentation:RootPath directory '{path}' does not exist.");
+                        $"DevContextMcp:IndexerSource:Documentations:RootPath directory '{path}' does not exist.");
                 }
             }
             catch (Exception exception) when (
@@ -92,7 +118,7 @@ public sealed class IndexerOptionsValidator :
         if (documentation.Extensions.Count == 0)
         {
             failures.Add(
-                "DevContextMcp:Documentation:Extensions must contain at least one extension.");
+                "DevContextMcp:IndexerSource:Documentations:Extensions must contain at least one extension.");
             return;
         }
 
@@ -165,10 +191,10 @@ public sealed class IndexerOptionsValidator :
     }
 
     private static void ValidateSourceNames(
-        IndexerOptions options,
+        IReadOnlyList<NuGetPackageSourceOptions> sources,
         List<string> failures)
     {
-        var names = options.Environments.Select(source => source.Name)
+        var names = sources.Select(source => source.Name)
             .ToList();
 
         foreach (var name in names.Where(string.IsNullOrWhiteSpace))
@@ -188,16 +214,22 @@ public sealed class IndexerOptionsValidator :
         }
     }
 
-    private static void ValidateEnvironments(
-        IEnumerable<NuGetEnvironmentOptions> sources,
+    private static void ValidateSources(
+        IEnumerable<NuGetPackageSourceOptions> sources,
         List<string> failures)
     {
         foreach (var source in sources)
         {
-            if (!IsEnvironment(source.Name))
+            if (!IsSlug(source.Name))
             {
                 failures.Add(
                     $"NuGet source Name '{source.Name}' must contain only letters, numbers, '.', '_', or '-'.");
+            }
+
+            if (!IsSlug(source.Environment))
+            {
+                failures.Add(
+                    $"NuGet source '{source.Name}' Environment '{source.Environment}' must contain only letters, numbers, '.', '_', or '-'.");
             }
 
             if (!ConfigurationValidation.IsNuGetSource(source.ServiceIndex))
@@ -218,7 +250,7 @@ public sealed class IndexerOptionsValidator :
         IReadOnlyList<NuGetPackageOptions> packages;
         try
         {
-            packages = _packageOptionsLoader.Load(options.NugetsPath);
+            packages = _packageOptionsLoader.Load(options.IndexerSource.NugetsPath);
         }
         catch (Exception exception)
         {
@@ -228,7 +260,7 @@ public sealed class IndexerOptionsValidator :
 
         foreach (var package in packages)
         {
-            if (!IsEnvironment(package.Environment))
+            if (!IsSlug(package.Environment))
             {
                 failures.Add(
                     $"NuGet package '{package.PackageId}' Environment must contain only letters, numbers, '.', '_', or '-'.");
@@ -261,8 +293,8 @@ public sealed class IndexerOptionsValidator :
                 $"NuGet package '{duplicate.Key.PackageId}' is configured more than once in environment '{duplicate.Key.Environment}'.");
         }
 
-        var configuredEnvironments = options.Environments
-            .Select(source => source.Name)
+        var configuredEnvironments = options.NugetPackages
+            .Select(source => source.Environment)
             .Where(environment => !string.IsNullOrWhiteSpace(environment))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -274,12 +306,12 @@ public sealed class IndexerOptionsValidator :
                 $"NuGet package '{package.PackageId}' references undefined environment '{package.Environment}'.");
         }
 
-        foreach (var source in options.Environments)
+        foreach (var source in options.NugetPackages)
         {
             var count = packages.Count(package =>
                 string.Equals(
                     package.Environment,
-                    source.Name,
+                    source.Environment,
                     StringComparison.OrdinalIgnoreCase));
             if (source.MaxPackages > 0 && count > source.MaxPackages)
             {
@@ -289,7 +321,7 @@ public sealed class IndexerOptionsValidator :
         }
     }
 
-    private static bool IsEnvironment(string value) =>
+    private static bool IsSlug(string value) =>
         !string.IsNullOrWhiteSpace(value)
         && EnvironmentPattern.IsMatch(value);
 

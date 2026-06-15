@@ -15,8 +15,8 @@ public sealed class IndexerOptionsValidatorTests
 
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [Feed("public")]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("public")]
         });
 
         Assert.Equal(ValidateOptionsResult.Success, result);
@@ -28,8 +28,8 @@ public sealed class IndexerOptionsValidatorTests
         using var folder = PackageFolder.Create();
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments =
+            IndexerSource = Source(folder.Path),
+            NugetPackages =
             [
                 Feed("internal"),
                 Feed("Internal")
@@ -40,18 +40,37 @@ public sealed class IndexerOptionsValidatorTests
     }
 
     [Fact]
+    public void DistinctSourcesMayShareAnEnvironment()
+    {
+        using var folder = PackageFolder.Create(
+            ("Package.json", Package("qa", "Company.Package")));
+        var result = Validate(new IndexerOptions
+        {
+            IndexerSource = Source(folder.Path),
+            NugetPackages =
+            [
+                Feed("qa", "qaPrimary"),
+                Feed("qa", "qaSecondary")
+            ]
+        });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
+    }
+
+    [Fact]
     public void InvalidFeedAndLimitValuesFail()
     {
         using var folder = PackageFolder.Create(
             ("Invalid.json", Package("bad environment", "Company.Package", 0)));
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments =
+            IndexerSource = Source(folder.Path),
+            NugetPackages =
             [
-                new NuGetEnvironmentOptions
+                new NuGetPackageSourceOptions
                 {
                     Name = "bad environment",
+                    Environment = "bad environment",
                     ServiceIndex = "ftp://packages.example/index.json",
                     MaxPackages = 0
                 }
@@ -76,16 +95,16 @@ public sealed class IndexerOptionsValidatorTests
         var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var missing = Validate(new IndexerOptions
         {
-            NugetsPath = missingPath,
-            Environments = [Feed("qa")]
+            IndexerSource = Source(missingPath),
+            NugetPackages = [Feed("qa")]
         });
         AssertFailure(missing, missingPath);
 
         using var folder = PackageFolder.Create(("Broken.json", "{"));
         var malformed = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [Feed("qa")]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
         });
         AssertFailure(malformed, "Broken.json");
     }
@@ -105,8 +124,8 @@ public sealed class IndexerOptionsValidatorTests
 
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [Feed("qa")]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
         });
 
         AssertFailure(result, "Legacy.json");
@@ -121,8 +140,8 @@ public sealed class IndexerOptionsValidatorTests
             ("C.json", Package("production", "Other.Package")));
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [Feed("qa")]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
         });
 
         AssertFailure(result, "configured more than once");
@@ -140,8 +159,8 @@ public sealed class IndexerOptionsValidatorTests
 
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [feed]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [feed]
         });
 
         AssertFailure(result, "exceeding MaxPackages 1");
@@ -163,8 +182,8 @@ public sealed class IndexerOptionsValidatorTests
 
         var result = Validate(new IndexerOptions
         {
-            NugetsPath = folder.Path,
-            Environments = [Feed("qa")]
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
         });
         var package = Assert.Single(new NuGetPackageOptionsLoader().Load(folder.Path));
 
@@ -224,10 +243,13 @@ public sealed class IndexerOptionsValidatorTests
             $"missing-docs-{Guid.NewGuid():N}");
         var missing = Validate(new IndexerOptions
         {
-            Documentation = new DocumentationOptions
+            IndexerSource = new IndexerSourceOptions
             {
-                RootPath = missingPath,
-                Extensions = [".md"]
+                Documentations = new DocumentationOptions
+                {
+                    RootPath = missingPath,
+                    Extensions = [".md"]
+                }
             }
         });
         AssertFailure(missing, "does not exist");
@@ -235,10 +257,13 @@ public sealed class IndexerOptionsValidatorTests
         using var folder = PackageFolder.Create();
         var invalid = Validate(new IndexerOptions
         {
-            Documentation = new DocumentationOptions
+            IndexerSource = new IndexerSourceOptions
             {
-                RootPath = folder.Path,
-                Extensions = [".md", "MD", "*"]
+                Documentations = new DocumentationOptions
+                {
+                    RootPath = folder.Path,
+                    Extensions = [".md", "MD", "*"]
+                }
             }
         });
         AssertFailure(invalid, "configured more than once");
@@ -251,10 +276,13 @@ public sealed class IndexerOptionsValidatorTests
         using var folder = PackageFolder.Create();
         var result = Validate(new IndexerOptions
         {
-            Documentation = new DocumentationOptions
+            IndexerSource = new IndexerSourceOptions
             {
-                RootPath = folder.Path,
-                Extensions = [".md", ".txt"]
+                Documentations = new DocumentationOptions
+                {
+                    RootPath = folder.Path,
+                    Extensions = [".md", ".txt"]
+                }
             }
         });
 
@@ -265,10 +293,19 @@ public sealed class IndexerOptionsValidatorTests
         new IndexerOptionsValidator(new NuGetPackageOptionsLoader())
             .Validate(null, options);
 
-    private static NuGetEnvironmentOptions Feed(string name) =>
+    private static IndexerSourceOptions Source(string nugetsPath) =>
         new()
         {
-            Name = name,
+            NugetsPath = nugetsPath
+        };
+
+    private static NuGetPackageSourceOptions Feed(
+        string environment,
+        string? name = null) =>
+        new()
+        {
+            Name = name ?? environment,
+            Environment = environment,
             ServiceIndex = "https://packages.example/v3/index.json",
             MaxPackages = 100
         };

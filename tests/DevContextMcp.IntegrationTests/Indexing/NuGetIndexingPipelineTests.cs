@@ -706,10 +706,11 @@ public sealed class NuGetIndexingPipelineTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["DevContextMcp:DatabasePath"] = databasePath,
-                ["DevContextMcp:NugetsPath"] = sourcesPath,
-                ["DevContextMcp:Environments:0:Name"] = environment,
-                ["DevContextMcp:Environments:0:ServiceIndex"] = feed,
-                ["DevContextMcp:Environments:0:MaxPackages"] = "10",
+                ["DevContextMcp:IndexerSource:NugetsPath"] = sourcesPath,
+                ["DevContextMcp:NugetPackages:0:Name"] = environment,
+                ["DevContextMcp:NugetPackages:0:Environment"] = environment,
+                ["DevContextMcp:NugetPackages:0:ServiceIndex"] = feed,
+                ["DevContextMcp:NugetPackages:0:MaxPackages"] = "10",
                 ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000"
             })
             .Build();

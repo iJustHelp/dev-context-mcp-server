@@ -7,6 +7,7 @@ using DevContextMcp.Server.Core.Contracts.ListVersions;
 using DevContextMcp.Server.Core.Contracts.QueryDocs;
 using DevContextMcp.Server.Core.Contracts.ResolveLibrary;
 using DevContextMcp.Server.Core.Services;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -55,6 +56,12 @@ public sealed class EnvironmentAwareRetrievalTests
             Assert.Equal(
                 ["2.1.0", "2.0.0"],
                 indexedLibrary.Environments[1].Versions);
+            Assert.Equal(
+                [
+                    ("productionNuget", "production"),
+                    ("qaNuget", "qa")
+                ],
+                await ReadSourcesAsync(databasePath));
 
             var resolver = provider.GetRequiredService<IResolveLibraryHandler>();
             var all = await resolver.HandleAsync(
@@ -69,7 +76,7 @@ public sealed class EnvironmentAwareRetrievalTests
                     "qa",
                     StringComparison.OrdinalIgnoreCase));
             Assert.Equal($"nuget:qa/{FixtureNuGetPackage.PackageId}", qaMatch.LibraryId);
-            Assert.Equal("qa", qaMatch.SourceId);
+            Assert.Equal("qaNuget", qaMatch.SourceId);
             Assert.Equal("2.1.0", qaMatch.RecommendedVersion);
 
             var productionMatch = Assert.Single(all.Data.Matches, match =>
@@ -77,7 +84,7 @@ public sealed class EnvironmentAwareRetrievalTests
                     match.Environment,
                     "production",
                     StringComparison.OrdinalIgnoreCase));
-            Assert.Equal("production", productionMatch.SourceId);
+            Assert.Equal("productionNuget", productionMatch.SourceId);
             Assert.Equal("1.0.0", productionMatch.RecommendedVersion);
 
             var filtered = await resolver.HandleAsync(
@@ -93,13 +100,13 @@ public sealed class EnvironmentAwareRetrievalTests
                 new ListVersionsRequest($"nuget:{FixtureNuGetPackage.PackageId}"),
                 CancellationToken.None);
             Assert.Equal("production", legacy.ResolvedContext!.Environment);
-            Assert.Equal("production", legacy.ResolvedContext.SourceId);
+            Assert.Equal("productionNuget", legacy.ResolvedContext.SourceId);
 
             var qaVersions = await versionsHandler.HandleAsync(
                 new ListVersionsRequest($"nuget:qa/{FixtureNuGetPackage.PackageId}"),
                 CancellationToken.None);
             Assert.Equal("qa", qaVersions.ResolvedContext!.Environment);
-            Assert.Equal("qa", qaVersions.ResolvedContext.SourceId);
+            Assert.Equal("qaNuget", qaVersions.ResolvedContext.SourceId);
             Assert.Equal("2.1.0", qaVersions.Data!.RecommendedVersion);
 
             var docsHandler = provider.GetRequiredService<IQueryDocsHandler>();
@@ -110,9 +117,11 @@ public sealed class EnvironmentAwareRetrievalTests
                     Version: "2.0.0"),
                 CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, qaDocs.Status);
-            Assert.Equal("qa", qaDocs.ResolvedContext!.SourceId);
+            Assert.Equal("qaNuget", qaDocs.ResolvedContext!.SourceId);
             Assert.Contains(qaDocs.Evidence, item =>
                 item.Text.Contains("QA version", StringComparison.Ordinal));
+            Assert.All(qaDocs.Citations, citation =>
+                Assert.StartsWith("nuget://qaNuget/", citation.Uri, StringComparison.Ordinal));
 
             var isolated = await docsHandler.HandleAsync(
                 new QueryDocsRequest(
@@ -134,6 +143,7 @@ public sealed class EnvironmentAwareRetrievalTests
         }
         finally
         {
+            SqliteConnection.ClearAllPools();
             if (Directory.Exists(root))
             {
                 Directory.Delete(root, recursive: true);
@@ -156,7 +166,7 @@ public sealed class EnvironmentAwareRetrievalTests
             ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000"
         };
         var root = Directory.GetParent(qa)!.FullName;
-        values["DevContextMcp:NugetsPath"] =
+        values["DevContextMcp:IndexerSource:NugetsPath"] =
             FixtureNuGetConfiguration.CreatePackageFolder(
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
@@ -165,8 +175,8 @@ public sealed class EnvironmentAwareRetrievalTests
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "production",
                     FixtureNuGetPackage.PackageId));
-        AddSource(values, 0, "qa", qa);
-        AddSource(values, 1, "production", production);
+        AddSource(values, 0, "qaNuget", "qa", qa);
+        AddSource(values, 1, "productionNuget", "production", production);
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(values)
@@ -182,11 +192,32 @@ public sealed class EnvironmentAwareRetrievalTests
         IDictionary<string, string?> values,
         int index,
         string name,
+        string environment,
         string serviceIndex)
     {
-        var prefix = $"DevContextMcp:Environments:{index}";
+        var prefix = $"DevContextMcp:NugetPackages:{index}";
         values[$"{prefix}:Name"] = name;
+        values[$"{prefix}:Environment"] = environment;
         values[$"{prefix}:ServiceIndex"] = serviceIndex;
         values[$"{prefix}:MaxPackages"] = "10";
+    }
+
+    private static async Task<IReadOnlyList<(string Name, string Environment)>>
+        ReadSourcesAsync(string databasePath)
+    {
+        await using var connection = new SqliteConnection(
+            $"Data Source={databasePath};Mode=ReadOnly");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT name, environment FROM sources WHERE kind = 'nuget' ORDER BY environment;";
+        await using var reader = await command.ExecuteReaderAsync();
+        var sources = new List<(string Name, string Environment)>();
+        while (await reader.ReadAsync())
+        {
+            sources.Add((reader.GetString(0), reader.GetString(1)));
+        }
+
+        return sources;
     }
 }

@@ -55,7 +55,7 @@ public sealed class InvalidConfigurationTests
             new Dictionary<string, string?>
             {
                 ["DevContextMcp:DatabasePath"] = "data/docs.db",
-                ["DevContextMcp:NugetsPath"] = sourcesPath,
+                ["DevContextMcp:IndexerSource:NugetsPath"] = sourcesPath,
                 ["DevContextMcp:Indexing:MaxPackageBytes"] = "0"
             });
         builder.Logging.ClearProviders();
@@ -74,5 +74,37 @@ public sealed class InvalidConfigurationTests
         {
             Directory.Delete(sourcesPath, recursive: true);
         }
+    }
+
+    [Theory]
+    [InlineData("NugetsPath")]
+    [InlineData("Documentation")]
+    [InlineData("Environments")]
+    public async Task ObsoleteIndexerConfigurationFailsStartup(string obsoleteKey)
+    {
+        var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(
+            new HostApplicationBuilderSettings
+            {
+                Args = [],
+                DisableDefaults = true
+            });
+
+        builder.Configuration.AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["DevContextMcp:DatabasePath"] = "data/docs.db",
+                [$"DevContextMcp:{obsoleteKey}"] = "obsolete"
+            });
+        builder.Logging.ClearProviders();
+        builder.Services.AddIndexerCli(builder.Configuration);
+
+        using var host = builder.Build();
+        var exception = await Assert.ThrowsAsync<OptionsValidationException>(() =>
+            host.StartAsync(CancellationToken.None));
+
+        Assert.Contains(
+            $"DevContextMcp:{obsoleteKey} is obsolete",
+            exception.Message,
+            StringComparison.Ordinal);
     }
 }

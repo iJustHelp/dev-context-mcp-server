@@ -129,11 +129,13 @@ public sealed class IndexerProcessTests
         };
         startInfo.ArgumentList.Add(IndexerAssemblyPath());
         startInfo.ArgumentList.Add($"--DevContextMcp:DatabasePath={databasePath}");
-        startInfo.ArgumentList.Add($"--DevContextMcp:NugetsPath={sourcesPath}");
-        startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:Name=test");
         startInfo.ArgumentList.Add(
-            $"--DevContextMcp:Environments:0:ServiceIndex={feed}");
-        startInfo.ArgumentList.Add("--DevContextMcp:Environments:0:MaxPackages=10");
+            $"--DevContextMcp:IndexerSource:NugetsPath={sourcesPath}");
+        startInfo.ArgumentList.Add("--DevContextMcp:NugetPackages:0:Name=test");
+        startInfo.ArgumentList.Add("--DevContextMcp:NugetPackages:0:Environment=test");
+        startInfo.ArgumentList.Add(
+            $"--DevContextMcp:NugetPackages:0:ServiceIndex={feed}");
+        startInfo.ArgumentList.Add("--DevContextMcp:NugetPackages:0:MaxPackages=10");
         startInfo.ArgumentList.Add(
             "--DevContextMcp:Indexing:MaxCompressionRatio=10000");
 
