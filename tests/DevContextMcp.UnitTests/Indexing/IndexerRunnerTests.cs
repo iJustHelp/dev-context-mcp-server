@@ -70,6 +70,7 @@ public sealed class IndexerRunnerTests
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
             "fixture",
+            "qa",
             "succeeded",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
@@ -108,6 +109,7 @@ public sealed class IndexerRunnerTests
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
             "fixture",
+            "qa",
             "succeeded",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
@@ -234,6 +236,7 @@ public sealed class IndexerRunnerTests
     private static IndexRunSummary Summary(string status) =>
         new(
             "fixture",
+            "qa",
             status,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
