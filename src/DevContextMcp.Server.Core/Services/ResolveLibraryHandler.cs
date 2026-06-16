@@ -79,15 +79,14 @@ internal sealed class ResolveLibraryHandler(
                             DisplayName = candidate.DisplayName,
                             Environment = null,
                             SourceId = candidate.SourceName,
-                            RecommendedVersion = null,
                             Description = candidate.Description,
                             Confidence = Math.Clamp(score, 0, 1)
                         },
                         candidate.PackageId,
                         null,
                         environmentIndex,
-                        sourceIndex,
-                        false));
+                        sourceIndex
+                        ));
                     continue;
                 }
 
@@ -102,32 +101,17 @@ internal sealed class ResolveLibraryHandler(
                     settings.DatabasePath,
                     candidate.LibraryId,
                     timeout.Token);
-                var recommendation = RecommendedVersionSelector.Find(
-                    settings.RecommendedVersions,
-                    candidate.Environment!,
-                    candidate.PackageId);
                 var resolution = versionResolver.Resolve(
                     versions,
                     null,
                     null,
-                    recommendation,
+                    null,
                     request.IncludePrerelease);
                 if (resolution is null)
                 {
                     continue;
                 }
-
-                if (recommendation is not null
-                    && versions.Any(version =>
-                        version.Version.Equals(recommendation, StringComparison.OrdinalIgnoreCase)))
-                {
-                    score += 0.05;
-                }
-                var recommendationAvailable = recommendation is not null
-                    && versions.Any(version =>
-                        version.Version.Equals(
-                            recommendation,
-                            StringComparison.OrdinalIgnoreCase));
+              
 
                 if (sourceIndex != int.MaxValue)
                 {
@@ -149,15 +133,14 @@ internal sealed class ResolveLibraryHandler(
                         DisplayName = candidate.DisplayName,
                         Environment = candidate.Environment,
                         SourceId = candidate.SourceName,
-                        RecommendedVersion = resolution.Version.Version,
                         Description = candidate.Description,
                         Confidence = Math.Clamp(score, 0, 1)
                     },
                     candidate.PackageId,
                     candidate.Environment,
                     environmentIndex,
-                    sourceIndex,
-                    recommendationAvailable));
+                    sourceIndex
+                    ));
             }
 
             var selected = matches
@@ -165,8 +148,7 @@ internal sealed class ResolveLibraryHandler(
                     $"{match.PackageId.ToUpperInvariant()}\n{match.Environment?.ToUpperInvariant()}",
                     StringComparer.Ordinal)
                 .Select(group => group
-                    .OrderByDescending(item => item.RecommendationAvailable)
-                    .ThenBy(item => item.SourceIndex)
+                    .OrderByDescending(item => item.SourceIndex)
                     .ThenByDescending(item => item.Match.Confidence)
                     .ThenBy(item => item.Match.DisplayName, StringComparer.Ordinal)
                     .First())
@@ -234,6 +216,5 @@ internal sealed class ResolveLibraryHandler(
         string PackageId,
         string? Environment,
         int EnvironmentIndex,
-        int SourceIndex,
-        bool RecommendationAvailable);
+        int SourceIndex);
 }

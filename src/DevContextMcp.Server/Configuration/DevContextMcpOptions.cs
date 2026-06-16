@@ -13,9 +13,6 @@ public sealed class DevContextMcpOptions
 
     public string DatabasePath { get; set; } = "data/docs.db";
 
-    public Dictionary<string, string> RecommendedVersions { get; set; } =
-        new(StringComparer.OrdinalIgnoreCase);
-
     public RetrievalOptions Retrieval { get; set; } = new();
 
     public ToolLoggingOptions ToolLogging { get; set; } = new();

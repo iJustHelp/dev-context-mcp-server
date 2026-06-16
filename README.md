@@ -219,8 +219,8 @@ For `query_docs` and `get_symbol`, one version is selected in this order:
 
 1. Exact `version` from the tool request.
 2. Exact `projectVersion` supplied as calling-project context.
-3. Environment-qualified `RecommendedVersions` entry.
-4. Package-wide `RecommendedVersions` entry.
+3. Environment-qualified version selection entry.
+4. Package-wide version selection entry.
 5. Latest indexed, listed stable version.
 6. Latest indexed, listed prerelease when prereleases are allowed.
 
@@ -332,10 +332,6 @@ Indexer:
       "Path": "/mcp"
     },
     "DatabasePath": "data/docs.db",
-    "RecommendedVersions": {
-      "Company.Foundation": "4.0.0",
-      "nuget:qa/Company.Foundation": "4.1.0-beta.1"
-    },
     "Retrieval": {
       "EnvironmentOrder": [ "production", "qa" ],
       "SourceOrder": [ "internal" ],
@@ -357,7 +353,6 @@ Key behavior:
 
 - `DatabasePath` is opened read-only and must already contain a current index.
 - `EnvironmentOrder` controls legacy unqualified NuGet IDs.
-- `RecommendedVersions` supports package-wide and environment-qualified keys.
 - Result count, evidence score, response bytes, and query duration are bounded.
 - HTTP validation permits only an absolute loopback HTTP URL.
 - Invalid configuration fails startup instead of silently falling back.

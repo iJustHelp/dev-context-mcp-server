@@ -33,7 +33,6 @@ internal sealed class ListVersionsHandler(
                 libraryId,
                 settings.EnvironmentOrder,
                 settings.SourceOrder,
-                settings.RecommendedVersions,
                 null,
                 null,
                 request.IncludePrerelease,

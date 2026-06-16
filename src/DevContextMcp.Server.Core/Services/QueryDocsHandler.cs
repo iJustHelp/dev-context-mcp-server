@@ -46,7 +46,6 @@ internal sealed class QueryDocsHandler(
                 libraryId,
                 settings.EnvironmentOrder,
                 settings.SourceOrder,
-                settings.RecommendedVersions,
                 request.Version,
                 request.ProjectVersion,
                 request.IncludePrerelease,

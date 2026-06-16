@@ -9,7 +9,6 @@ public interface ILibraryResolver
         LibraryId libraryId,
         IReadOnlyList<string> environmentOrder,
         IReadOnlyList<string> sourceOrder,
-        IReadOnlyDictionary<string, string> recommendedVersions,
         string? requestedVersion,
         string? projectVersion,
         bool includePrerelease,

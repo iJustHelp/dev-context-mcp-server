@@ -118,22 +118,6 @@ public sealed class DevContextMcpOptionsValidatorTests
     }
 
     [Fact]
-    public void InvalidRecommendedVersionFails()
-    {
-        var result = _validator.Validate(
-            null,
-            new DevContextMcpOptions
-            {
-                RecommendedVersions = new Dictionary<string, string>
-                {
-                    ["Company.Customer"] = "four"
-                }
-            });
-
-        AssertFailure(result, "valid semantic version");
-    }
-
-    [Fact]
     public void NonPositiveToolLoggingPayloadLimitFails()
     {
         var result = _validator.Validate(
@@ -147,22 +131,6 @@ public sealed class DevContextMcpOptionsValidatorTests
             });
 
         AssertFailure(result, "ToolLogging:MaxPayloadBytes");
-    }
-
-    [Fact]
-    public void InvalidQualifiedRecommendationKeyFails()
-    {
-        var result = _validator.Validate(
-            null,
-            new DevContextMcpOptions
-            {
-                RecommendedVersions = new Dictionary<string, string>
-                {
-                    ["nuget:bad environment/Company.Customer"] = "4.2.0"
-                }
-            });
-
-        AssertFailure(result, "environment-qualified library ID");
     }
 
     private static void AssertFailure(

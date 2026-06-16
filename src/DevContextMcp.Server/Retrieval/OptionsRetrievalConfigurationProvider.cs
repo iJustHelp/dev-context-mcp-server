@@ -17,9 +17,6 @@ internal sealed class OptionsRetrievalConfigurationProvider(
             Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
             retrieval.EnvironmentOrder.ToArray(),
             retrieval.SourceOrder.ToArray(),
-            new Dictionary<string, string>(
-                value.RecommendedVersions,
-                StringComparer.OrdinalIgnoreCase),
             new RetrievalLimits(
                 retrieval.DefaultMaxResults,
                 retrieval.MaxResults,

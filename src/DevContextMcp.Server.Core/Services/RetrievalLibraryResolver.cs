@@ -13,7 +13,6 @@ internal sealed class RetrievalLibraryResolver(
         LibraryId libraryId,
         IReadOnlyList<string> environmentOrder,
         IReadOnlyList<string> sourceOrder,
-        IReadOnlyDictionary<string, string> recommendedVersions,
         string? requestedVersion,
         string? projectVersion,
         bool includePrerelease,
@@ -59,10 +58,6 @@ internal sealed class RetrievalLibraryResolver(
                 continue;
             }
 
-            var recommendation = RecommendedVersionSelector.Find(
-                recommendedVersions,
-                library.Environment!,
-                library.PackageId);
             candidates.Add(new(
                 library,
                 versions,
@@ -70,7 +65,7 @@ internal sealed class RetrievalLibraryResolver(
                     versions,
                     requestedVersion,
                     projectVersion,
-                    recommendation,
+                    null,
                     includePrerelease)));
         }
 

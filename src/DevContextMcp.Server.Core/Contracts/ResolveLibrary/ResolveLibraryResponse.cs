@@ -40,9 +40,6 @@ public sealed record LibraryMatch
     [JsonPropertyName("sourceId")]
     public required string SourceId { get; init; }
 
-    [JsonPropertyName("recommendedVersion")]
-    public string? RecommendedVersion { get; init; }
-
     [JsonPropertyName("description")]
     public string? Description { get; init; }
 

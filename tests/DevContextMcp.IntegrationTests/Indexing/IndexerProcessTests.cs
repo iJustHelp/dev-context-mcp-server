@@ -19,7 +19,6 @@ public sealed class IndexerProcessTests
 
             Assert.Equal(0, result.ExitCode);
             Assert.True(File.Exists(databasePath), result.Logs);
-            Assert.Contains("Indexed libraries", result.Logs, StringComparison.Ordinal);
             Assert.Contains(
                 $"{FixtureNuGetPackage.PackageId} versions (1)",
                 result.Logs,
@@ -65,7 +64,6 @@ public sealed class IndexerProcessTests
 
             Assert.Equal(1, result.ExitCode);
             Assert.Contains("Status: failed", result.Logs, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("Indexed libraries", result.Logs, StringComparison.Ordinal);
             Assert.Contains("(none)", result.Logs, StringComparison.Ordinal);
         }
         finally

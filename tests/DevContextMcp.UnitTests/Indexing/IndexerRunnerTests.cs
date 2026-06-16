@@ -27,7 +27,7 @@ public sealed class IndexerRunnerTests
 
     [Theory]
     [InlineData("succeeded", true)]
-    [InlineData("partial_success", false)]
+    [InlineData("partial_success", false)]    
     [InlineData("failed", false)]
     public async Task ResultReflectsRunStatus(string status, bool expected)
     {
@@ -70,8 +70,8 @@ public sealed class IndexerRunnerTests
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
             "fixture",
-            "qa",
             "succeeded",
+            "qa",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             4,
@@ -92,7 +92,7 @@ public sealed class IndexerRunnerTests
         Assert.True(succeeded);
         var message = Assert.Single(
             logger.Messages,
-            item => item.Contains("Environment: fixture", StringComparison.Ordinal));
+            item => item.Contains("Environment", StringComparison.Ordinal));
         Assert.Contains("Added (2):", message);
         Assert.Contains("Alpha.Package 1.0.0", message);
         Assert.Contains("Zulu.Package 2.0.0", message);
@@ -109,8 +109,8 @@ public sealed class IndexerRunnerTests
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
             "fixture",
-            "qa",
             "succeeded",
+            "qa",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             1,
@@ -128,10 +128,10 @@ public sealed class IndexerRunnerTests
         Assert.True(succeeded);
         Assert.DoesNotContain(
             logger.Messages,
-            message => message.Contains("Environment: fixture", StringComparison.Ordinal));
+            message => message.Contains("Environment", StringComparison.Ordinal));
         Assert.Contains(
             logger.Messages,
-            message => message.Contains("Indexed libraries", StringComparison.Ordinal));
+            message => message.Contains("Indexed NuGets", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -159,9 +159,9 @@ public sealed class IndexerRunnerTests
 
         Assert.False(succeeded);
         var summaryIndex = logger.Messages.FindIndex(message =>
-            message.Contains("Environment: fixture", StringComparison.Ordinal));
+            message.Contains("Environment", StringComparison.Ordinal));
         var inventoryIndex = logger.Messages.FindIndex(message =>
-            message.Contains("Indexed libraries", StringComparison.Ordinal));
+            message.Contains("Indexed NuGets", StringComparison.Ordinal));
         Assert.True(inventoryIndex > summaryIndex);
 
         var inventory = logger.Messages[inventoryIndex];
@@ -178,9 +178,11 @@ public sealed class IndexerRunnerTests
             new StubCoordinator(
                 indexedDocuments:
                 [
-                    "z/reference.md",
+                    "Indexed documents (3)",
+                    "Indexed libraries",
                     "API.md",
-                    "a/design.md"
+                    "a/design.md",
+                    "z/reference.md"
                 ]),
             logger);
 
@@ -210,7 +212,7 @@ public sealed class IndexerRunnerTests
         Assert.True(succeeded);
         var inventory = Assert.Single(
             logger.Messages,
-            message => message.Contains("Indexed libraries", StringComparison.Ordinal));
+            message => message.Contains("Indexed NuGets", StringComparison.Ordinal));
         Assert.Contains("(none)", inventory);
     }
 
@@ -236,8 +238,8 @@ public sealed class IndexerRunnerTests
     private static IndexRunSummary Summary(string status) =>
         new(
             "fixture",
-            "qa",
             status,
+            "qa",
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             1,

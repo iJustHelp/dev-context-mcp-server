@@ -77,7 +77,6 @@ public sealed class EnvironmentAwareRetrievalTests
                     StringComparison.OrdinalIgnoreCase));
             Assert.Equal($"nuget:qa/{FixtureNuGetPackage.PackageId}", qaMatch.LibraryId);
             Assert.Equal("qaNuget", qaMatch.SourceId);
-            Assert.Equal("2.1.0", qaMatch.RecommendedVersion);
 
             var productionMatch = Assert.Single(all.Data.Matches, match =>
                 string.Equals(
@@ -85,7 +84,6 @@ public sealed class EnvironmentAwareRetrievalTests
                     "production",
                     StringComparison.OrdinalIgnoreCase));
             Assert.Equal("productionNuget", productionMatch.SourceId);
-            Assert.Equal("1.0.0", productionMatch.RecommendedVersion);
 
             var filtered = await resolver.HandleAsync(
                 new ResolveLibraryRequest(
@@ -161,8 +159,6 @@ public sealed class EnvironmentAwareRetrievalTests
             ["DevContextMcp:DatabasePath"] = databasePath,
             ["DevContextMcp:Retrieval:EnvironmentOrder:0"] = "production",
             ["DevContextMcp:Retrieval:EnvironmentOrder:1"] = "qa",
-            [$"DevContextMcp:RecommendedVersions:{FixtureNuGetPackage.PackageId}"] = "1.0.0",
-            [$"DevContextMcp:RecommendedVersions:nuget:qa/{FixtureNuGetPackage.PackageId}"] = "2.1.0",
             ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000"
         };
         var root = Directory.GetParent(qa)!.FullName;

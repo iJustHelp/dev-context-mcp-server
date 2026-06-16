@@ -10,9 +10,6 @@
       "Url": "http://127.0.0.1:2222",
       "Path": "/mcp"
     },
-    "RecommendedVersions": {
-      "Formula.SimpleRepo": "2.8.1"
-    },
     "Retrieval": {
       "EnvironmentOrder": [
         "public"

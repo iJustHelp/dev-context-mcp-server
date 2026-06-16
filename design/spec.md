@@ -219,10 +219,6 @@ Host:
 {
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
-    "RecommendedVersions": {
-      "Company.Customer.Client": "4.2.0",
-      "nuget:qa/Company.Customer.Client": "4.3.0-beta.1"
-    },
     "Retrieval": {
       "EnvironmentOrder": ["production", "qa"],
       "SourceOrder": ["internal"]

@@ -20,7 +20,6 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
             failures);
         ValidateRetrieval(options.Retrieval, failures);
         ValidateToolLogging(options.ToolLogging, failures);
-        ValidateRecommendedVersions(options.RecommendedVersions, failures);
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success
@@ -146,37 +145,6 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
         }
     }
 
-    private static void ValidateRecommendedVersions(
-        IReadOnlyDictionary<string, string> versions,
-        List<string> failures)
-    {
-        foreach (var (packageId, version) in versions)
-        {
-            if (string.IsNullOrWhiteSpace(packageId))
-            {
-                failures.Add("RecommendedVersions contains an empty package ID.");
-            }
-            else if (packageId.StartsWith("nuget:", StringComparison.OrdinalIgnoreCase))
-            {
-                var payload = packageId["nuget:".Length..];
-                var separator = payload.IndexOf('/');
-                if (separator <= 0
-                    || separator == payload.Length - 1
-                    || payload.IndexOf('/', separator + 1) >= 0
-                    || !EnvironmentPattern().IsMatch(payload[..separator]))
-                {
-                    failures.Add(
-                        $"RecommendedVersions key '{packageId}' is not a valid environment-qualified library ID.");
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(version) || !SemanticVersionPattern().IsMatch(version))
-            {
-                failures.Add(
-                    $"Recommended version '{version}' for package '{packageId}' is not a valid semantic version.");
-            }
-        }
-    }
 
     [GeneratedRegex(
         @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",

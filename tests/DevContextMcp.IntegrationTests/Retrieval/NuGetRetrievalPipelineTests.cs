@@ -70,8 +70,6 @@ public sealed class NuGetRetrievalPipelineTests
             Assert.Equal("test", versions.ResolvedContext!.Environment);
             Assert.Equal("test", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
-            Assert.Equal("1.2.3", versions.Data.RecommendedVersion);
-            Assert.Equal("configured_recommendation", versions.Data.RecommendedVersionReason);
 
             var docs = await provider.GetRequiredService<IQueryDocsHandler>()
                 .HandleAsync(
@@ -114,7 +112,6 @@ public sealed class NuGetRetrievalPipelineTests
                 new Dictionary<string, string?>
                 {
                     ["DevContextMcp:DatabasePath"] = databasePath,
-                    [$"DevContextMcp:RecommendedVersions:{FixtureNuGetPackage.PackageId}"] = "1.2.3"
                 });
 
             var toolResult = await server.Client.CallToolAsync(
@@ -193,8 +190,7 @@ public sealed class NuGetRetrievalPipelineTests
                 ["DevContextMcp:NugetPackages:0:Environment"] = "test",
                 ["DevContextMcp:NugetPackages:0:ServiceIndex"] = feed,
                 ["DevContextMcp:NugetPackages:0:MaxPackages"] = "10",
-                ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000",
-                [$"DevContextMcp:RecommendedVersions:{FixtureNuGetPackage.PackageId}"] = "1.2.3"
+                ["DevContextMcp:Indexing:MaxCompressionRatio"] = "10000"
             })
             .Build();
 

@@ -23,10 +23,6 @@ public static class DependencyInjection
         var optionsSection = configuration.GetSection(DevContextMcpOptions.SectionName);
         services.AddOptions<DevContextMcpOptions>()
             .Bind(optionsSection)
-            .PostConfigure(options =>
-                options.RecommendedVersions =
-                    RecommendedVersionsConfigurationReader.Read(
-                        optionsSection.GetSection(nameof(options.RecommendedVersions))))
             .ValidateOnStart();
 
         services.AddApplication();
