@@ -88,8 +88,8 @@ Each indexed NuGet source should have a JSON configuration file.
 where:
 
 - `Delete`: Boolean, default: false. If true, the indexer deletes the specified `PackageId` from the database.
-- `Environment`: It should be one of the values defined in `NugetPackages` in `appsettings.json` (for example: `public`, `prod`, `qa`).
+- `Environment`: is one of the values defined in `NugetPackages` in `appsettings.json` (for example: `public`, `prod`, `qa`).
 - `PackageId`: full NuGet package name.
-- `MaxVersionsPerPackage`: maximum number of versions to index for this package.
+- `MaxVersionsPerPackage`: maximum number of versions for indexing of package.
 `IncludePrerelease`: Boolean, default: false. If true, then include prerelease versions of this package.
 `IncludeUnlisted:`  Boolean, default: false. If true, then include unlisted package versions.
