@@ -10,7 +10,7 @@ namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
 internal sealed class SqliteIndexStore : IIndexStore
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 1;
     private const string DocumentationLibraryId = "company-docs";
     private const string DocumentationDisplayName = "Company Docs";
     private const string DocumentationVersion = "";
@@ -95,47 +95,6 @@ internal sealed class SqliteIndexStore : IIndexStore
                 transaction,
                 SchemaSql,
                 cancellationToken);
-            await ExecuteNonQueryAsync(
-                connection,
-                transaction,
-                $"PRAGMA user_version = {SchemaVersion};",
-                cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        else if (version < SchemaVersion)
-        {
-            await using var transaction = connection.BeginTransaction();
-            if (version == 1)
-            {
-                await ExecuteNonQueryAsync(
-                    connection,
-                    transaction,
-                    MigrationV2Sql,
-                    cancellationToken);
-                await RefreshAllLibrarySearchAsync(
-                    connection,
-                    transaction,
-                    cancellationToken);
-            }
-
-            if (version <= 2)
-            {
-                await ExecuteNonQueryAsync(
-                    connection,
-                    transaction,
-                    MigrationV3Sql,
-                    cancellationToken);
-            }
-
-            if (version <= 3)
-            {
-                await ExecuteNonQueryAsync(
-                    connection,
-                    transaction,
-                    MigrationV4Sql,
-                    cancellationToken);
-            }
-
             await ExecuteNonQueryAsync(
                 connection,
                 transaction,
@@ -1155,83 +1114,6 @@ internal sealed class SqliteIndexStore : IIndexStore
             tokenize = 'unicode61'
         );
         """;
-
-    private const string MigrationV2Sql =
-        """
-        CREATE INDEX IF NOT EXISTS ix_libraries_normalized_package_id
-            ON libraries(normalized_package_id);
-
-        CREATE INDEX IF NOT EXISTS ix_library_versions_selection
-            ON library_versions(library_id, is_listed, is_prerelease, version);
-
-        CREATE INDEX IF NOT EXISTS ix_document_chunks_lookup
-            ON document_chunks(library_version_id, kind, member_name);
-
-        CREATE INDEX IF NOT EXISTS ix_symbols_lookup
-            ON symbols(library_version_id, fully_qualified_name, target_framework);
-
-        CREATE INDEX IF NOT EXISTS ix_symbols_containing_type
-            ON symbols(library_version_id, containing_type);
-
-        CREATE VIRTUAL TABLE IF NOT EXISTS libraries_fts USING fts5(
-            library_id UNINDEXED,
-            source_name UNINDEXED,
-            package_id,
-            title,
-            description,
-            summary,
-            tags,
-            document_text,
-            tokenize = 'unicode61'
-        );
-        """;
-
-    private const string MigrationV3Sql =
-        """
-        ALTER TABLE sources
-            ADD COLUMN environment TEXT NOT NULL DEFAULT '';
-
-        UPDATE sources
-        SET environment = name
-        WHERE environment = '';
-        """;
-
-    private const string MigrationV4Sql =
-        """
-        ALTER TABLE sources
-            ADD COLUMN kind TEXT NOT NULL DEFAULT 'nuget';
-
-        ALTER TABLE libraries
-            ADD COLUMN kind TEXT NOT NULL DEFAULT 'nuget';
-
-        ALTER TABLE libraries
-            ADD COLUMN display_name TEXT NULL;
-
-        UPDATE libraries
-        SET display_name = package_id
-        WHERE display_name IS NULL;
-
-        ALTER TABLE artifacts
-            ADD COLUMN content TEXT NULL;
-        """;
-
-    private static async Task RefreshAllLibrarySearchAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        CancellationToken cancellationToken)
-    {
-        await ExecuteNonQueryAsync(
-            connection,
-            transaction,
-            "DELETE FROM libraries_fts;",
-            cancellationToken);
-        await InsertLibrarySearchRowsAsync(
-            connection,
-            transaction,
-            whereClause: string.Empty,
-            parameters: [],
-            cancellationToken);
-    }
 
     private static async Task RefreshSourceLibrarySearchAsync(
         SqliteConnection connection,
