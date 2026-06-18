@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
-// A package dependency declared for a specific target framework.
+/// <summary>
+/// A package dependency declared for a specific target framework.
+/// </summary>
 public sealed record DependencyRecord(
     string PackageId,
     string VersionRange,

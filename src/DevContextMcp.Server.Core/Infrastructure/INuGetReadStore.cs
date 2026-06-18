@@ -2,7 +2,9 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Infrastructure;
 
-// Read-only access to the documentation index: library/version lookup, document and symbol search, and resource reads.
+/// <summary>
+/// Read-only access to the documentation index: library/version lookup, document and symbol search, and resource reads.
+/// </summary>
 public interface INuGetReadStore
 {
     Task<IReadOnlyList<LibraryCandidateRecord>> SearchLibrariesAsync(

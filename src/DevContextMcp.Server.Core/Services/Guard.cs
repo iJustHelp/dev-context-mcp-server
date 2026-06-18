@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Core.Services;
 
-// Lightweight argument guards that throw standard exceptions for blank or non-positive values.
+/// <summary>
+/// Lightweight argument guards that throw standard exceptions for blank or non-positive values.
+/// </summary>
 internal static class Guard
 {
     public static void NotBlank(string? value, string parameterName)

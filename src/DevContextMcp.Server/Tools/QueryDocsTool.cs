@@ -5,7 +5,9 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
-// MCP tool that exposes query_docs, delegating to the handler.
+/// <summary>
+/// MCP tool that exposes query_docs, delegating to the handler.
+/// </summary>
 [McpServerToolType]
 internal sealed class QueryDocsTool(
     IQueryDocsHandler handler,

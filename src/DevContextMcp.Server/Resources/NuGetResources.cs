@@ -8,7 +8,9 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Resources;
 
-// MCP resource provider that serves indexed NuGet artifacts and symbols by nuget:// URI.
+/// <summary>
+/// MCP resource provider that serves indexed NuGet artifacts and symbols by nuget:// URI.
+/// </summary>
 [McpServerResourceType]
 public sealed class NuGetResources(
     RetrievalSettings settings,

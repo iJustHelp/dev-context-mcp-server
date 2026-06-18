@@ -2,7 +2,9 @@ using DevContextMcp.Indexer.Core.Infrastructure;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// No-op authentication provider for anonymous NuGet sources; validates arguments only.
+/// <summary>
+/// No-op authentication provider for anonymous NuGet sources; validates arguments only.
+/// </summary>
 internal sealed class AnonymousNuGetSourceAuthenticationProvider :
     INuGetSourceAuthenticationProvider
 {

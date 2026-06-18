@@ -2,7 +2,9 @@ using System.Text;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Selects a prefix of ranked items that fits within configured count and byte-size budgets.
+/// <summary>
+/// Selects a prefix of ranked items that fits within configured count and byte-size budgets.
+/// </summary>
 internal sealed class ResponseBudget : IResponseBudget
 {
     public IReadOnlyList<T> Take<T>(

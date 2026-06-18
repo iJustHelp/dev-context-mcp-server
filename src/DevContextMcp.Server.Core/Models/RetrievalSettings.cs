@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Core.Models;
 
-// Resolved retrieval settings: database path, environment/source priority order, and limits.
+/// <summary>
+/// Resolved retrieval settings: database path, environment/source priority order, and limits.
+/// </summary>
 public sealed record RetrievalSettings(
     string DatabasePath,
     IReadOnlyList<string> EnvironmentOrder,

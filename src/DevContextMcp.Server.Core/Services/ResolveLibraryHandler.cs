@@ -5,8 +5,10 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Handles the resolve_library tool: searches candidate libraries, ranks them by confidence and
-// configured environment/source priority, and returns the best matches.
+/// <summary>
+/// Handles the resolve_library tool: searches candidate libraries, ranks them by confidence and
+/// configured environment/source priority, and returns the best matches.
+/// </summary>
 internal sealed class ResolveLibraryHandler(
     RetrievalSettings settings,
     INuGetReadStore store,

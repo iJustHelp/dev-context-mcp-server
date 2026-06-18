@@ -6,7 +6,9 @@ using NuGet.Packaging;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// Processes a downloaded .nupkg into indexable metadata, documents, symbols, and dependencies.
+/// <summary>
+/// Processes a downloaded .nupkg into indexable metadata, documents, symbols, and dependencies.
+/// </summary>
 internal sealed class NuGetPackageProcessor(
     IDocumentChunker documentChunker,
     IContentHasher contentHasher) : IPackageProcessor

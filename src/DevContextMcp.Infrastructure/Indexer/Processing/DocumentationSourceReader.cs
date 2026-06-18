@@ -4,7 +4,9 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.Processing;
 
-// Reads documentation files from a folder tree into artifacts and chunked, hashed documents.
+/// <summary>
+/// Reads documentation files from a folder tree into artifacts and chunked, hashed documents.
+/// </summary>
 internal sealed class DocumentationSourceReader(
     IDocumentChunker chunker,
     IContentHasher hasher) : IDocumentationSourceReader

@@ -8,8 +8,10 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
-// SQLite-backed index store that creates the schema and publishes packages and documentation,
-// computing per-run change sets against the previously indexed content.
+/// <summary>
+/// SQLite-backed index store that creates the schema and publishes packages and documentation,
+/// computing per-run change sets against the previously indexed content.
+/// </summary>
 internal sealed class SqliteIndexStore : IIndexStore
 {
     private sealed record IndexedLibraryRow(

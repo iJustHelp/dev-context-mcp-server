@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Configuration;
 
-// Shared helpers for validating server configuration values such as file-system paths.
+/// <summary>
+/// Shared helpers for validating server configuration values such as file-system paths.
+/// </summary>
 internal static class ConfigurationValidation
 {
     public static void ValidatePath(

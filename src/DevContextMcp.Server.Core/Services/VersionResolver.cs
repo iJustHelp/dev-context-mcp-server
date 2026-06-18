@@ -3,7 +3,9 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Selects the best library version by precedence: requested, project, recommended, then latest stable/prerelease.
+/// <summary>
+/// Selects the best library version by precedence: requested, project, recommended, then latest stable/prerelease.
+/// </summary>
 internal sealed class VersionResolver : IVersionResolver
 {
     public VersionResolution? Resolve(

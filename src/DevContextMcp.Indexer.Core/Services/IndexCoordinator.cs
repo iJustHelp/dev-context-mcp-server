@@ -3,8 +3,10 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Services;
 
-// Coordinates a full indexing run across configured package sources and documentation,
-// publishing each result to the index store and aggregating the run summaries.
+/// <summary>
+/// Coordinates a full indexing run across configured package sources and documentation,
+/// publishing each result to the index store and aggregating the run summaries.
+/// </summary>
 internal sealed class IndexCoordinator(
     IIndexingConfigurationProvider configurationProvider,
     IPackageSourceClient sourceClient,

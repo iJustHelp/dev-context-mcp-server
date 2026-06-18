@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
-// A discovered package version that is a candidate for download and indexing.
+/// <summary>
+/// A discovered package version that is a candidate for download and indexing.
+/// </summary>
 public sealed record PackageVersionCandidate(
     string PackageId,
     string Version,

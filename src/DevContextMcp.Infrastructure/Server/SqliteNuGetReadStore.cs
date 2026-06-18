@@ -6,8 +6,10 @@ using System.Globalization;
 
 namespace DevContextMcp.Infrastructure.Server;
 
-// Read-only SQLite-backed store that powers retrieval: library search, version listing,
-// document and symbol search, and resource reads against the documentation index.
+/// <summary>
+/// Read-only SQLite-backed store that powers retrieval: library search, version listing,
+/// document and symbol search, and resource reads against the documentation index.
+/// </summary>
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
     private const int RequiredSchemaVersion = 4;

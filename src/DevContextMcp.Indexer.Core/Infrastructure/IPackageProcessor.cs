@@ -2,7 +2,9 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
-// Processes a downloaded package into its fully indexable representation.
+/// <summary>
+/// Processes a downloaded package into its fully indexable representation.
+/// </summary>
 public interface IPackageProcessor
 {
     Task<PackageIndexData> ProcessAsync(

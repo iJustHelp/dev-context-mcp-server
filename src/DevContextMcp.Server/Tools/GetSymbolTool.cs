@@ -5,7 +5,9 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
-// MCP tool that exposes get_symbol, delegating to the handler.
+/// <summary>
+/// MCP tool that exposes get_symbol, delegating to the handler.
+/// </summary>
 [McpServerToolType]
 internal sealed class GetSymbolTool(
     IGetSymbolHandler handler,

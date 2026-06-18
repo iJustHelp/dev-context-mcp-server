@@ -2,7 +2,9 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
-// Reads a documentation source from disk into indexable artifacts and document chunks.
+/// <summary>
+/// Reads a documentation source from disk into indexable artifacts and document chunks.
+/// </summary>
 public interface IDocumentationSourceReader
 {
     Task<DocumentationIndexData> ReadAsync(

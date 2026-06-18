@@ -5,7 +5,9 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Handles the list_versions tool: resolves the library and returns its indexed versions and recommendation.
+/// <summary>
+/// Handles the list_versions tool: resolves the library and returns its indexed versions and recommendation.
+/// </summary>
 internal sealed class ListVersionsHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver) : IListVersionsHandler

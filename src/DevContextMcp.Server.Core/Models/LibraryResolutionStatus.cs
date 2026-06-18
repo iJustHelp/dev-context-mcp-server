@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Core.Models;
 
-// The status of a library resolution attempt.
+/// <summary>
+/// The status of a library resolution attempt.
+/// </summary>
 public enum LibraryResolutionStatus
 {
     Resolved,

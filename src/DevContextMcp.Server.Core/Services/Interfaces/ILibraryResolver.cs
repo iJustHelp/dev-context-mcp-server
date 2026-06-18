@@ -2,7 +2,9 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Resolves a library reference to a single best selection using priority order and version rules.
+/// <summary>
+/// Resolves a library reference to a single best selection using priority order and version rules.
+/// </summary>
 public interface ILibraryResolver
 {
     Task<LibraryResolutionResult> ResolveAsync(

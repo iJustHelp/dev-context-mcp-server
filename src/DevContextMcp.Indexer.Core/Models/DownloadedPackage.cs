@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
-// A package downloaded to a temporary file; deletes the file on disposal (best-effort).
+/// <summary>
+/// A package downloaded to a temporary file; deletes the file on disposal (best-effort).
+/// </summary>
 public sealed class DownloadedPackage(
     string filePath,
     string contentHash,

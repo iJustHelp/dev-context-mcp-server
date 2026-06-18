@@ -5,7 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Indexer;
 
-// Builds resolved IndexingSettings from bound IndexerOptions and the external package policy files.
+/// <summary>
+/// Builds resolved IndexingSettings from bound IndexerOptions and the external package policy files.
+/// </summary>
 internal sealed class OptionsIndexingConfigurationProvider(
     IOptions<IndexerOptions> options,
     INuGetPackageOptionsLoader packageOptionsLoader) : IIndexingConfigurationProvider

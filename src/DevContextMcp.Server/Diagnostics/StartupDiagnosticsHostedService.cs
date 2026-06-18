@@ -7,7 +7,9 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Diagnostics;
 
-// Hosted service that validates the tool catalog and local dependencies at startup, failing fast on problems.
+/// <summary>
+/// Hosted service that validates the tool catalog and local dependencies at startup, failing fast on problems.
+/// </summary>
 internal sealed class StartupDiagnosticsHostedService(
     RetrievalSettings settings,
     ToolRegistrationCatalog toolCatalog,

@@ -1,6 +1,8 @@
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// Write-only stream wrapper that throws once more than a maximum number of bytes is written.
+/// <summary>
+/// Write-only stream wrapper that throws once more than a maximum number of bytes is written.
+/// </summary>
 internal sealed class LengthLimitedStream(Stream inner, long maximumLength) : Stream
 {
     private long _written;

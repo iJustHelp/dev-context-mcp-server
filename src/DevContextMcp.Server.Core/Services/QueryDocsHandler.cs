@@ -5,8 +5,10 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Handles the query_docs tool: resolves the library/version, gathers and ranks document and
-// symbol evidence within the response budget, and builds the response.
+/// <summary>
+/// Handles the query_docs tool: resolves the library/version, gathers and ranks document and
+/// symbol evidence within the response budget, and builds the response.
+/// </summary>
 internal sealed class QueryDocsHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver,

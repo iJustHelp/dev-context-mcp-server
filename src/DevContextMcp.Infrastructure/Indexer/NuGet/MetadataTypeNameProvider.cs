@@ -3,7 +3,9 @@ using System.Reflection.Metadata;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// Renders metadata signature types as readable C# type-name strings for symbol extraction.
+/// <summary>
+/// Renders metadata signature types as readable C# type-name strings for symbol extraction.
+/// </summary>
 internal sealed class MetadataTypeNameProvider :
     ISignatureTypeProvider<string, object?>
 {

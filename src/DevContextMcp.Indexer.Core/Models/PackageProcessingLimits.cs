@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
-// Safety limits applied while downloading and extracting packages and documents.
+/// <summary>
+/// Safety limits applied while downloading and extracting packages and documents.
+/// </summary>
 public sealed record PackageProcessingLimits(
     long MaxPackageBytes,
     long MaxDocumentBytes,

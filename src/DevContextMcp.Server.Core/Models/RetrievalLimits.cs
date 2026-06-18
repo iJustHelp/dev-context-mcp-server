@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Core.Models;
 
-// Limits that bound retrieval requests: result counts, response size, timeout, and scoring.
+/// <summary>
+/// Limits that bound retrieval requests: result counts, response size, timeout, and scoring.
+/// </summary>
 public sealed record RetrievalLimits(
     int DefaultMaxResults,
     int MaxResults,

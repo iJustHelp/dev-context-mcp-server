@@ -76,5 +76,7 @@ static void ResolveRelativeFileSinkPaths(IConfiguration configuration)
     }
 }
 
-// Marker partial type that exposes the server entry point assembly to integration tests.
+/// <summary>
+/// Marker partial type that exposes the server entry point assembly to integration tests.
+/// </summary>
 public partial class Program;

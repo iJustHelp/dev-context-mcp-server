@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
-// Configures authentication on a NuGet package source before it is queried.
+/// <summary>
+/// Configures authentication on a NuGet package source before it is queried.
+/// </summary>
 public interface INuGetSourceAuthenticationProvider
 {
     void Configure(object packageSource, string sourceName);

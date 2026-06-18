@@ -3,8 +3,10 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Resolves a library reference to a single best selection, applying environment and source
-// priority order and delegating version selection to the version resolver.
+/// <summary>
+/// Resolves a library reference to a single best selection, applying environment and source
+/// priority order and delegating version selection to the version resolver.
+/// </summary>
 internal sealed class RetrievalLibraryResolver(
     INuGetReadStore store,
     IVersionResolver versionResolver) :

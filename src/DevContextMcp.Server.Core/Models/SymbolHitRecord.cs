@@ -1,6 +1,8 @@
 namespace DevContextMcp.Server.Core.Models;
 
-// A symbol that matched a symbol search, with its signature, documentation, and match tier.
+/// <summary>
+/// A symbol that matched a symbol search, with its signature, documentation, and match tier.
+/// </summary>
 public sealed record SymbolHitRecord(
     string FullyQualifiedName,
     string Kind,

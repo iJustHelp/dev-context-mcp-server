@@ -6,7 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Server.Tools;
 
-// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level.
+/// <summary>
+/// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level.
+/// </summary>
 internal sealed class ToolInvocationLogger(
     IOptions<DevContextMcpOptions> options,
     ILogger<ToolInvocationLogger> logger)

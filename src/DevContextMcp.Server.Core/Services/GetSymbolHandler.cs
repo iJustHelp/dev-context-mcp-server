@@ -5,7 +5,9 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Handles the get_symbol tool: resolves the library/version, searches symbols, and builds the response.
+/// <summary>
+/// Handles the get_symbol tool: resolves the library/version, searches symbols, and builds the response.
+/// </summary>
 internal sealed class GetSymbolHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver,

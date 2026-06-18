@@ -6,7 +6,9 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
-// MCP tool that exposes resolve_library, parsing the query and delegating to the handler.
+/// <summary>
+/// MCP tool that exposes resolve_library, parsing the query and delegating to the handler.
+/// </summary>
 [McpServerToolType]
 internal sealed class ResolveLibraryTool(
     IResolveLibraryHandler handler,

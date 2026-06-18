@@ -2,7 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// A parsed library identifier ('nuget:env/package' or 'docs:id') with parsing and formatting helpers.
+/// <summary>
+/// A parsed library identifier ('nuget:env/package' or 'docs:id') with parsing and formatting helpers.
+/// </summary>
 public readonly partial record struct LibraryId(
     string PackageId,
     string? Environment = null,

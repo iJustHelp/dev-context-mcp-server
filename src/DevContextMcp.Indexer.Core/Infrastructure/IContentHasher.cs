@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
-// Computes stable content hashes for byte spans and streams.
+/// <summary>
+/// Computes stable content hashes for byte spans and streams.
+/// </summary>
 public interface IContentHasher
 {
     string Hash(ReadOnlySpan<byte> content);

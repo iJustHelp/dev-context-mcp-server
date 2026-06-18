@@ -8,7 +8,9 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// Discovers and downloads package versions from a NuGet V3 feed, applying selection and size limits.
+/// <summary>
+/// Discovers and downloads package versions from a NuGet V3 feed, applying selection and size limits.
+/// </summary>
 internal sealed class NuGetPackageSourceClient(
     INuGetSourceAuthenticationProvider authenticationProvider,
     IContentHasher contentHasher) : IPackageSourceClient

@@ -4,7 +4,9 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Server.Core.Services;
 
-// Shared helpers for retrieval handlers: timeouts, version validation, and error/warning construction.
+/// <summary>
+/// Shared helpers for retrieval handlers: timeouts, version validation, and error/warning construction.
+/// </summary>
 internal static class RetrievalHandlerSupport
 {
     public static CancellationTokenSource CreateTimeout(

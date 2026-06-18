@@ -5,7 +5,9 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
-// Extracts public type and member symbols from an assembly's metadata using PE/metadata readers.
+/// <summary>
+/// Extracts public type and member symbols from an assembly's metadata using PE/metadata readers.
+/// </summary>
 internal static class MetadataSymbolExtractor
 {
     public static IReadOnlyList<SymbolRecord> Extract(

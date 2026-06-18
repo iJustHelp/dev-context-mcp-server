@@ -1,6 +1,8 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
-// Resolved settings for an indexing run: database path, limits, sources, and optional documentation.
+/// <summary>
+/// Resolved settings for an indexing run: database path, limits, sources, and optional documentation.
+/// </summary>
 public sealed record IndexingSettings(
     string DatabasePath,
     PackageProcessingLimits Limits,

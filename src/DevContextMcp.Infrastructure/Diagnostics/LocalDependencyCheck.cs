@@ -2,7 +2,9 @@ using DevContextMcp.Server.Core.Diagnostics;
 
 namespace DevContextMcp.Infrastructure.Diagnostics;
 
-// Verifies local prerequisites for retrieval, such as the database path resolving to a real location.
+/// <summary>
+/// Verifies local prerequisites for retrieval, such as the database path resolving to a real location.
+/// </summary>
 internal sealed class LocalDependencyCheck : ILocalDependencyCheck
 {
     public Task<IReadOnlyList<LocalDependencyCheckResult>> CheckAsync(
