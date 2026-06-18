@@ -34,9 +34,10 @@ Each API solution contains the following projects:
 
 ## Testing
 
+- Use `Unit Test Generation Standard.md` as unit test standard.
 - Unit-test service behavior through service interfaces and mocked repository
   contracts.
-- Use company test template to create and mock all unit tests.
+- Use `Unit Test Generation Standard.md` document as unit test company standard.
 - Test controllers for routing, validation, authorization, and response
   mapping.
 - Add integration tests for repository queries and database mappings.
