@@ -11,7 +11,7 @@ public sealed class DevContextMcpOptions
 
     public string DatabasePath { get; set; } = "data/docs.db";
 
-    public RetrievalOptions Retrieval { get; set; } = new();
+    public RetrievalOptions Retrieval { get; set; } = new RetrievalOptions();
 
-    public ToolLoggingOptions ToolLogging { get; set; } = new();
+    public ToolLoggingOptions ToolLogging { get; set; } = new ToolLoggingOptions();
 }

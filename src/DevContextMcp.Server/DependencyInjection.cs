@@ -31,16 +31,16 @@ public static class DependencyInjection
             var value = provider.GetRequiredService<IOptions<DevContextMcpOptions>>().Value;
             var retrieval = value.Retrieval;
             return new RetrievalSettings(
-                Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
-                retrieval.EnvironmentOrder.ToArray(),
-                retrieval.SourceOrder.ToArray(),
-                new RetrievalLimits(
-                    retrieval.DefaultMaxResults,
-                    retrieval.MaxResults,
-                    retrieval.MaxResponseBytes,
-                    retrieval.QueryTimeout,
-                    retrieval.MinimumEvidenceScore,
-                    retrieval.AmbiguousSymbolLimit));
+                DatabasePath: Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
+                EnvironmentOrder: retrieval.EnvironmentOrder.ToArray(),
+                SourceOrder: retrieval.SourceOrder.ToArray(),
+                Limits: new RetrievalLimits(
+                    DefaultMaxResults: retrieval.DefaultMaxResults,
+                    MaxResults: retrieval.MaxResults,
+                    MaxResponseBytes: retrieval.MaxResponseBytes,
+                    QueryTimeout: retrieval.QueryTimeout,
+                    MinimumEvidenceScore: retrieval.MinimumEvidenceScore,
+                    AmbiguousSymbolLimit: retrieval.AmbiguousSymbolLimit));
         });
         services.AddSingleton<ToolRegistrationCatalog>();
         services.AddSingleton<ToolInvocationLogger>();

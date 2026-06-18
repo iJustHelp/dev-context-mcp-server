@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Indexer;
 
+// Builds resolved IndexingSettings from bound IndexerOptions and the external package policy files.
 internal sealed class OptionsIndexingConfigurationProvider(
     IOptions<IndexerOptions> options,
     INuGetPackageOptionsLoader packageOptionsLoader) : IIndexingConfigurationProvider
@@ -17,17 +18,17 @@ internal sealed class OptionsIndexingConfigurationProvider(
             ? []
             : packageOptionsLoader.Load(value.IndexerSource.NugetsPath);
 
-        return new(
-            Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
-            new PackageProcessingLimits(
-                limits.MaxPackageBytes,
-                limits.MaxDocumentBytes,
-                limits.MaxArchiveEntries,
-                limits.MaxExtractedBytes,
-                limits.MaxCompressionRatio,
-                limits.MaxDocumentChars,
-                limits.PackageDownloadTimeout),
-            value.NugetPackages
+        return new IndexingSettings(
+            DatabasePath: Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
+            Limits: new PackageProcessingLimits(
+                MaxPackageBytes: limits.MaxPackageBytes,
+                MaxDocumentBytes: limits.MaxDocumentBytes,
+                MaxArchiveEntries: limits.MaxArchiveEntries,
+                MaxExtractedBytes: limits.MaxExtractedBytes,
+                MaxCompressionRatio: limits.MaxCompressionRatio,
+                MaxDocumentChars: limits.MaxDocumentChars,
+                PackageDownloadTimeout: limits.PackageDownloadTimeout),
+            Sources: value.NugetPackages
                 .Select(source => new
                 {
                     Source = source,
@@ -38,10 +39,10 @@ internal sealed class OptionsIndexingConfigurationProvider(
                             StringComparison.OrdinalIgnoreCase))
                         .Where(package => !package.Delete)
                         .Select(package => new PackageSelectionDefinition(
-                            package.PackageId,
-                            package.IncludePrerelease,
-                            package.IncludeUnlisted,
-                            package.MaxVersionsPerPackage))
+                            PackageId: package.PackageId,
+                            IncludePrerelease: package.IncludePrerelease,
+                            IncludeUnlisted: package.IncludeUnlisted,
+                            MaxVersions: package.MaxVersionsPerPackage))
                         .ToArray(),
                     DeletedPackageIds = packages
                         .Where(package => string.Equals(
@@ -56,14 +57,14 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     item.Packages.Length > 0
                     || item.DeletedPackageIds.Length > 0)
                 .Select(item => new IndexSourceDefinition(
-                    item.Source.Name,
-                    item.Source.Environment,
-                    ResolveSource(item.Source.ServiceIndex),
-                    item.Packages,
-                    item.DeletedPackageIds,
-                    item.Source.MaxPackages))
+                    Name: item.Source.Name,
+                    Environment: item.Source.Environment,
+                    ServiceIndex: ResolveSource(item.Source.ServiceIndex),
+                    Packages: item.Packages,
+                    DeletedPackageIds: item.DeletedPackageIds,
+                    MaxPackages: item.Source.MaxPackages))
                 .ToArray(),
-            value.IndexerSource.Documents is null
+            Documentation: value.IndexerSource.Documents is null
                 ? null
                 : new DocumentationSourceDefinition(
                     Path.GetFullPath(

@@ -1,5 +1,6 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
+// Per-source summary of an indexing run: timing, counts, and any errors encountered.
 public sealed record IndexRunSummary(
     string SourceName,
     string Status,

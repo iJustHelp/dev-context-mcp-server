@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
+// MCP tool that exposes list_versions, delegating to the handler.
 [McpServerToolType]
 internal sealed class ListVersionsTool(
     IListVersionsHandler handler,

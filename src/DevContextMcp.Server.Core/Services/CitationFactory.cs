@@ -1,5 +1,6 @@
 namespace DevContextMcp.Server.Core.Services;
 
+// Builds stable MCP resource URIs (nuget:// and docs://) for artifacts, symbols, and documentation.
 internal sealed class CitationFactory : ICitationFactory
 {
     public string ArtifactUri(

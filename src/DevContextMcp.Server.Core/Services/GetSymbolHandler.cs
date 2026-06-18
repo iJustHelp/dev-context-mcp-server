@@ -5,12 +5,17 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Handles the get_symbol tool: resolves the library/version, searches symbols, and builds the response.
 internal sealed class GetSymbolHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver,
     INuGetReadStore store,
     ICitationFactory citationFactory) : IGetSymbolHandler
 {
+    private sealed record SymbolGroup(
+        SymbolHitRecord Symbol,
+        IReadOnlyList<string> TargetFrameworks);
+
     public async Task<GetSymbolResponse> HandleAsync(
         GetSymbolRequest request,
         CancellationToken cancellationToken)
@@ -250,7 +255,7 @@ internal sealed class GetSymbolHandler(
     private static ResolvedContext Context(
         ResolvedLibrarySelection selection,
         VersionResolution version) =>
-        new()
+        new ResolvedContext
         {
             LibraryId = new LibraryId(
                 selection.Library.PackageId,
@@ -262,14 +267,10 @@ internal sealed class GetSymbolHandler(
         };
 
     private static GetSymbolResponse NotFound(string code, string message) =>
-        new()
+        new GetSymbolResponse
         {
             Status = ToolResultStatus.NotFound,
             Data = new GetSymbolResult(),
             Errors = [RetrievalHandlerSupport.Error(code, message)]
         };
-
-    private sealed record SymbolGroup(
-        SymbolHitRecord Symbol,
-        IReadOnlyList<string> TargetFrameworks);
 }

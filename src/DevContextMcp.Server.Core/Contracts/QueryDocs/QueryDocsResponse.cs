@@ -23,6 +23,9 @@ public sealed record QueryDocsResult
     public IReadOnlyList<UsageExample> Examples { get; init; } = [];
 }
 
+/// <summary>
+/// A documentation text fragment returned for a query, with its citation URI.
+/// </summary>
 public sealed record DocumentFragment
 {
     [JsonPropertyName("title")]
@@ -35,6 +38,9 @@ public sealed record DocumentFragment
     public required string CitationUri { get; init; }
 }
 
+/// <summary>
+/// A reference to a symbol related to a documentation query, with an optional signature.
+/// </summary>
 public sealed record SymbolReference
 {
     [JsonPropertyName("name")]
@@ -47,6 +53,9 @@ public sealed record SymbolReference
     public string? CitationUri { get; init; }
 }
 
+/// <summary>
+/// A code usage example returned for a documentation query, with its citation URI.
+/// </summary>
 public sealed record UsageExample
 {
     [JsonPropertyName("title")]

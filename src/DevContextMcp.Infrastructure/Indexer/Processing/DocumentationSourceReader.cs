@@ -4,11 +4,12 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.Processing;
 
+// Reads documentation files from a folder tree into artifacts and chunked, hashed documents.
 internal sealed class DocumentationSourceReader(
     IDocumentChunker chunker,
     IContentHasher hasher) : IDocumentationSourceReader
 {
-    private static readonly UTF8Encoding StrictUtf8 = new(
+    private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(
         encoderShouldEmitUTF8Identifier: false,
         throwOnInvalidBytes: true);
 
@@ -46,12 +47,12 @@ internal sealed class DocumentationSourceReader(
             var relativePath = NormalizeRelativePath(root, file);
             var content = StrictUtf8.GetString(bytes).TrimStart('\uFEFF');
             var contentHash = hasher.Hash(bytes);
-            artifacts.Add(new(
-                relativePath,
-                "company_document",
-                contentHash,
-                bytes.LongLength,
-                content));
+            artifacts.Add(new ArtifactRecord(
+                Path: relativePath,
+                Kind: "company_document",
+                ContentHash: contentHash,
+                Size: bytes.LongLength,
+                Content: content));
             documents.AddRange(chunker.Chunk(
                 relativePath,
                 "company_document",
@@ -62,7 +63,7 @@ internal sealed class DocumentationSourceReader(
         var snapshot = string.Join(
             '\n',
             artifacts.Select(artifact => $"{artifact.Path}\n{artifact.ContentHash}"));
-        return new(
+        return new DocumentationIndexData(
             hasher.Hash(Encoding.UTF8.GetBytes(snapshot)),
             artifacts,
             documents);

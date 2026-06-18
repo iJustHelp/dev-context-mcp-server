@@ -4,6 +4,7 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Shared helpers for retrieval handlers: timeouts, version validation, and error/warning construction.
 internal static class RetrievalHandlerSupport
 {
     public static CancellationTokenSource CreateTimeout(
@@ -19,10 +20,10 @@ internal static class RetrievalHandlerSupport
         value is not null && !NuGetVersion.TryParse(value, out _);
 
     public static ToolError Error(string code, string message) =>
-        new() { Code = code, Message = message };
+        new ToolError { Code = code, Message = message };
 
     public static ToolWarning Warning(string code, string message) =>
-        new() { Code = code, Message = message };
+        new ToolWarning { Code = code, Message = message };
 
     public static ToolError IndexUnavailable(IndexUnavailableException exception) =>
         Error("index_unavailable", exception.Message);

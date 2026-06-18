@@ -3,6 +3,8 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Services;
 
+// Coordinates a full indexing run across configured package sources and documentation,
+// publishing each result to the index store and aggregating the run summaries.
 internal sealed class IndexCoordinator(
     IIndexingConfigurationProvider configurationProvider,
     IPackageSourceClient sourceClient,
@@ -10,6 +12,10 @@ internal sealed class IndexCoordinator(
     IDocumentationSourceReader documentationReader,
     IIndexStore indexStore) : IIndexCoordinator
 {
+    private sealed record DocumentationIndexResult(
+        IndexRunSummary Summary,
+        IReadOnlyList<string> Paths);
+
     public async Task<IndexRunResult> IndexAllAsync(
         CancellationToken cancellationToken)
     {
@@ -38,7 +44,7 @@ internal sealed class IndexCoordinator(
             settings.DatabasePath,
             cancellationToken);
 
-        return new(summaries, indexedLibraries, indexedDocuments);
+        return new IndexRunResult(summaries, indexedLibraries, indexedDocuments);
     }
 
     private async Task<DocumentationIndexResult> IndexDocumentationAsync(
@@ -60,8 +66,8 @@ internal sealed class IndexCoordinator(
                 documentation,
                 cancellationToken);
 
-            return new(
-                new(
+            return new DocumentationIndexResult(
+                new IndexRunSummary(
                     SourceName: "company-docs",
                     Status: "succeeded",
                     StartedAt: startedAt,
@@ -75,7 +81,7 @@ internal sealed class IndexCoordinator(
                     Deleted: publish.Deleted,
                     Errors: [],
                     Environment: "Documents"),
-                    documentation.Artifacts
+                documentation.Artifacts
                     .Select(artifact => artifact.Path)
                     .ToArray());
         }
@@ -86,12 +92,12 @@ internal sealed class IndexCoordinator(
         catch (Exception exception)
         {
             var error = new IndexRunError(
-                "documentation_index_failed",
-                exception.Message,
-                "company-docs",
-                null);
-            return new(
-                new(
+                Code: "documentation_index_failed",
+                Message: exception.Message,
+                PackageId: "company-docs",
+                Version: null);
+            return new DocumentationIndexResult(
+                new IndexRunSummary(
                     SourceName: "company-docs",
                     Status: "failed",
                     StartedAt: startedAt,
@@ -140,7 +146,7 @@ internal sealed class IndexCoordinator(
                 [discoveryError],
                 cancellationToken);
 
-            return new(
+            return new IndexRunSummary(
                 SourceName: source.Name,
                 Environment: source.Environment,
                 Status: "failed",
@@ -183,11 +189,11 @@ internal sealed class IndexCoordinator(
             }
             catch (Exception exception)
             {
-                errors.Add(new(
-                    "package_index_failed",
-                    exception.Message,
-                    candidate.PackageId,
-                    candidate.Version));
+                errors.Add(new IndexRunError(
+                    Code: "package_index_failed",
+                    Message: exception.Message,
+                    PackageId: candidate.PackageId,
+                    Version: candidate.Version));
             }
         }
 
@@ -203,7 +209,7 @@ internal sealed class IndexCoordinator(
             ? "failed"
             : errors.Count > 0 ? "partial_success" : "succeeded";
 
-        return new(
+        return new IndexRunSummary(
             SourceName: source.Name,
             Environment: source.Environment,
             Status: status,
@@ -221,8 +227,4 @@ internal sealed class IndexCoordinator(
             Deleted: publish.Deleted,
             Errors: errors);
     }
-
-    private sealed record DocumentationIndexResult(
-        IndexRunSummary Summary,
-        IReadOnlyList<string> Paths);
 }

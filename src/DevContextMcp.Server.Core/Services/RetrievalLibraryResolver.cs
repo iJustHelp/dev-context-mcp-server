@@ -3,6 +3,8 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Resolves a library reference to a single best selection, applying environment and source
+// priority order and delegating version selection to the version resolver.
 internal sealed class RetrievalLibraryResolver(
     INuGetReadStore store,
     IVersionResolver versionResolver) :
@@ -24,7 +26,7 @@ internal sealed class RetrievalLibraryResolver(
                 libraryId.Environment,
                 cancellationToken))
         {
-            return new(LibraryResolutionStatus.EnvironmentNotFound);
+            return new LibraryResolutionResult(LibraryResolutionStatus.EnvironmentNotFound);
         }
 
         var libraries = await store.FindLibrariesAsync(
@@ -42,7 +44,7 @@ internal sealed class RetrievalLibraryResolver(
                 .ToArray();
         if (matchingLibraries.Count == 0)
         {
-            return new(LibraryResolutionStatus.LibraryNotFound);
+            return new LibraryResolutionResult(LibraryResolutionStatus.LibraryNotFound);
         }
 
         var candidates = new List<ResolvedLibrarySelection>();
@@ -54,11 +56,11 @@ internal sealed class RetrievalLibraryResolver(
                 cancellationToken);
             if (library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
             {
-                candidates.Add(new(library, versions, null));
+                candidates.Add(new ResolvedLibrarySelection(library, versions, null));
                 continue;
             }
 
-            candidates.Add(new(
+            candidates.Add(new ResolvedLibrarySelection(
                 library,
                 versions,
                 versionResolver.Resolve(
@@ -80,7 +82,7 @@ internal sealed class RetrievalLibraryResolver(
             .ThenBy(candidate => candidate.Library.SourceName, StringComparer.Ordinal)
             .First();
 
-        return new(LibraryResolutionStatus.Resolved, selected);
+        return new LibraryResolutionResult(LibraryResolutionStatus.Resolved, selected);
     }
 
     internal static int OrderIndex(IReadOnlyList<string> order, string? value)

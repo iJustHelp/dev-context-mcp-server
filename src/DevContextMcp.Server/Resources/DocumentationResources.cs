@@ -8,6 +8,7 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Resources;
 
+// MCP resource provider that serves indexed company documentation files by docs:// URI.
 [McpServerResourceType]
 public sealed class DocumentationResources(
     RetrievalSettings settings,

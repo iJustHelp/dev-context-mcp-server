@@ -1,5 +1,6 @@
 namespace DevContextMcp.Indexer.Core.Models;
 
+// The fully processed, indexable representation of a single package version.
 public sealed record PackageIndexData(
     string PackageId,
     string Version,

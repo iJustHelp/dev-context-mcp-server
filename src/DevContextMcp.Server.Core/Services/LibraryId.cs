@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// A parsed library identifier ('nuget:env/package' or 'docs:id') with parsing and formatting helpers.
 public readonly partial record struct LibraryId(
     string PackageId,
     string? Environment = null,
@@ -21,7 +22,7 @@ public readonly partial record struct LibraryId(
                 && docsId.IndexOf('/') < 0
                 && IsValidEnvironment(docsId))
             {
-                libraryId = new(docsId, null, "docs");
+                libraryId = new LibraryId(docsId, null, "docs");
                 return true;
             }
         }
@@ -34,7 +35,7 @@ public readonly partial record struct LibraryId(
             var separator = payload.IndexOf('/');
             if (separator < 0)
             {
-                libraryId = new(payload, null, "nuget");
+                libraryId = new LibraryId(payload, null, "nuget");
                 return libraryId.PackageId.Length > 0;
             }
 
@@ -54,7 +55,7 @@ public readonly partial record struct LibraryId(
                 return false;
             }
 
-            libraryId = new(packageId, environment, "nuget");
+            libraryId = new LibraryId(packageId, environment, "nuget");
             return true;
         }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Indexer;
 
+// Drives a single indexing run from configuration and logs the resulting summaries and reports.
 internal sealed class IndexerRunner(
     IOptions<IndexerOptions> options,
     IIndexCoordinator indexCoordinator,

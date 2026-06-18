@@ -4,6 +4,9 @@ using DevContextMcp.Indexer.Configuration;
 
 namespace DevContextMcp.Indexer;
 
+/// <summary>
+/// Loads per-package NuGet indexing policy from JSON files under a configured folder.
+/// </summary>
 internal interface INuGetPackageOptionsLoader
 {
     IReadOnlyList<NuGetPackageOptions> Load(string configuredPath);
@@ -11,15 +14,18 @@ internal interface INuGetPackageOptionsLoader
     string ResolvePath(string configuredPath);
 }
 
+/// <summary>
+/// Loads and caches NuGet package policy files, enforcing a single source folder per process.
+/// </summary>
 internal sealed class NuGetPackageOptionsLoader : INuGetPackageOptionsLoader
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
+    private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
     };
 
-    private readonly object _gate = new();
+    private readonly object _gate = new object();
     private string? _loadedPath;
     private IReadOnlyList<NuGetPackageOptions>? _packages;
 

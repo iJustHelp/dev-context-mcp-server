@@ -3,6 +3,7 @@ using System.Text;
 
 namespace DevContextMcp.Indexer.Core.Models;
 
+// Identifies a package by id and version, providing normalized forms and a stable hashed id.
 public readonly record struct PackageIdentityKey(string PackageId, string Version)
 {
     public string NormalizedPackageId => PackageId.Trim().ToLowerInvariant();

@@ -1,5 +1,6 @@
 namespace DevContextMcp.Indexer.Configuration;
 
+// Shared helpers for validating indexer configuration values such as source URIs and paths.
 internal static class ConfigurationValidation
 {
     public static bool IsNuGetSource(string value)

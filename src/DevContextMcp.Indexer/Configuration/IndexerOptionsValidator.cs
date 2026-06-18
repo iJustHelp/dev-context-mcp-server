@@ -10,7 +10,24 @@ namespace DevContextMcp.Indexer.Configuration;
 public sealed class IndexerOptionsValidator :
     IValidateOptions<IndexerOptions>
 {
-    private static readonly Regex EnvironmentPattern = new(
+    private sealed class EnvironmentPackageComparer :
+        IEqualityComparer<(string Environment, string PackageId)>
+    {
+        public static EnvironmentPackageComparer Instance { get; } = new EnvironmentPackageComparer();
+
+        public bool Equals(
+            (string Environment, string PackageId) x,
+            (string Environment, string PackageId) y) =>
+            string.Equals(x.Environment, y.Environment, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.PackageId, y.PackageId, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((string Environment, string PackageId) obj) =>
+            HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Environment),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.PackageId));
+    }
+
+    private static readonly Regex EnvironmentPattern = new Regex(
         "^[A-Za-z0-9._-]+$",
         RegexOptions.CultureInvariant);
 
@@ -324,21 +341,4 @@ public sealed class IndexerOptionsValidator :
     private static bool IsSlug(string value) =>
         !string.IsNullOrWhiteSpace(value)
         && EnvironmentPattern.IsMatch(value);
-
-    private sealed class EnvironmentPackageComparer :
-        IEqualityComparer<(string Environment, string PackageId)>
-    {
-        public static EnvironmentPackageComparer Instance { get; } = new();
-
-        public bool Equals(
-            (string Environment, string PackageId) x,
-            (string Environment, string PackageId) y) =>
-            string.Equals(x.Environment, y.Environment, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(x.PackageId, y.PackageId, StringComparison.OrdinalIgnoreCase);
-
-        public int GetHashCode((string Environment, string PackageId) obj) =>
-            HashCode.Combine(
-                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Environment),
-                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.PackageId));
-    }
 }

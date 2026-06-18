@@ -5,6 +5,8 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Handles the query_docs tool: resolves the library/version, gathers and ranks document and
+// symbol evidence within the response budget, and builds the response.
 internal sealed class QueryDocsHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver,
@@ -12,6 +14,16 @@ internal sealed class QueryDocsHandler(
     ICitationFactory citationFactory,
     IResponseBudget responseBudget) : IQueryDocsHandler
 {
+    private sealed record RankedEvidence(
+        string Kind,
+        string Title,
+        string Text,
+        double Score,
+        string Uri,
+        string? Location,
+        SymbolHitRecord? Symbol,
+        string? ContentHash);
+
     public async Task<QueryDocsResponse> HandleAsync(
         QueryDocsRequest request,
         CancellationToken cancellationToken)
@@ -109,14 +121,14 @@ internal sealed class QueryDocsHandler(
                     version.Version.Version,
                     document.Path);
                 return new RankedEvidence(
-                    document.Kind,
-                    document.MemberName ?? document.Path,
-                    document.Content,
-                    Math.Round(Math.Min(1, score), 6),
-                    uri,
-                    document.MemberName,
-                    null,
-                    document.ContentHash);
+                    Kind: document.Kind,
+                    Title: document.MemberName ?? document.Path,
+                    Text: document.Content,
+                    Score: Math.Round(Math.Min(1, score), 6),
+                    Uri: uri,
+                    Location: document.MemberName,
+                    Symbol: null,
+                    ContentHash: document.ContentHash);
             }));
             ranked.AddRange(symbols.Select(symbol =>
             {
@@ -137,14 +149,14 @@ internal sealed class QueryDocsHandler(
                     ? symbol.Signature
                     : $"{symbol.Signature}{Environment.NewLine}{symbol.Documentation}";
                 return new RankedEvidence(
-                    "symbol",
-                    symbol.FullyQualifiedName,
-                    text,
-                    score,
-                    uri,
-                    symbol.XmlDocumentationMember,
-                    symbol,
-                    null);
+                    Kind: "symbol",
+                    Title: symbol.FullyQualifiedName,
+                    Text: text,
+                    Score: score,
+                    Uri: uri,
+                    Location: symbol.XmlDocumentationMember,
+                    Symbol: symbol,
+                    ContentHash: null);
             }));
 
             if (version.Version.Deprecated)
@@ -288,14 +300,14 @@ internal sealed class QueryDocsHandler(
             cancellationToken);
         var ranked = documents
             .Select(document => new RankedEvidence(
-                document.Kind,
-                document.MemberName ?? document.Path,
-                document.Content,
-                Math.Round(Math.Min(1, document.Rank + 0.10), 6),
-                citationFactory.DocumentationUri(document.Path),
-                document.MemberName,
-                null,
-                document.ContentHash))
+                Kind: document.Kind,
+                Title: document.MemberName ?? document.Path,
+                Text: document.Content,
+                Score: Math.Round(Math.Min(1, document.Rank + 0.10), 6),
+                Uri: citationFactory.DocumentationUri(document.Path),
+                Location: document.MemberName,
+                Symbol: null,
+                ContentHash: document.ContentHash))
             .Where(item => item.Score >= settings.Limits.MinimumEvidenceScore)
             .GroupBy(item => item.ContentHash ?? item.Uri, StringComparer.Ordinal)
             .Select(group => group.First())
@@ -440,7 +452,7 @@ internal sealed class QueryDocsHandler(
     private static ResolvedContext Context(
         ResolvedLibrarySelection selection,
         VersionResolution version) =>
-        new()
+        new ResolvedContext
         {
             LibraryId = new LibraryId(
                 selection.Library.PackageId,
@@ -452,20 +464,10 @@ internal sealed class QueryDocsHandler(
         };
 
     private static QueryDocsResponse NotFound(string code, string message) =>
-        new()
+        new QueryDocsResponse
         {
             Status = ToolResultStatus.NotFound,
             Data = new QueryDocsResult(),
             Errors = [RetrievalHandlerSupport.Error(code, message)]
         };
-
-    private sealed record RankedEvidence(
-        string Kind,
-        string Title,
-        string Text,
-        double Score,
-        string Uri,
-        string? Location,
-        SymbolHitRecord? Symbol,
-        string? ContentHash);
 }

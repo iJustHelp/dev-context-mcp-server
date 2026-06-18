@@ -1,5 +1,6 @@
 namespace DevContextMcp.Server.Core.Models;
 
+// A candidate library returned from search, with its latest-version flags and match scores.
 public sealed record LibraryCandidateRecord(
     string LibraryId,
     string Kind,

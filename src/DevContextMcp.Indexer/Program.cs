@@ -61,4 +61,5 @@ static void ResolveRelativeFileSinkPaths(IConfiguration configuration)
     }
 }
 
+// Marker partial type that exposes the indexer entry point assembly to integration tests.
 public partial class Program;

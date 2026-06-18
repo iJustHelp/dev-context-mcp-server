@@ -6,12 +6,23 @@ using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Server.Tools;
 
+// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level.
 internal sealed class ToolInvocationLogger(
     IOptions<DevContextMcpOptions> options,
     ILogger<ToolInvocationLogger> logger)
 {
+    private sealed record TruncatedPayloadEnvelope(
+        string Preview,
+        bool Truncated,
+        int OriginalUtf8Bytes);
+
+    private sealed record SerializedPayload(
+        string Json,
+        int OriginalUtf8Bytes,
+        bool Truncated);
+
     private static readonly JsonSerializerOptions SerializerOptions =
-        new(JsonSerializerDefaults.Web)
+        new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             WriteIndented = true
         };
@@ -148,7 +159,7 @@ internal sealed class ToolInvocationLogger(
         var bytes = JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);
         if (bytes.Length <= maxPayloadBytes)
         {
-            return new(Encoding.UTF8.GetString(bytes), bytes.Length, false);
+            return new SerializedPayload(Encoding.UTF8.GetString(bytes), bytes.Length, false);
         }
 
         var json = Encoding.UTF8.GetString(bytes);
@@ -160,7 +171,7 @@ internal sealed class ToolInvocationLogger(
             json[..previewLength],
             true,
             bytes.Length);
-        return new(
+        return new SerializedPayload(
             JsonSerializer.Serialize(envelope, SerializerOptions),
             bytes.Length,
             true);
@@ -203,14 +214,4 @@ internal sealed class ToolInvocationLogger(
         && char.IsHighSurrogate(value[length - 1])
             ? length - 1
             : length;
-
-    private sealed record TruncatedPayloadEnvelope(
-        string Preview,
-        bool Truncated,
-        int OriginalUtf8Bytes);
-
-    private sealed record SerializedPayload(
-        string Json,
-        int OriginalUtf8Bytes,
-        bool Truncated);
 }

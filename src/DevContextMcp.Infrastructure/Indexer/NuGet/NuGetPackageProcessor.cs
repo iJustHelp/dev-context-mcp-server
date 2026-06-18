@@ -6,6 +6,7 @@ using NuGet.Packaging;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
+// Processes a downloaded .nupkg into indexable metadata, documents, symbols, and dependencies.
 internal sealed class NuGetPackageProcessor(
     IDocumentChunker documentChunker,
     IContentHasher contentHasher) : IPackageProcessor
@@ -49,7 +50,11 @@ internal sealed class NuGetPackageProcessor(
                 var path = NormalizePath(entry.FullName);
                 var kind = GetDocumentKind(path);
                 var content = DecodeText(bytes);
-                artifacts.Add(new(path, kind, contentHasher.Hash(bytes), bytes.LongLength));
+                artifacts.Add(new ArtifactRecord(
+                    Path: path,
+                    Kind: kind,
+                    ContentHash: contentHasher.Hash(bytes),
+                    Size: bytes.LongLength));
                 documents.AddRange(documentChunker.Chunk(
                     path,
                     kind,
@@ -63,7 +68,11 @@ internal sealed class NuGetPackageProcessor(
             cancellationToken.ThrowIfCancellationRequested();
             var bytes = await ReadEntryAsync(entry, limits.MaxExtractedBytes, cancellationToken);
             var path = NormalizePath(entry.FullName);
-            artifacts.Add(new(path, "managed_assembly", contentHasher.Hash(bytes), bytes.LongLength));
+            artifacts.Add(new ArtifactRecord(
+                Path: path,
+                Kind: "managed_assembly",
+                ContentHash: contentHasher.Hash(bytes),
+                Size: bytes.LongLength));
             symbols.AddRange(MetadataSymbolExtractor.Extract(bytes, path));
         }
 
@@ -87,25 +96,25 @@ internal sealed class NuGetPackageProcessor(
 
         var repository = nuspec.GetRepositoryMetadata();
         return new PackageIndexData(
-            nuspec.GetId(),
-            nuspec.GetVersion().ToNormalizedString(),
-            package.ContentHash,
-            NullIfEmpty(nuspec.GetTitle()),
-            NullIfEmpty(nuspec.GetDescription()),
-            NullIfEmpty(nuspec.GetSummary()),
-            NullIfEmpty(nuspec.GetAuthors()),
-            NullIfEmpty(nuspec.GetTags()),
-            nuspec.GetProjectUrl()?.ToString(),
-            NullIfEmpty(repository?.Url),
-            candidate.IsListed,
-            nuspec.GetVersion().IsPrerelease,
-            candidate.IsDeprecated,
-            candidate.PublishedAt,
-            artifacts,
-            documents,
-            symbols,
-            dependencies,
-            frameworks);
+            PackageId: nuspec.GetId(),
+            Version: nuspec.GetVersion().ToNormalizedString(),
+            ContentHash: package.ContentHash,
+            Title: NullIfEmpty(nuspec.GetTitle()),
+            Description: NullIfEmpty(nuspec.GetDescription()),
+            Summary: NullIfEmpty(nuspec.GetSummary()),
+            Authors: NullIfEmpty(nuspec.GetAuthors()),
+            Tags: NullIfEmpty(nuspec.GetTags()),
+            ProjectUrl: nuspec.GetProjectUrl()?.ToString(),
+            RepositoryUrl: NullIfEmpty(repository?.Url),
+            IsListed: candidate.IsListed,
+            IsPrerelease: nuspec.GetVersion().IsPrerelease,
+            IsDeprecated: candidate.IsDeprecated,
+            PublishedAt: candidate.PublishedAt,
+            Artifacts: artifacts,
+            Documents: documents,
+            Symbols: symbols,
+            Dependencies: dependencies,
+            TargetFrameworks: frameworks);
     }
 
     private static IReadOnlyList<ZipArchiveEntry> SelectAssemblies(

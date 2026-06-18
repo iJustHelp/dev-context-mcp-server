@@ -6,6 +6,8 @@ using System.Globalization;
 
 namespace DevContextMcp.Infrastructure.Server;
 
+// Read-only SQLite-backed store that powers retrieval: library search, version listing,
+// document and symbol search, and resource reads against the documentation index.
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
     private const int RequiredSchemaVersion = 4;
@@ -60,21 +62,21 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             while (await reader.ReadAsync(cancellationToken))
             {
                 var packageId = reader.GetString(5);
-                candidates[reader.GetString(0)] = new(
-                    reader.GetString(0),
-                    reader.GetString(1),
-                    reader.GetString(2),
-                    reader.GetString(3),
-                    NullIfEmpty(reader.GetString(4)),
-                    packageId,
-                    GetNullableString(reader, 6),
-                    reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
-                    reader.GetInt64(8) != 0,
-                    reader.GetInt64(9) != 0,
-                    reader.GetInt64(10) != 0,
-                    packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
-                    packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
-                    0);
+                candidates[reader.GetString(0)] = new LibraryCandidateRecord(
+                    LibraryId: reader.GetString(0),
+                    Kind: reader.GetString(1),
+                    DisplayName: reader.GetString(2),
+                    SourceName: reader.GetString(3),
+                    Environment: NullIfEmpty(reader.GetString(4)),
+                    PackageId: packageId,
+                    Description: GetNullableString(reader, 6),
+                    LatestVersion: reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
+                    LatestListed: reader.GetInt64(8) != 0,
+                    LatestPrerelease: reader.GetInt64(9) != 0,
+                    LatestDeprecated: reader.GetInt64(10) != 0,
+                    ExactId: packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
+                    PrefixId: packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
+                    TextScore: 0);
             }
         }
 
@@ -126,20 +128,20 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 var packageId = reader.GetString(5);
                 var textScore = Math.Max(0.35, 0.75 - (position++ * 0.02));
                 var record = new LibraryCandidateRecord(
-                    libraryId,
-                    reader.GetString(1),
-                    reader.GetString(2),
-                    reader.GetString(3),
-                    NullIfEmpty(reader.GetString(4)),
-                    packageId,
-                    GetNullableString(reader, 6),
-                    reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
-                    reader.GetInt64(8) != 0,
-                    reader.GetInt64(9) != 0,
-                    reader.GetInt64(10) != 0,
-                    packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
-                    packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
-                    textScore);
+                    LibraryId: libraryId,
+                    Kind: reader.GetString(1),
+                    DisplayName: reader.GetString(2),
+                    SourceName: reader.GetString(3),
+                    Environment: NullIfEmpty(reader.GetString(4)),
+                    PackageId: packageId,
+                    Description: GetNullableString(reader, 6),
+                    LatestVersion: reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
+                    LatestListed: reader.GetInt64(8) != 0,
+                    LatestPrerelease: reader.GetInt64(9) != 0,
+                    LatestDeprecated: reader.GetInt64(10) != 0,
+                    ExactId: packageId.Equals(query, StringComparison.OrdinalIgnoreCase),
+                    PrefixId: packageId.StartsWith(query, StringComparison.OrdinalIgnoreCase),
+                    TextScore: textScore);
 
                 if (!candidates.TryGetValue(libraryId, out var existing)
                     || record.TextScore > existing.TextScore)
@@ -194,14 +196,14 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            values.Add(new(
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.GetString(2),
-                reader.GetString(3),
-                NullIfEmpty(reader.GetString(4)),
-                reader.GetString(5),
-                GetNullableString(reader, 6)));
+            values.Add(new ResolvedLibraryRecord(
+                LibraryId: reader.GetString(0),
+                Kind: reader.GetString(1),
+                DisplayName: reader.GetString(2),
+                SourceName: reader.GetString(3),
+                Environment: NullIfEmpty(reader.GetString(4)),
+                PackageId: reader.GetString(5),
+                Description: GetNullableString(reader, 6)));
         }
 
         return values;
@@ -250,13 +252,13 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            versions.Add(new(
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.GetInt64(2) != 0,
-                reader.GetInt64(3) != 0,
-                reader.GetInt64(4) != 0,
-                ParseDate(GetNullableString(reader, 5))));
+            versions.Add(new IndexedVersionRecord(
+                LibraryVersionId: reader.GetString(0),
+                Version: reader.GetString(1),
+                Listed: reader.GetInt64(2) != 0,
+                Prerelease: reader.GetInt64(3) != 0,
+                Deprecated: reader.GetInt64(4) != 0,
+                PublishedAt: ParseDate(GetNullableString(reader, 5))));
         }
 
         return versions;
@@ -303,13 +305,13 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         var position = 0;
         while (await reader.ReadAsync(cancellationToken))
         {
-            hits.Add(new(
-                reader.GetString(0),
-                reader.GetString(1),
-                GetNullableString(reader, 2),
-                reader.GetString(3),
-                reader.GetString(4),
-                Math.Max(0.2, 0.7 - (position++ * 0.02))));
+            hits.Add(new DocumentHitRecord(
+                Path: reader.GetString(0),
+                Kind: reader.GetString(1),
+                MemberName: GetNullableString(reader, 2),
+                Content: reader.GetString(3),
+                ContentHash: reader.GetString(4),
+                Rank: Math.Max(0.2, 0.7 - (position++ * 0.02))));
         }
 
         return hits;
@@ -357,16 +359,16 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         while (await reader.ReadAsync(cancellationToken))
         {
             var fullyQualifiedName = reader.GetString(0);
-            hits.Add(new(
-                fullyQualifiedName,
-                reader.GetString(1),
-                reader.GetString(2),
-                GetNullableString(reader, 3),
-                reader.GetString(4),
-                GetNullableString(reader, 5),
-                GetNullableString(reader, 6),
-                GetNullableString(reader, 7),
-                GetMatchTier(fullyQualifiedName, query)));
+            hits.Add(new SymbolHitRecord(
+                FullyQualifiedName: fullyQualifiedName,
+                Kind: reader.GetString(1),
+                Signature: reader.GetString(2),
+                ContainingType: GetNullableString(reader, 3),
+                AssemblyPath: reader.GetString(4),
+                TargetFramework: GetNullableString(reader, 5),
+                XmlDocumentationMember: GetNullableString(reader, 6),
+                Documentation: GetNullableString(reader, 7),
+                MatchTier: GetMatchTier(fullyQualifiedName, query)));
         }
 
         return hits
@@ -413,16 +415,16 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            hits.Add(new(
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.GetString(2),
-                GetNullableString(reader, 3),
-                reader.GetString(4),
-                GetNullableString(reader, 5),
-                GetNullableString(reader, 6),
-                null,
-                0));
+            hits.Add(new SymbolHitRecord(
+                FullyQualifiedName: reader.GetString(0),
+                Kind: reader.GetString(1),
+                Signature: reader.GetString(2),
+                ContainingType: GetNullableString(reader, 3),
+                AssemblyPath: reader.GetString(4),
+                TargetFramework: GetNullableString(reader, 5),
+                XmlDocumentationMember: GetNullableString(reader, 6),
+                Documentation: null,
+                MatchTier: 0));
         }
 
         return hits;
@@ -567,7 +569,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             : kind == "readme" || kind == "text_documentation"
                 ? "text/markdown"
                 : "application/xml";
-        return new(string.Join(Environment.NewLine + Environment.NewLine, parts), mimeType);
+        return new ResourceDocumentRecord(string.Join(Environment.NewLine + Environment.NewLine, parts), mimeType);
     }
 
     private static async Task<SqliteConnection> OpenAsync(

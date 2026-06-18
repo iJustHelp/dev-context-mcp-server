@@ -26,8 +26,10 @@ when generating or refactoring C# code, apply them automatically.
 Classes:
 
 ```csharp
-public class CustomerService
-public class PaymentProcessor
+/// <summary>
+/// Loads and caches NuGet package policy files, enforcing a single source folder per process.
+/// </summary>
+internal sealed class NuGetPackageOptionsLoader : INuGetPackageOptionsLoader
 ```
 
 Interfaces:

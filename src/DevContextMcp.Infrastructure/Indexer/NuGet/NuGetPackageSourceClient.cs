@@ -8,10 +8,28 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
+// Discovers and downloads package versions from a NuGet V3 feed, applying selection and size limits.
 internal sealed class NuGetPackageSourceClient(
     INuGetSourceAuthenticationProvider authenticationProvider,
     IContentHasher contentHasher) : IPackageSourceClient
 {
+    private sealed class PackageVersionComparer :
+        IEqualityComparer<(string PackageId, string Version)>
+    {
+        public static PackageVersionComparer Instance { get; } = new PackageVersionComparer();
+
+        public bool Equals(
+            (string PackageId, string Version) x,
+            (string PackageId, string Version) y) =>
+            string.Equals(x.PackageId, y.PackageId, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Version, y.Version, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode((string PackageId, string Version) obj) =>
+            HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.PackageId),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Version));
+    }
+
     public async Task<IReadOnlyList<PackageVersionCandidate>> DiscoverAsync(
         IndexSourceDefinition source,
         CancellationToken cancellationToken)
@@ -44,11 +62,11 @@ internal sealed class NuGetPackageSourceClient(
             {
                 var deprecation = await item.GetDeprecationMetadataAsync();
                 candidates.Add(new PackageVersionCandidate(
-                    item.Identity.Id,
-                    item.Identity.Version.ToNormalizedString(),
-                    item.IsListed,
-                    deprecation is not null,
-                    item.Published));
+                    PackageId: item.Identity.Id,
+                    Version: item.Identity.Version.ToNormalizedString(),
+                    IsListed: item.IsListed,
+                    IsDeprecated: deprecation is not null,
+                    PublishedAt: item.Published));
             }
         }
 
@@ -129,22 +147,5 @@ internal sealed class NuGetPackageSourceClient(
         var packageSource = new PackageSource(source.ServiceIndex, source.Name);
         authenticationProvider.Configure(packageSource, source.Name);
         return Repository.Factory.GetCoreV3(packageSource);
-    }
-
-    private sealed class PackageVersionComparer :
-        IEqualityComparer<(string PackageId, string Version)>
-    {
-        public static PackageVersionComparer Instance { get; } = new();
-
-        public bool Equals(
-            (string PackageId, string Version) x,
-            (string PackageId, string Version) y) =>
-            string.Equals(x.PackageId, y.PackageId, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(x.Version, y.Version, StringComparison.OrdinalIgnoreCase);
-
-        public int GetHashCode((string PackageId, string Version) obj) =>
-            HashCode.Combine(
-                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.PackageId),
-                StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Version));
     }
 }

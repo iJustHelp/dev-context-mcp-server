@@ -5,11 +5,20 @@ using DevContextMcp.Server.Core.Models;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Handles the resolve_library tool: searches candidate libraries, ranks them by confidence and
+// configured environment/source priority, and returns the best matches.
 internal sealed class ResolveLibraryHandler(
     RetrievalSettings settings,
     INuGetReadStore store,
     IVersionResolver versionResolver) : IResolveLibraryHandler
 {
+    private sealed record RankedLibraryMatch(
+        LibraryMatch Match,
+        string PackageId,
+        string? Environment,
+        int EnvironmentIndex,
+        int SourceIndex);
+
     public async Task<ResolveLibraryResponse> HandleAsync(
         ResolveLibraryRequest request,
         CancellationToken cancellationToken)
@@ -67,8 +76,8 @@ internal sealed class ResolveLibraryHandler(
                     : candidate.PrefixId ? 0.9 : candidate.TextScore;
                 if (candidate.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
                 {
-                    matches.Add(new(
-                        new LibraryMatch
+                    matches.Add(new RankedLibraryMatch(
+                        Match: new LibraryMatch
                         {
                             LibraryId = new LibraryId(
                                 candidate.PackageId,
@@ -81,11 +90,10 @@ internal sealed class ResolveLibraryHandler(
                             Description = candidate.Description,
                             Confidence = Math.Clamp(score, 0, 1)
                         },
-                        candidate.PackageId,
-                        null,
-                        environmentIndex,
-                        sourceIndex
-                        ));
+                        PackageId: candidate.PackageId,
+                        Environment: null,
+                        EnvironmentIndex: environmentIndex,
+                        SourceIndex: sourceIndex));
                     continue;
                 }
 
@@ -122,8 +130,8 @@ internal sealed class ResolveLibraryHandler(
                     score -= 0.10;
                 }
 
-                matches.Add(new(
-                    new LibraryMatch
+                matches.Add(new RankedLibraryMatch(
+                    Match: new LibraryMatch
                     {
                         LibraryId = new LibraryId(
                             candidate.PackageId,
@@ -135,11 +143,10 @@ internal sealed class ResolveLibraryHandler(
                         Description = candidate.Description,
                         Confidence = Math.Clamp(score, 0, 1)
                     },
-                    candidate.PackageId,
-                    candidate.Environment,
-                    environmentIndex,
-                    sourceIndex
-                    ));
+                    PackageId: candidate.PackageId,
+                    Environment: candidate.Environment,
+                    EnvironmentIndex: environmentIndex,
+                    SourceIndex: sourceIndex));
             }
 
             var selected = matches
@@ -203,17 +210,10 @@ internal sealed class ResolveLibraryHandler(
     }
 
     private static ResolveLibraryResponse NotFound(string code, string message) =>
-        new()
+        new ResolveLibraryResponse
         {
             Status = ToolResultStatus.NotFound,
             Data = new ResolveLibraryResult(),
             Errors = [RetrievalHandlerSupport.Error(code, message)]
         };
-
-    private sealed record RankedLibraryMatch(
-        LibraryMatch Match,
-        string PackageId,
-        string? Environment,
-        int EnvironmentIndex,
-        int SourceIndex);
 }

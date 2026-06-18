@@ -5,6 +5,7 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
+// Extracts public type and member symbols from an assembly's metadata using PE/metadata readers.
 internal static class MetadataSymbolExtractor
 {
     public static IReadOnlyList<SymbolRecord> Extract(
@@ -42,15 +43,15 @@ internal static class MetadataSymbolExtractor
                 ? typeName
                 : $"{typeNamespace}.{typeName}";
 
-            symbols.Add(new(
-                typeNamespace,
-                fullTypeName,
-                GetTypeKind(type.Attributes),
-                BuildTypeSignature(type, fullTypeName),
-                null,
-                assemblyPath,
-                targetFramework,
-                $"T:{fullTypeName}"));
+            symbols.Add(new SymbolRecord(
+                Namespace: typeNamespace,
+                FullyQualifiedName: fullTypeName,
+                Kind: GetTypeKind(type.Attributes),
+                Signature: BuildTypeSignature(type, fullTypeName),
+                ContainingType: null,
+                AssemblyPath: assemblyPath,
+                TargetFramework: targetFramework,
+                XmlDocumentationMember: $"T:{fullTypeName}"));
 
             AddMethods(
                 reader,
@@ -125,15 +126,15 @@ internal static class MetadataSymbolExtractor
                 : string.Empty;
             var returnType = isConstructor ? string.Empty : $"{signature.ReturnType} ";
 
-            symbols.Add(new(
-                typeNamespace,
-                memberName,
-                isConstructor ? "constructor" : "method",
-                $"public {staticModifier}{returnType}{name}({string.Join(", ", parameters)})",
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                isConstructor ? $"M:{fullTypeName}.#ctor" : $"M:{memberName}"));
+            symbols.Add(new SymbolRecord(
+                Namespace: typeNamespace,
+                FullyQualifiedName: memberName,
+                Kind: isConstructor ? "constructor" : "method",
+                Signature: $"public {staticModifier}{returnType}{name}({string.Join(", ", parameters)})",
+                ContainingType: fullTypeName,
+                AssemblyPath: assemblyPath,
+                TargetFramework: targetFramework,
+                XmlDocumentationMember: isConstructor ? $"M:{fullTypeName}.#ctor" : $"M:{memberName}"));
         }
     }
 
@@ -160,15 +161,15 @@ internal static class MetadataSymbolExtractor
             var name = reader.GetString(property.Name);
             var memberName = $"{fullTypeName}.{name}";
             var signature = property.DecodeSignature(typeNameProvider, genericContext: null);
-            symbols.Add(new(
-                typeNamespace,
-                memberName,
-                "property",
-                $"public {signature.ReturnType} {name} {{ {(accessors.Getter.IsNil ? string.Empty : "get; ")}{(accessors.Setter.IsNil ? string.Empty : "set; ")} }}",
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                $"P:{memberName}"));
+            symbols.Add(new SymbolRecord(
+                Namespace: typeNamespace,
+                FullyQualifiedName: memberName,
+                Kind: "property",
+                Signature: $"public {signature.ReturnType} {name} {{ {(accessors.Getter.IsNil ? string.Empty : "get; ")}{(accessors.Setter.IsNil ? string.Empty : "set; ")} }}",
+                ContainingType: fullTypeName,
+                AssemblyPath: assemblyPath,
+                TargetFramework: targetFramework,
+                XmlDocumentationMember: $"P:{memberName}"));
         }
     }
 
@@ -192,15 +193,15 @@ internal static class MetadataSymbolExtractor
 
             var name = reader.GetString(eventDefinition.Name);
             var memberName = $"{fullTypeName}.{name}";
-            symbols.Add(new(
-                typeNamespace,
-                memberName,
-                "event",
-                $"event {name}",
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                $"E:{memberName}"));
+            symbols.Add(new SymbolRecord(
+                Namespace: typeNamespace,
+                FullyQualifiedName: memberName,
+                Kind: "event",
+                Signature: $"event {name}",
+                ContainingType: fullTypeName,
+                AssemblyPath: assemblyPath,
+                TargetFramework: targetFramework,
+                XmlDocumentationMember: $"E:{memberName}"));
         }
     }
 
@@ -225,15 +226,15 @@ internal static class MetadataSymbolExtractor
             var name = reader.GetString(field.Name);
             var memberName = $"{fullTypeName}.{name}";
             var signature = field.DecodeSignature(new MetadataTypeNameProvider(), genericContext: null);
-            symbols.Add(new(
-                typeNamespace,
-                memberName,
-                "field",
-                $"public {signature} {name}",
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                $"F:{memberName}"));
+            symbols.Add(new SymbolRecord(
+                Namespace: typeNamespace,
+                FullyQualifiedName: memberName,
+                Kind: "field",
+                Signature: $"public {signature} {name}",
+                ContainingType: fullTypeName,
+                AssemblyPath: assemblyPath,
+                TargetFramework: targetFramework,
+                XmlDocumentationMember: $"F:{memberName}"));
         }
     }
 

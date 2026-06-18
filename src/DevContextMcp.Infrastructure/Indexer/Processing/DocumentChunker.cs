@@ -122,15 +122,15 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                 continue;
             }
 
-            chunks.Add(new(
-                path,
-                kind,
-                memberName,
+            chunks.Add(new DocumentChunkRecord(
+                Path: path,
+                Kind: kind,
+                MemberName: memberName,
                 // The index is global to the document so ordering remains stable
                 // when one section or XML member produces multiple chunks.
-                chunks.Count,
-                chunk,
-                hasher.Hash(Encoding.UTF8.GetBytes(chunk))));
+                Ordinal: chunks.Count,
+                Content: chunk,
+                ContentHash: hasher.Hash(Encoding.UTF8.GetBytes(chunk))));
         }
     }
 

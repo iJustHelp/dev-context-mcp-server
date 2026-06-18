@@ -8,8 +8,15 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
+// SQLite-backed index store that creates the schema and publishes packages and documentation,
+// computing per-run change sets against the previously indexed content.
 internal sealed class SqliteIndexStore : IIndexStore
 {
+    private sealed record IndexedLibraryRow(
+        string PackageId,
+        string Environment,
+        string Version);
+
     private const int SchemaVersion = 1;
     private const string DocumentationLibraryId = "company-docs";
     private const string DocumentationDisplayName = "Company Docs";
@@ -37,7 +44,7 @@ internal sealed class SqliteIndexStore : IIndexStore
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            rows.Add(new(
+            rows.Add(new IndexedLibraryRow(
                 reader.GetString(0),
                 reader.GetString(1),
                 reader.GetString(2)));
@@ -218,12 +225,12 @@ internal sealed class SqliteIndexStore : IIndexStore
             cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
-        return new(
-            changed,
-            unchanged,
-            SortIdentities(added),
-            SortIdentities(updated),
-            SortIdentities(deleted));
+        return new IndexPublishResult(
+            Changed: changed,
+            Unchanged: unchanged,
+            Added: SortIdentities(added),
+            Updated: SortIdentities(updated),
+            Deleted: SortIdentities(deleted));
     }
 
     public async Task<IndexPublishResult> PublishDocumentationAsync(
@@ -360,7 +367,12 @@ internal sealed class SqliteIndexStore : IIndexStore
             cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
-        return new(changed, unchanged, added, updated, []);
+        return new IndexPublishResult(
+            Changed: changed,
+            Unchanged: unchanged,
+            Added: added,
+            Updated: updated,
+            Deleted: []);
     }
 
     private static async Task InsertPackageAsync(
@@ -593,7 +605,7 @@ internal sealed class SqliteIndexStore : IIndexStore
                     transaction,
                     version.VersionId,
                     cancellationToken);
-                deleted.Add(new(library.Value.PackageId, version.Version));
+                deleted.Add(new PackageIdentityKey(library.Value.PackageId, version.Version));
             }
 
             await ExecuteAsync(
@@ -954,11 +966,6 @@ internal sealed class SqliteIndexStore : IIndexStore
         var value = string.Join('\n', values);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     }
-
-    private sealed record IndexedLibraryRow(
-        string PackageId,
-        string Environment,
-        string Version);
 
     private const string SchemaSql =
         """

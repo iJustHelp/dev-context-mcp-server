@@ -1,5 +1,6 @@
 namespace DevContextMcp.Server.Core.Models;
 
+// An indexed version of a library, with its listing, prerelease, and deprecation flags.
 public sealed record IndexedVersionRecord(
     string LibraryVersionId,
     string Version,

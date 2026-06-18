@@ -20,6 +20,9 @@ public sealed record GetSymbolResult
     public IReadOnlyList<SymbolDetails> Candidates { get; init; } = [];
 }
 
+/// <summary>
+/// Full details of a resolved symbol, including signature, documentation, and related members.
+/// </summary>
 public sealed record SymbolDetails
 {
     [JsonPropertyName("fullyQualifiedName")]
@@ -47,6 +50,9 @@ public sealed record SymbolDetails
     public IReadOnlyList<RelatedSymbol> RelatedMembers { get; init; } = [];
 }
 
+/// <summary>
+/// A sibling member related to a resolved symbol (for example, another member of the same type).
+/// </summary>
 public sealed record RelatedSymbol
 {
     [JsonPropertyName("fullyQualifiedName")]

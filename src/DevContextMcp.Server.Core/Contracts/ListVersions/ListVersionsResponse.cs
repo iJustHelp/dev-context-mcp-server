@@ -23,6 +23,9 @@ public sealed record ListVersionsResult
     public string? RecommendedVersionReason { get; init; }
 }
 
+/// <summary>
+/// A single library version with its listing, prerelease, deprecation, and indexing flags.
+/// </summary>
 public sealed record LibraryVersion
 {
     [JsonPropertyName("version")]

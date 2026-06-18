@@ -5,6 +5,7 @@ using NuGet.Versioning;
 
 namespace DevContextMcp.Server.Core.Services;
 
+// Handles the list_versions tool: resolves the library and returns its indexed versions and recommendation.
 internal sealed class ListVersionsHandler(
     RetrievalSettings settings,
     ILibraryResolver libraryResolver) : IListVersionsHandler
@@ -146,7 +147,7 @@ internal sealed class ListVersionsHandler(
     }
 
     private static ListVersionsResponse NotFound(string code, string message) =>
-        new()
+        new ListVersionsResponse
         {
             Status = ToolResultStatus.NotFound,
             Data = new ListVersionsResult(),

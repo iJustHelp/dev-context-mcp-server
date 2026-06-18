@@ -2,6 +2,7 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
+// Persists indexed packages and documentation, and reports what is currently indexed.
 public interface IIndexStore
 {
     Task InitializeAsync(string databasePath, CancellationToken cancellationToken);

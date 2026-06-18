@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
+// MCP tool that exposes query_docs, delegating to the handler.
 [McpServerToolType]
 internal sealed class QueryDocsTool(
     IQueryDocsHandler handler,
@@ -26,13 +27,13 @@ internal sealed class QueryDocsTool(
         CancellationToken cancellationToken = default)
     {
         var request = new QueryDocsRequest(
-            libraryId,
-            question,
-            version,
-            targetFramework,
-            maxResults,
-            projectVersion,
-            includePrerelease);
+            LibraryId: libraryId,
+            Question: question,
+            Version: version,
+            TargetFramework: targetFramework,
+            MaxResults: maxResults,
+            ProjectVersion: projectVersion,
+            IncludePrerelease: includePrerelease);
 
         return invocationLogger.InvokeAsync(
             "query_docs",

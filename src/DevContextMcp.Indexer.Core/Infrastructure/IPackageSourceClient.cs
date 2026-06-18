@@ -2,6 +2,7 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
+// Discovers and downloads package versions from a configured NuGet source.
 public interface IPackageSourceClient
 {
     Task<IReadOnlyList<PackageVersionCandidate>> DiscoverAsync(

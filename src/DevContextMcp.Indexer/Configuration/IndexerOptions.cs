@@ -9,9 +9,9 @@ public sealed class IndexerOptions
 
     public string DatabasePath { get; set; } = "data/docs.db";
 
-    public IndexerSourceOptions IndexerSource { get; set; } = new();
+    public IndexerSourceOptions IndexerSource { get; set; } = new IndexerSourceOptions();
 
     public List<NuGetPackageSourceOptions> NugetPackages { get; set; } = [];
 
-    public IndexingOptions Indexing { get; set; } = new();
+    public IndexingOptions Indexing { get; set; } = new IndexingOptions();
 }

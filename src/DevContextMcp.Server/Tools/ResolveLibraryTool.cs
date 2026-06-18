@@ -6,6 +6,7 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
+// MCP tool that exposes resolve_library, parsing the query and delegating to the handler.
 [McpServerToolType]
 internal sealed class ResolveLibraryTool(
     IResolveLibraryHandler handler,
@@ -47,10 +48,10 @@ internal sealed class ResolveLibraryTool(
                 || nestedQuery.ValueKind != JsonValueKind.String)
             {
                 return new ResolveLibraryRequest(
-                    query,
-                    includePrerelease,
-                    limit,
-                    environment);
+                    Query: query,
+                    IncludePrerelease: includePrerelease,
+                    Limit: limit,
+                    Environment: environment);
             }
 
             query = nestedQuery.GetString()!;
@@ -78,9 +79,9 @@ internal sealed class ResolveLibraryTool(
         }
 
         return new ResolveLibraryRequest(
-            query,
-            includePrerelease,
-            limit,
-            environment);
+            Query: query,
+            IncludePrerelease: includePrerelease,
+            Limit: limit,
+            Environment: environment);
     }
 }

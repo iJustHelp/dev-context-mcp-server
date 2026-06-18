@@ -3,6 +3,7 @@ using DevContextMcp.Indexer.Core.Models;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 
+// Guards package archive extraction against zip bombs and path-traversal entries.
 internal static class ArchiveSafetyValidator
 {
     public static IReadOnlyList<ZipArchiveEntry> Validate(

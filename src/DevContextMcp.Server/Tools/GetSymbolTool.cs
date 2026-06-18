@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 
 namespace DevContextMcp.Server.Tools;
 
+// MCP tool that exposes get_symbol, delegating to the handler.
 [McpServerToolType]
 internal sealed class GetSymbolTool(
     IGetSymbolHandler handler,
@@ -25,12 +26,12 @@ internal sealed class GetSymbolTool(
         CancellationToken cancellationToken = default)
     {
         var request = new GetSymbolRequest(
-            libraryId,
-            symbol,
-            version,
-            targetFramework,
-            projectVersion,
-            includePrerelease);
+            LibraryId: libraryId,
+            Symbol: symbol,
+            Version: version,
+            TargetFramework: targetFramework,
+            ProjectVersion: projectVersion,
+            IncludePrerelease: includePrerelease);
 
         return invocationLogger.InvokeAsync(
             "get_symbol",
