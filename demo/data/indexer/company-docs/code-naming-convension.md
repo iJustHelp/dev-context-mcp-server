@@ -1,20 +1,27 @@
-## C# Naming Conventions
+# C# Naming Conventions
 
-Follow standard Microsoft C# naming conventions.
+Follow standard Microsoft C# naming conventions. The rules below are normative:
+when generating or refactoring C# code, apply them automatically.
 
-### General Rules
+## Casing Rules
 
-* Use `PascalCase` for classes, records, structs, enums, methods, properties, events, and public members.
-* Use `camelCase` for local variables and method parameters.
-* Use `_camelCase` for private fields.
-* Prefix interfaces with `I`.
-* Add comments on top of each class.
+| Element | Convention | Example |
+| --- | --- | --- |
+| Classes, records, structs, enums, methods, properties, events, public members | `PascalCase` | `CustomerService`, `GetCustomerById` |
+| Local variables, method parameters | `camelCase` | `customerId`, `customerName` |
+| Private fields | `_camelCase` | `_customerRepository` |
+| Interfaces | `I` prefix + `PascalCase` | `ICustomerRepository` |
+| Constants | `PascalCase` | `MaxRetryCount` |
+| Asynchronous methods | `PascalCase` + `Async` suffix | `GetCustomerByIdAsync` |
+
+## General Rules
+
 * Use clear, descriptive names. Avoid unclear abbreviations.
-* Use the `Async` suffix for asynchronous methods.* 
+* Add a summary comment above each class.
 * Do not use Hungarian notation.
 * Do not use underscores in public type, method, or property names.
 
-### Examples
+## Examples
 
 Classes:
 
@@ -30,7 +37,7 @@ public interface ICustomerRepository
 public interface IEmailSender
 ```
 
-Methods:
+Methods (note the `Async` suffix on the asynchronous overload):
 
 ```csharp
 public Customer GetCustomerById(int customerId)
@@ -80,7 +87,9 @@ public enum OrderStatus
 }
 ```
 
-### Avoid
+## Avoid
+
+These violate the rules above (`snake_case` member, `PascalCase` field, missing `Async` suffix, `PascalCase` parameter):
 
 ```csharp
 public class customer_service
@@ -89,35 +98,34 @@ private readonly ILogger Logger;
 public Task<Customer> GetCustomer(int CustomerId)
 ```
 
-### Object Creation and Constructor Arguments
+## Object Creation and Constructor Arguments
 
-* Do not use target-typed `new()` when creating objects.
-* Always use the explicit type name for better readability and easier code review.
-* If a constructor or method call has more than 3 parameters, use named arguments.
-* Prefer formatting long constructor calls across multiple lines.
-* If a constructor requires too many parameters, consider whether a configuration object, options class, builder, or request model would make the code cleaner.
+* Do not use target-typed `new()`. Always write the explicit type name for readability and easier code review.
+* If a constructor or method call has **more than 3 arguments**, use named arguments.
+* Format long constructor calls across multiple lines, one argument per line.
+* If a constructor needs many parameters, consider whether a configuration object, options class, builder, or request model would make the code cleaner.
 
 ### Examples
 
-Avoid:
+Avoid target-typed `new()`:
 
 ```csharp
 var customer = new("John", "Smith", "john@email.com");
 ```
 
-Use:
+Use the explicit type name (3 arguments, so positional is fine):
 
 ```csharp
 var customer = new Customer("John", "Smith", "john@email.com");
 ```
 
-Avoid when many parameters:
+Avoid positional arguments when there are more than 3:
 
 ```csharp
 var order = new Order(123, customerId, amount, tax);
 ```
 
-Use named arguments when there are more than 5 parameters:
+Use named arguments, one per line, when there are more than 3:
 
 ```csharp
 var order = new Order(
@@ -130,16 +138,11 @@ var order = new Order(
     createdDate: createdDate);
 ```
 
-When generating or refactoring C# code, always prefer explicit object creation and named arguments for constructor or method calls with more than 3 parameters.
+## Class Member Ordering
 
+When generating or refactoring C# classes, order members consistently:
 
-### Class Member Ordering
-
-When generating or refactoring C# classes, organize members in a consistent order.
-
-Use this order:
-
-1. Nested types, if needed
+1. Nested types (only if needed)
 2. Constants
 3. Private fields
 4. Properties
@@ -162,14 +165,11 @@ public class CustomerService
     }
 
     private const int MaxRetryCount = 3;
-
     private readonly ICustomerRepository _customerRepository;
     private readonly ILogger<CustomerService> _logger;
-
     private int _retryCount;
 
     public string ServiceName { get; } = "Customer Service";
-
     private bool IsRetryEnabled { get; set; }
 
     public CustomerService(
@@ -197,6 +197,8 @@ public class CustomerService
 }
 ```
 
-### Required Behavior for AI Agent
+## Required Behavior for AI Agent
 
-When generating or refactoring C# code, always apply these naming conventions automatically. If existing code uses different naming, preserve compatibility only when changing the name would break public APIs, serialization contracts, database mappings, or external integrations.
+When generating or refactoring C# code, apply these naming conventions automatically.
+If existing code uses different naming, preserve compatibility **only** when renaming would break
+public APIs, serialization contracts, database mappings, or external integrations.
