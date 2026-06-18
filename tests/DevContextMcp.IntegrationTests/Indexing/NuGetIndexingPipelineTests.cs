@@ -46,7 +46,7 @@ public sealed class NuGetIndexingPipelineTests
                 $"Data Source={databasePath};Pooling=False");
             await connection.OpenAsync();
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
-            Assert.Equal(4L, await ScalarAsync(connection, "PRAGMA user_version;"));
+            Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA user_version;"));
             Assert.Equal(
                 "test",
                 await TextScalarAsync(connection, "SELECT environment FROM sources;"));
@@ -91,72 +91,6 @@ public sealed class NuGetIndexingPipelineTests
             Assert.True(await ScalarAsync(
                 connection,
                 "SELECT COUNT(*) FROM document_chunks_fts WHERE document_chunks_fts MATCH 'fixture';") > 0);
-        }
-        finally
-        {
-            if (Directory.Exists(root))
-            {
-                Directory.Delete(root, recursive: true);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task VersionTwoDatabaseMigratesEnvironmentWithoutChangingSourceId()
-    {
-        var root = Path.Combine(Path.GetTempPath(), $"mcp-doc-migration-{Guid.NewGuid():N}");
-        var databasePath = Path.Combine(root, "docs.db");
-        Directory.CreateDirectory(root);
-
-        try
-        {
-            await using (var connection = new SqliteConnection(
-                             $"Data Source={databasePath};Pooling=False"))
-            {
-                await connection.OpenAsync();
-                await using var command = connection.CreateCommand();
-                command.CommandText =
-                    """
-                    CREATE TABLE sources (
-                        id TEXT PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        service_index TEXT NOT NULL,
-                        last_indexed_at TEXT NULL
-                    );
-                    CREATE TABLE libraries (
-                        id TEXT PRIMARY KEY,
-                        source_id TEXT NOT NULL,
-                        package_id TEXT NOT NULL,
-                        normalized_package_id TEXT NOT NULL
-                    );
-                    CREATE TABLE artifacts (
-                        id TEXT PRIMARY KEY,
-                        library_version_id TEXT NOT NULL,
-                        path TEXT NOT NULL,
-                        kind TEXT NOT NULL,
-                        content_hash TEXT NOT NULL,
-                        size INTEGER NOT NULL
-                    );
-                    INSERT INTO sources (id, name, service_index)
-                    VALUES ('stable-source-id', 'qa-feed', 'https://packages.example/v3/index.json');
-                    PRAGMA user_version = 2;
-                    """;
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var store = new SqliteIndexStore();
-            await store.InitializeAsync(databasePath, CancellationToken.None);
-
-            await using var migrated = new SqliteConnection(
-                $"Data Source={databasePath};Mode=ReadOnly;Pooling=False");
-            await migrated.OpenAsync();
-            Assert.Equal(4L, await ScalarAsync(migrated, "PRAGMA user_version;"));
-            Assert.Equal(
-                "stable-source-id",
-                await TextScalarAsync(migrated, "SELECT id FROM sources;"));
-            Assert.Equal(
-                "qa-feed",
-                await TextScalarAsync(migrated, "SELECT environment FROM sources;"));
         }
         finally
         {

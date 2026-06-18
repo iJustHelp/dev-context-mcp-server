@@ -12,8 +12,6 @@ namespace DevContextMcp.Infrastructure.Server;
 /// </summary>
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
-    private const int RequiredSchemaVersion = 4;
-
     public async Task<IReadOnlyList<LibraryCandidateRecord>> SearchLibrariesAsync(
         string databasePath,
         string query,
@@ -600,11 +598,11 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             var version = Convert.ToInt32(
                 await command.ExecuteScalarAsync(cancellationToken),
                 CultureInfo.InvariantCulture);
-            if (version < RequiredSchemaVersion)
+            if (version < IndexSchema.Version)
             {
                 await connection.DisposeAsync();
                 throw new IndexUnavailableException(
-                    $"The documentation index schema is {version}; version {RequiredSchemaVersion} is required.");
+                    $"The documentation index schema is {version}; version {IndexSchema.Version} is required.");
             }
 
             return connection;

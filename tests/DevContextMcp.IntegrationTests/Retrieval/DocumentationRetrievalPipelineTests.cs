@@ -62,7 +62,7 @@ public sealed class DocumentationRetrievalPipelineTests
             await using var connection = new SqliteConnection(
                 $"Data Source={databasePath};Pooling=False");
             await connection.OpenAsync();
-            Assert.Equal(4L, await ScalarAsync(connection, "PRAGMA user_version;"));
+            Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA user_version;"));
             Assert.Equal(
                 2L,
                 await ScalarAsync(

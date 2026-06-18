@@ -19,7 +19,6 @@ internal sealed class SqliteIndexStore : IIndexStore
         string Environment,
         string Version);
 
-    private const int SchemaVersion = 1;
     private const string DocumentationLibraryId = "company-docs";
     private const string DocumentationDisplayName = "Company Docs";
     private const string DocumentationVersion = "";
@@ -90,10 +89,10 @@ internal sealed class SqliteIndexStore : IIndexStore
             await ExecuteScalarAsync(connection, null, "PRAGMA user_version;", cancellationToken),
             CultureInfo.InvariantCulture);
 
-        if (version > SchemaVersion)
+        if (version > IndexSchema.Version)
         {
             throw new InvalidOperationException(
-                $"Database schema version {version} is newer than supported version {SchemaVersion}.");
+                $"Database schema version {version} is newer than supported version {IndexSchema.Version}.");
         }
 
         if (version == 0)
@@ -107,7 +106,7 @@ internal sealed class SqliteIndexStore : IIndexStore
             await ExecuteNonQueryAsync(
                 connection,
                 transaction,
-                $"PRAGMA user_version = {SchemaVersion};",
+                $"PRAGMA user_version = {IndexSchema.Version};",
                 cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
