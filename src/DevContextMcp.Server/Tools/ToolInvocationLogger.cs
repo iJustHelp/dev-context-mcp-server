@@ -11,7 +11,10 @@ internal sealed class ToolInvocationLogger(
     ILogger<ToolInvocationLogger> logger)
 {
     private static readonly JsonSerializerOptions SerializerOptions =
-        new(JsonSerializerDefaults.Web);
+        new(JsonSerializerDefaults.Web)
+        {
+            WriteIndented = true
+        };
 
     public async Task<TResponse> InvokeAsync<TRequest, TResponse>(
         string toolName,
