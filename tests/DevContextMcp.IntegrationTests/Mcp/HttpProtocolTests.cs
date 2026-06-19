@@ -73,7 +73,7 @@ public sealed class HttpProtocolTests
                     .Deserialize<ResolveLibraryResponse>(
                         new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
-                Assert.Equal(4, tools.Count);
+                Assert.Equal(5, tools.Count);
                 Assert.Contains(tools, tool => tool.Name == "resolve_library");
                 Assert.Contains(templates, template =>
                     template.UriTemplate.Contains("/artifact/", StringComparison.Ordinal));
@@ -87,7 +87,7 @@ public sealed class HttpProtocolTests
             {
                 var tools = await secondClient.ListToolsAsync(cancellationToken: timeout.Token);
 
-                Assert.Equal(4, tools.Count);
+                Assert.Equal(5, tools.Count);
             }
         }
         finally

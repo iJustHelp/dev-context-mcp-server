@@ -18,6 +18,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
         services.AddSingleton<IValidateOptions<DevContextMcpOptions>, DevContextMcpOptionsValidator>();
         var optionsSection = configuration.GetSection(DevContextMcpOptions.SectionName);
         services.AddOptions<DevContextMcpOptions>()
@@ -52,6 +53,7 @@ public static class DependencyInjection
     public static IMcpServerBuilder WithDevContextMcpTools(this IMcpServerBuilder builder)
     {
         return builder
+            .WithTools<PingTool>()
             .WithTools<ResolveLibraryTool>()
             .WithTools<QueryDocsTool>()
             .WithTools<GetSymbolTool>()
