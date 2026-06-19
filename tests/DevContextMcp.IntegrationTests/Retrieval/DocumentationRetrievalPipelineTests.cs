@@ -160,6 +160,9 @@ public sealed class DocumentationRetrievalPipelineTests
                     databasePath,
                     "security.md",
                     CancellationToken.None);
+            Assert.NotNull(stored);
+            Assert.Contains("Never log credentials.", stored.Text, StringComparison.Ordinal);
+            Assert.Equal("text/markdown", stored.MimeType);
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await using var server = await McpTestServer.StartAsync(

@@ -509,7 +509,6 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             INNER JOIN libraries l ON l.id = lv.library_id
             WHERE l.kind = 'docs'
               AND l.normalized_package_id = 'company-docs'
-              AND lv.version = 'current'
               AND a.path = $path
               AND a.content IS NOT NULL
             LIMIT 1;
