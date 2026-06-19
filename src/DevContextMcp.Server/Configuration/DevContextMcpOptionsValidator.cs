@@ -20,6 +20,7 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
             failures);
         ValidateRetrieval(options.Retrieval, failures);
         ValidateToolLogging(options.ToolLogging, failures);
+        ValidateAnalytics(options.Analytics, failures);
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success
@@ -98,6 +99,26 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
         {
             failures.Add(
                 "DevContextMcp:ToolLogging:MaxPayloadBytes must be positive.");
+        }
+    }
+
+    private static void ValidateAnalytics(
+        AnalyticsOptions options,
+        List<string> failures)
+    {
+        if (!options.Enabled)
+        {
+            return;
+        }
+
+        ConfigurationValidation.ValidatePath(
+            options.DatabasePath,
+            "DevContextMcp:Analytics:DatabasePath",
+            failures);
+
+        if (string.IsNullOrWhiteSpace(options.UserHeaderName))
+        {
+            failures.Add("DevContextMcp:Analytics:UserHeaderName must not be empty.");
         }
     }
 

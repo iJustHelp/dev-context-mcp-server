@@ -104,6 +104,58 @@ public sealed class DevContextMcpOptionsValidatorTests
         AssertFailure(result, "ToolLogging:MaxPayloadBytes");
     }
 
+    [Fact]
+    public void EnabledAnalyticsWithEmptyDatabasePathFails()
+    {
+        var result = _validator.Validate(
+            null,
+            new DevContextMcpOptions
+            {
+                Analytics = new AnalyticsOptions
+                {
+                    Enabled = true,
+                    DatabasePath = " "
+                }
+            });
+
+        AssertFailure(result, "Analytics:DatabasePath");
+    }
+
+    [Fact]
+    public void EnabledAnalyticsWithEmptyUserHeaderFails()
+    {
+        var result = _validator.Validate(
+            null,
+            new DevContextMcpOptions
+            {
+                Analytics = new AnalyticsOptions
+                {
+                    Enabled = true,
+                    UserHeaderName = " "
+                }
+            });
+
+        AssertFailure(result, "Analytics:UserHeaderName");
+    }
+
+    [Fact]
+    public void DisabledAnalyticsSkipsValidation()
+    {
+        var result = _validator.Validate(
+            null,
+            new DevContextMcpOptions
+            {
+                Analytics = new AnalyticsOptions
+                {
+                    Enabled = false,
+                    DatabasePath = " ",
+                    UserHeaderName = " "
+                }
+            });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
+    }
+
     private static void AssertFailure(
         ValidateOptionsResult result,
         string expectedText)

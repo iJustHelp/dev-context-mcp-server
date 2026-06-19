@@ -1,4 +1,5 @@
 using DevContextMcp.Server;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,11 @@ static async Task RunHttpAsync(string[] args)
         .Value;
     var mcpUri = new Uri(options.McpUrl, UriKind.Absolute);
     app.MapMcp(mcpUri.AbsolutePath);
+    if (options.Analytics.Enabled)
+    {
+        app.MapAnalyticsEndpoints();
+    }
+
     await app.RunAsync(mcpUri.GetLeftPart(UriPartial.Authority));
 }
 

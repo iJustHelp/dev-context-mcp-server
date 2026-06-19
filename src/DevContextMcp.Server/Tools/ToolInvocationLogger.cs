@@ -1,17 +1,22 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
+using DevContextMcp.Server.Core.Models.Analytics;
 using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Server.Tools;
 
 /// <summary>
-/// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level.
+/// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level,
+/// and to capture one metadata-only analytics event per invocation.
 /// </summary>
 internal sealed class ToolInvocationLogger(
     IOptions<DevContextMcpOptions> options,
-    ILogger<ToolInvocationLogger> logger)
+    ILogger<ToolInvocationLogger> logger,
+    IAnalyticsRecorder analyticsRecorder,
+    AnalyticsUserResolver userResolver)
 {
     private sealed record TruncatedPayloadEnvelope(
         string Preview,
@@ -37,6 +42,7 @@ internal sealed class ToolInvocationLogger(
     {
         var invocationId = Guid.NewGuid().ToString("N");
         var debugEnabled = IsDebugEnabled();
+        long? requestBytes = null;
         if (debugEnabled)
         {
             LogPayload(
@@ -45,12 +51,16 @@ internal sealed class ToolInvocationLogger(
                 invocationId: invocationId,
                 payload: request,
                 elapsedMilliseconds: null);
+            requestBytes = MeasureBytes(request);
         }
 
+        var startedAtUtc = DateTimeOffset.UtcNow;
         var startedAt = Stopwatch.GetTimestamp();
         try
         {
             var response = await invoke(cancellationToken);
+            var elapsedMilliseconds = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+            long? responseBytes = null;
             if (debugEnabled)
             {
                 LogPayload(
@@ -58,32 +68,108 @@ internal sealed class ToolInvocationLogger(
                     toolName: toolName,
                     invocationId: invocationId,
                     payload: response,
-                    elapsedMilliseconds: Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+                    elapsedMilliseconds: elapsedMilliseconds);
+                responseBytes = MeasureBytes(response);
             }
 
+            RecordAnalytics(
+                toolName,
+                invocationId,
+                startedAtUtc,
+                elapsedMilliseconds,
+                AnalyticsStatus.Success,
+                errorType: null,
+                requestBytes,
+                responseBytes);
             return response;
         }
         catch (OperationCanceledException)
         {
+            var elapsedMilliseconds = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
             SafeLog(
                 LogLevel.Debug,
                 null,
                 "MCP tool {ToolName} invocation {InvocationId} was canceled after {ElapsedMilliseconds} ms.",
                 toolName,
                 invocationId,
-                Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+                elapsedMilliseconds);
+            RecordAnalytics(
+                toolName,
+                invocationId,
+                startedAtUtc,
+                elapsedMilliseconds,
+                AnalyticsStatus.Canceled,
+                errorType: null,
+                requestBytes,
+                responseBytes: null);
             throw;
         }
         catch (Exception exception)
         {
+            var elapsedMilliseconds = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
             SafeLog(
                 LogLevel.Error,
                 exception,
                 "MCP tool {ToolName} invocation {InvocationId} failed after {ElapsedMilliseconds} ms.",
                 toolName,
                 invocationId,
-                Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+                elapsedMilliseconds);
+            RecordAnalytics(
+                toolName,
+                invocationId,
+                startedAtUtc,
+                elapsedMilliseconds,
+                AnalyticsStatus.Error,
+                errorType: exception.GetType().Name,
+                requestBytes,
+                responseBytes: null);
             throw;
+        }
+    }
+
+    private void RecordAnalytics(
+        string toolName,
+        string invocationId,
+        DateTimeOffset startedAt,
+        double durationMs,
+        string status,
+        string? errorType,
+        long? requestBytes,
+        long? responseBytes)
+    {
+        if (!analyticsRecorder.Enabled)
+        {
+            return;
+        }
+
+        try
+        {
+            analyticsRecorder.Record(new ToolInvocationRecord(
+                Id: invocationId,
+                ToolName: toolName,
+                UserName: userResolver.Resolve(),
+                StartedAt: startedAt,
+                DurationMs: durationMs,
+                Status: status,
+                ErrorType: errorType,
+                RequestBytes: requestBytes,
+                ResponseBytes: responseBytes));
+        }
+        catch
+        {
+            // Analytics capture must never change tool behavior.
+        }
+    }
+
+    private static long? MeasureBytes<TPayload>(TPayload payload)
+    {
+        try
+        {
+            return JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions).Length;
+        }
+        catch
+        {
+            return null;
         }
     }
 

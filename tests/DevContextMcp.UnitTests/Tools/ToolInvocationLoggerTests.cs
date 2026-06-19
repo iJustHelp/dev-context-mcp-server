@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Core.Contracts.GetSymbol;
@@ -8,6 +9,7 @@ using DevContextMcp.Server.Core.Contracts.QueryDocs;
 using DevContextMcp.Server.Core.Contracts.ResolveLibrary;
 using DevContextMcp.Server.Core.Services;
 using DevContextMcp.Server.Tools;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -159,7 +161,9 @@ public sealed class ToolInvocationLoggerTests
     {
         var target = new ToolInvocationLogger(
             Options.Create(new DevContextMcpOptions()),
-            new ThrowingLogger());
+            new ThrowingLogger(),
+            new NullAnalyticsRecorder(),
+            CreateUserResolver());
 
         var actual = await target.InvokeAsync(
             toolName: "fixture",
@@ -272,7 +276,12 @@ public sealed class ToolInvocationLoggerTests
                     MaxPayloadBytes = maximumPayloadBytes
                 }
             }),
-            logger);
+            logger,
+            new NullAnalyticsRecorder(),
+            CreateUserResolver());
+
+    private static AnalyticsUserResolver CreateUserResolver() =>
+        new(new HttpContextAccessor(), Options.Create(new DevContextMcpOptions()));
 
     private static ListVersionsResponse Response() =>
         new()

@@ -1,4 +1,5 @@
 using DevContextMcp.Indexer.Core.Infrastructure;
+using DevContextMcp.Infrastructure.Analytics;
 using DevContextMcp.Infrastructure.Diagnostics;
 using DevContextMcp.Infrastructure.Indexer.NuGet;
 using DevContextMcp.Infrastructure.Indexer.Persistence;
@@ -21,6 +22,17 @@ public static class DependencyInjection
     {
         services.TryAddSingleton<ILocalDependencyCheck, LocalDependencyCheck>();
         services.AddSingleton<INuGetReadStore, SqliteNuGetReadStore>();
+        return services;
+    }
+
+    public static IServiceCollection AddAnalyticsInfrastructure(
+        this IServiceCollection services)
+    {
+        services.AddSingleton<SqliteAnalyticsStore>();
+        services.AddSingleton<IToolInvocationWriteStore>(
+            provider => provider.GetRequiredService<SqliteAnalyticsStore>());
+        services.AddSingleton<IToolInvocationReadStore>(
+            provider => provider.GetRequiredService<SqliteAnalyticsStore>());
         return services;
     }
 
