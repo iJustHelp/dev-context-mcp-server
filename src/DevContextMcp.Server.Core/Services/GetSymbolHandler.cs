@@ -49,14 +49,14 @@ internal sealed class GetSymbolHandler(
         try
         {
             var resolution = await libraryResolver.ResolveAsync(
-                settings.DatabasePath,
-                libraryId,
-                settings.EnvironmentOrder,
-                settings.SourceOrder,
-                request.Version,
-                request.ProjectVersion,
-                request.IncludePrerelease,
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                libraryId: libraryId,
+                environmentOrder: settings.EnvironmentOrder,
+                sourceOrder: settings.SourceOrder,
+                requestedVersion: request.Version,
+                projectVersion: request.ProjectVersion,
+                includePrerelease: request.IncludePrerelease,
+                cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {
                 return NotFound(
@@ -83,12 +83,12 @@ internal sealed class GetSymbolHandler(
             }
 
             var hits = await store.SearchSymbolsAsync(
-                settings.DatabasePath,
-                version.Version.LibraryVersionId,
-                request.Symbol,
-                request.TargetFramework,
-                settings.Limits.AmbiguousSymbolLimit * 4,
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                libraryVersionId: version.Version.LibraryVersionId,
+                query: request.Symbol,
+                targetFramework: request.TargetFramework,
+                limit: settings.Limits.AmbiguousSymbolLimit * 4,
+                cancellationToken: timeout.Token);
             if (hits.Count == 0)
             {
                 return new GetSymbolResponse
@@ -135,7 +135,11 @@ internal sealed class GetSymbolHandler(
                     Data = new GetSymbolResult
                     {
                         Candidates = winners
-                            .Select(group => ToDetails(selection, version, group, []))
+                            .Select(group => ToDetails(
+                                selection: selection,
+                                version: version,
+                                group: group,
+                                related: []))
                             .ToArray()
                     },
                     ResolvedContext = Context(selection, version),
@@ -152,13 +156,17 @@ internal sealed class GetSymbolHandler(
             var related = winner.Symbol.ContainingType is null
                 ? []
                 : await store.GetRelatedSymbolsAsync(
-                    settings.DatabasePath,
-                    version.Version.LibraryVersionId,
-                    winner.Symbol.ContainingType,
-                    winner.Symbol.FullyQualifiedName,
-                    10,
-                    timeout.Token);
-            var details = ToDetails(selection, version, winner, related);
+                    databasePath: settings.DatabasePath,
+                    libraryVersionId: version.Version.LibraryVersionId,
+                    containingType: winner.Symbol.ContainingType,
+                    fullyQualifiedName: winner.Symbol.FullyQualifiedName,
+                    limit: 10,
+                    cancellationToken: timeout.Token);
+            var details = ToDetails(
+                selection: selection,
+                version: version,
+                group: winner,
+                related: related);
             var warnings = version.WarningCodes
                 .Select(code => RetrievalHandlerSupport.Warning(
                     code,
@@ -241,10 +249,10 @@ internal sealed class GetSymbolHandler(
             Assembly = group.Symbol.AssemblyPath,
             TargetFrameworks = group.TargetFrameworks,
             CitationUri = citationFactory.SymbolUri(
-                selection.Library.SourceName,
-                selection.Library.PackageId,
-                version.Version.Version,
-                group.Symbol.FullyQualifiedName),
+                source: selection.Library.SourceName,
+                packageId: selection.Library.PackageId,
+                version: version.Version.Version,
+                qualifiedName: group.Symbol.FullyQualifiedName),
             RelatedMembers = related.Select(item => new RelatedSymbol
             {
                 FullyQualifiedName = item.FullyQualifiedName,

@@ -56,10 +56,10 @@ internal sealed class DocumentationSourceReader(
                 Size: bytes.LongLength,
                 Content: content));
             documents.AddRange(chunker.Chunk(
-                relativePath,
-                "company_document",
-                content,
-                limits.MaxDocumentChars));
+                path: relativePath,
+                kind: "company_document",
+                content: content,
+                maxCharacters: limits.MaxDocumentChars));
         }
 
         var snapshot = string.Join(

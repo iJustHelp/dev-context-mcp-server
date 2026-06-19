@@ -25,10 +25,10 @@ public sealed class ToolInvocationLoggerTests
         var response = Response();
 
         var actual = await target.InvokeAsync(
-            "list_versions",
-            request,
-            _ => Task.FromResult(response),
-            CancellationToken.None);
+            toolName: "list_versions",
+            request: request,
+            invoke: _ => Task.FromResult(response),
+            cancellationToken: CancellationToken.None);
 
         Assert.Same(response, actual);
         var (requestLog, responseLog) = AssertPairedLogs(logger);
@@ -56,10 +56,10 @@ public sealed class ToolInvocationLoggerTests
         var request = new { Query = new string('x', 2_000) };
 
         await target.InvokeAsync(
-            "resolve_library",
-            request,
-            _ => Task.FromResult(new { Status = "ok" }),
-            CancellationToken.None);
+            toolName: "resolve_library",
+            request: request,
+            invoke: _ => Task.FromResult(new { Status = "ok" }),
+            cancellationToken: CancellationToken.None);
 
         var requestLog = AssertPairedLogs(logger).Request;
         Assert.True(requestLog.Property<bool>("PayloadTruncated"));
@@ -82,10 +82,10 @@ public sealed class ToolInvocationLoggerTests
         var request = new ThrowingPayload();
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            request,
-            _ => Task.FromResult("ok"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: request,
+            invoke: _ => Task.FromResult("ok"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("ok", actual);
         Assert.Equal(0, request.GetterCalls);
@@ -99,10 +99,10 @@ public sealed class ToolInvocationLoggerTests
         var target = CreateTarget(logger);
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            new ThrowingPayload(),
-            _ => Task.FromResult("response"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: new ThrowingPayload(),
+            invoke: _ => Task.FromResult("response"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("response", actual);
         Assert.Contains(
@@ -119,10 +119,10 @@ public sealed class ToolInvocationLoggerTests
 
         var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             target.InvokeAsync<string, string>(
-                "fixture",
-                "request",
-                _ => Task.FromException<string>(expected),
-                CancellationToken.None));
+                toolName: "fixture",
+                request: "request",
+                invoke: _ => Task.FromException<string>(expected),
+                cancellationToken: CancellationToken.None));
 
         Assert.Same(expected, actual);
         var error = Assert.Single(
@@ -143,10 +143,10 @@ public sealed class ToolInvocationLoggerTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             target.InvokeAsync<string, string>(
-                "fixture",
-                "request",
-                _ => Task.FromCanceled<string>(cancellation.Token),
-                cancellation.Token));
+                toolName: "fixture",
+                request: "request",
+                invoke: _ => Task.FromCanceled<string>(cancellation.Token),
+                cancellationToken: cancellation.Token));
 
         Assert.Contains(
             logger.Entries,
@@ -162,10 +162,10 @@ public sealed class ToolInvocationLoggerTests
             new ThrowingLogger());
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            "request",
-            _ => Task.FromResult("response"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: "request",
+            invoke: _ => Task.FromResult("response"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("response", actual);
     }
@@ -190,7 +190,11 @@ public sealed class ToolInvocationLoggerTests
             """{"query":"wrapped","includePrerelease":true,"limit":3,"environment":"qa"}""");
 
         handler.Verify(value => value.HandleAsync(
-            new ResolveLibraryRequest("wrapped", true, 3, "qa"),
+            new ResolveLibraryRequest(
+                Query: "wrapped",
+                IncludePrerelease: true,
+                Limit: 3,
+                Environment: "qa"),
             It.IsAny<CancellationToken>()), Times.Once);
         AssertToolLogs(logger, "resolve_library", "\"query\":\"wrapped\"");
     }

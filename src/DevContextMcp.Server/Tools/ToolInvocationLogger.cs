@@ -39,7 +39,12 @@ internal sealed class ToolInvocationLogger(
         var debugEnabled = IsDebugEnabled();
         if (debugEnabled)
         {
-            LogPayload("request", toolName, invocationId, request, null);
+            LogPayload(
+                direction: "request",
+                toolName: toolName,
+                invocationId: invocationId,
+                payload: request,
+                elapsedMilliseconds: null);
         }
 
         var startedAt = Stopwatch.GetTimestamp();
@@ -49,11 +54,11 @@ internal sealed class ToolInvocationLogger(
             if (debugEnabled)
             {
                 LogPayload(
-                    "response",
-                    toolName,
-                    invocationId,
-                    response,
-                    Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+                    direction: "response",
+                    toolName: toolName,
+                    invocationId: invocationId,
+                    payload: response,
+                    elapsedMilliseconds: Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
             }
 
             return response;

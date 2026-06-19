@@ -21,7 +21,11 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 
         return kind.Equals("xml_documentation", StringComparison.Ordinal)
             ? ChunkXml(path, content, maxCharacters)
-            : ChunkText(path, kind, content, maxCharacters);
+            : ChunkText(
+                path: path,
+                kind: kind,
+                content: content,
+                maxCharacters: maxCharacters);
     }
 
     private IReadOnlyList<DocumentChunkRecord> ChunkXml(
@@ -41,7 +45,11 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
             {
                 // Some XML documentation files are incomplete or use a nonstandard
                 // shape. Index their raw text instead of silently dropping them.
-                return ChunkText(path, "xml_documentation", content, maxCharacters);
+                return ChunkText(
+                    path: path,
+                    kind: "xml_documentation",
+                    content: content,
+                    maxCharacters: maxCharacters);
             }
 
             var chunks = new List<DocumentChunkRecord>();
@@ -54,12 +62,12 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                         $"{element.Name.LocalName}: {NormalizeWhitespace(element.Value)}")));
 
                 AddBoundedChunks(
-                    chunks,
-                    path,
-                    "xml_documentation",
-                    memberName,
-                    text,
-                    maxCharacters);
+                    chunks: chunks,
+                    path: path,
+                    kind: "xml_documentation",
+                    memberName: memberName,
+                    content: text,
+                    maxCharacters: maxCharacters);
             }
 
             return chunks;
@@ -68,7 +76,11 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
             exception is InvalidOperationException or System.Xml.XmlException)
         {
             // Malformed XML can still contain useful documentation text.
-            return ChunkText(path, "xml_documentation", content, maxCharacters);
+            return ChunkText(
+                path: path,
+                kind: "xml_documentation",
+                content: content,
+                maxCharacters: maxCharacters);
         }
     }
 
@@ -83,7 +95,13 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 
         foreach (var section in sections)
         {
-            AddBoundedChunks(chunks, path, kind, null, section, maxCharacters);
+            AddBoundedChunks(
+                chunks: chunks,
+                path: path,
+                kind: kind,
+                memberName: null,
+                content: section,
+                maxCharacters: maxCharacters);
         }
 
         return chunks;

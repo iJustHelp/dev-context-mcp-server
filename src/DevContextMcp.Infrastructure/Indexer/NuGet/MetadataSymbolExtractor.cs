@@ -56,25 +56,39 @@ internal static class MetadataSymbolExtractor
                 XmlDocumentationMember: $"T:{fullTypeName}"));
 
             AddMethods(
-                reader,
-                type,
-                typeNamespace,
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                typeNameProvider,
-                symbols);
+                reader: reader,
+                type: type,
+                typeNamespace: typeNamespace,
+                fullTypeName: fullTypeName,
+                assemblyPath: assemblyPath,
+                targetFramework: targetFramework,
+                typeNameProvider: typeNameProvider,
+                symbols: symbols);
             AddProperties(
-                reader,
-                type,
-                typeNamespace,
-                fullTypeName,
-                assemblyPath,
-                targetFramework,
-                typeNameProvider,
-                symbols);
-            AddEvents(reader, type, typeNamespace, fullTypeName, assemblyPath, targetFramework, symbols);
-            AddFields(reader, type, typeNamespace, fullTypeName, assemblyPath, targetFramework, symbols);
+                reader: reader,
+                type: type,
+                typeNamespace: typeNamespace,
+                fullTypeName: fullTypeName,
+                assemblyPath: assemblyPath,
+                targetFramework: targetFramework,
+                typeNameProvider: typeNameProvider,
+                symbols: symbols);
+            AddEvents(
+                reader: reader,
+                type: type,
+                typeNamespace: typeNamespace,
+                fullTypeName: fullTypeName,
+                assemblyPath: assemblyPath,
+                targetFramework: targetFramework,
+                symbols: symbols);
+            AddFields(
+                reader: reader,
+                type: type,
+                typeNamespace: typeNamespace,
+                fullTypeName: fullTypeName,
+                assemblyPath: assemblyPath,
+                targetFramework: targetFramework,
+                symbols: symbols);
         }
 
         return symbols

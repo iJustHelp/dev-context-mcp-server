@@ -46,12 +46,12 @@ internal sealed class NuGetPackageSourceClient(
                      .OrderBy(item => item.PackageId, StringComparer.OrdinalIgnoreCase))
         {
             var metadata = await metadataResource.GetMetadataAsync(
-                package.PackageId,
-                package.IncludePrerelease,
-                package.IncludeUnlisted,
-                cache,
-                NullLogger.Instance,
-                cancellationToken);
+                packageId: package.PackageId,
+                includePrerelease: package.IncludePrerelease,
+                includeUnlisted: package.IncludeUnlisted,
+                sourceCacheContext: cache,
+                log: NullLogger.Instance,
+                token: cancellationToken);
 
             var selectedMetadata = metadata
                 .Where(item => package.IncludePrerelease || !item.Identity.Version.IsPrerelease)
@@ -101,21 +101,21 @@ internal sealed class NuGetPackageSourceClient(
         {
             long length;
             await using (var file = new FileStream(
-                             tempPath,
-                             FileMode.CreateNew,
-                             FileAccess.Write,
-                             FileShare.None,
-                             81_920,
-                             FileOptions.Asynchronous | FileOptions.SequentialScan))
+                             path: tempPath,
+                             mode: FileMode.CreateNew,
+                             access: FileAccess.Write,
+                             share: FileShare.None,
+                             bufferSize: 81_920,
+                             options: FileOptions.Asynchronous | FileOptions.SequentialScan))
             await using (var bounded = new LengthLimitedStream(file, limits.MaxPackageBytes))
             {
                 var copied = await resource.CopyNupkgToStreamAsync(
-                    package.PackageId,
-                    NuGetVersion.Parse(package.Version),
-                    bounded,
-                    cache,
-                    NullLogger.Instance,
-                    timeout.Token);
+                    id: package.PackageId,
+                    version: NuGetVersion.Parse(package.Version),
+                    destination: bounded,
+                    cacheContext: cache,
+                    logger: NullLogger.Instance,
+                    cancellationToken: timeout.Token);
 
                 if (!copied)
                 {
@@ -128,12 +128,12 @@ internal sealed class NuGetPackageSourceClient(
             }
 
             await using var readStream = new FileStream(
-                tempPath,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read,
-                81_920,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+                path: tempPath,
+                mode: FileMode.Open,
+                access: FileAccess.Read,
+                share: FileShare.Read,
+                bufferSize: 81_920,
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
             var hash = await contentHasher.HashAsync(readStream, timeout.Token);
             return new DownloadedPackage(tempPath, hash, length);
         }

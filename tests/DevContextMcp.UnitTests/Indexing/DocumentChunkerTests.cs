@@ -19,7 +19,11 @@ public sealed class DocumentChunkerTests
             </doc>
             """;
 
-        var chunks = _chunker.Chunk("lib/net10.0/Fixture.xml", "xml_documentation", xml, 4000);
+        var chunks = _chunker.Chunk(
+            path: "lib/net10.0/Fixture.xml",
+            kind: "xml_documentation",
+            content: xml,
+            maxCharacters: 4000);
 
         Assert.Equal(2, chunks.Count);
         Assert.Contains(chunks, chunk => chunk.MemberName == "T:Fixture.Widget");
@@ -30,10 +34,10 @@ public sealed class DocumentChunkerTests
     public void TextChunksRespectMaximumLength()
     {
         var chunks = _chunker.Chunk(
-            "README.md",
-            "readme",
-            string.Join(' ', Enumerable.Repeat("documentation", 100)),
-            100);
+            path: "README.md",
+            kind: "readme",
+            content: string.Join(' ', Enumerable.Repeat("documentation", 100)),
+            maxCharacters: 100);
 
         Assert.True(chunks.Count > 1);
         Assert.All(chunks, chunk => Assert.True(chunk.Content.Length <= 100));

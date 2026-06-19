@@ -36,9 +36,9 @@ internal sealed class GetSymbolTool(
             IncludePrerelease: includePrerelease);
 
         return invocationLogger.InvokeAsync(
-            "get_symbol",
-            request,
-            token => handler.HandleAsync(request, token),
-            cancellationToken);
+            toolName: "get_symbol",
+            request: request,
+            invoke: token => handler.HandleAsync(request, token),
+            cancellationToken: cancellationToken);
     }
 }

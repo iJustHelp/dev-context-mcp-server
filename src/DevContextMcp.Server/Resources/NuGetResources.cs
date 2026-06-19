@@ -31,12 +31,12 @@ public sealed class NuGetResources(
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(settings.Limits.QueryTimeout);
         var resource = await store.ReadArtifactAsync(
-            settings.DatabasePath,
-            Decode(source),
-            Decode(packageId),
-            Decode(version),
-            Decode(path),
-            timeout.Token);
+            databasePath: settings.DatabasePath,
+            sourceName: Decode(source),
+            packageId: Decode(packageId),
+            version: Decode(version),
+            path: Decode(path),
+            cancellationToken: timeout.Token);
         if (resource is null)
         {
             throw new McpException("The indexed NuGet artifact was not found.");
@@ -45,10 +45,10 @@ public sealed class NuGetResources(
         return new TextResourceContents
         {
             Uri = citationFactory.ArtifactUri(
-                Decode(source),
-                Decode(packageId),
-                Decode(version),
-                Decode(path)),
+                source: Decode(source),
+                packageId: Decode(packageId),
+                version: Decode(version),
+                path: Decode(path)),
             MimeType = resource.MimeType,
             Text = resource.Text
         };
@@ -68,12 +68,12 @@ public sealed class NuGetResources(
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(settings.Limits.QueryTimeout);
         var resource = await store.ReadSymbolAsync(
-            settings.DatabasePath,
-            Decode(source),
-            Decode(packageId),
-            Decode(version),
-            Decode(qualifiedName),
-            timeout.Token);
+            databasePath: settings.DatabasePath,
+            sourceName: Decode(source),
+            packageId: Decode(packageId),
+            version: Decode(version),
+            qualifiedName: Decode(qualifiedName),
+            cancellationToken: timeout.Token);
         if (resource is null)
         {
             throw new McpException("The indexed NuGet symbol was not found.");
@@ -82,10 +82,10 @@ public sealed class NuGetResources(
         return new TextResourceContents
         {
             Uri = citationFactory.SymbolUri(
-                Decode(source),
-                Decode(packageId),
-                Decode(version),
-                Decode(qualifiedName)),
+                source: Decode(source),
+                packageId: Decode(packageId),
+                version: Decode(version),
+                qualifiedName: Decode(qualifiedName)),
             MimeType = resource.MimeType,
             Text = resource.Text
         };

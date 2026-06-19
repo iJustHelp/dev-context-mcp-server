@@ -19,11 +19,11 @@ public sealed class IndexCoordinatorTests
     public IndexCoordinatorTests()
     {
         _target = new IndexCoordinator(
-            _configurationProvider.Object,
-            _sourceClient.Object,
-            _packageProcessor.Object,
-            _documentationReader.Object,
-            _indexStore.Object);
+            configurationProvider: _configurationProvider.Object,
+            sourceClient: _sourceClient.Object,
+            packageProcessor: _packageProcessor.Object,
+            documentationReader: _documentationReader.Object,
+            indexStore: _indexStore.Object);
     }
 
     // Purpose: publishes a failed source without applying configured delete tombstones
@@ -32,7 +32,11 @@ public sealed class IndexCoordinatorTests
     {
         // arrange
         var source = CreateSource(
-            [new PackageSelectionDefinition("Active.Package", false, false, 1)],
+            [new PackageSelectionDefinition(
+                PackageId: "Active.Package",
+                IncludePrerelease: false,
+                IncludeUnlisted: false,
+                MaxVersions: 1)],
             ["Deleted.Package"]);
         SetupCommon(CreateSettings(source));
         _sourceClient
@@ -42,12 +46,12 @@ public sealed class IndexCoordinatorTests
             .ThrowsAsync(new InvalidOperationException("discovery failed"));
         _indexStore
             .Setup(store => store.PublishSourceAsync(
-                It.IsAny<string>(),
-                It.IsAny<IndexSourceDefinition>(),
-                It.IsAny<DateTimeOffset>(),
-                It.IsAny<IReadOnlyList<PackageIndexData>>(),
-                It.IsAny<IReadOnlyList<IndexRunError>>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                source: It.IsAny<IndexSourceDefinition>(),
+                startedAt: It.IsAny<DateTimeOffset>(),
+                packages: It.IsAny<IReadOnlyList<PackageIndexData>>(),
+                errors: It.IsAny<IReadOnlyList<IndexRunError>>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(EmptyPublishResult());
 
         // act
@@ -71,17 +75,17 @@ public sealed class IndexCoordinatorTests
             Times.Once);
         _indexStore.Verify(
             store => store.PublishSourceAsync(
-                DatabasePath,
-                It.Is<IndexSourceDefinition>(published =>
+                databasePath: DatabasePath,
+                source: It.Is<IndexSourceDefinition>(published =>
                     published.Name == source.Name
                     && published.DeletedPackageIds.Count == 0),
-                It.IsAny<DateTimeOffset>(),
-                It.Is<IReadOnlyList<PackageIndexData>>(packages =>
+                startedAt: It.IsAny<DateTimeOffset>(),
+                packages: It.Is<IReadOnlyList<PackageIndexData>>(packages =>
                     packages.Count == 0),
-                It.Is<IReadOnlyList<IndexRunError>>(errors =>
+                errors: It.Is<IReadOnlyList<IndexRunError>>(errors =>
                     errors.Count == 1
                     && errors[0].Code == "source_discovery_failed"),
-                It.IsAny<CancellationToken>()),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _indexStore.Verify(
             store => store.GetIndexedLibrariesAsync(
@@ -90,17 +94,17 @@ public sealed class IndexCoordinatorTests
             Times.Once);
         _sourceClient.Verify(
             client => client.DownloadAsync(
-                It.IsAny<IndexSourceDefinition>(),
-                It.IsAny<PackageVersionCandidate>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()),
+                source: It.IsAny<IndexSourceDefinition>(),
+                package: It.IsAny<PackageVersionCandidate>(),
+                limits: It.IsAny<PackageProcessingLimits>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         _packageProcessor.Verify(
             processor => processor.ProcessAsync(
-                It.IsAny<PackageVersionCandidate>(),
-                It.IsAny<DownloadedPackage>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()),
+                candidate: It.IsAny<PackageVersionCandidate>(),
+                package: It.IsAny<DownloadedPackage>(),
+                limits: It.IsAny<PackageProcessingLimits>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         VerifyDocumentationNotCalled();
         VerifyNoOtherCalls();
@@ -119,8 +123,16 @@ public sealed class IndexCoordinatorTests
         ];
         var source = CreateSource(
             [
-                new PackageSelectionDefinition("Alpha.Package", false, false, 2),
-                new PackageSelectionDefinition("Beta.Package", false, false, 1)
+                new PackageSelectionDefinition(
+                    PackageId: "Alpha.Package",
+                    IncludePrerelease: false,
+                    IncludeUnlisted: false,
+                    MaxVersions: 2),
+                new PackageSelectionDefinition(
+                    PackageId: "Beta.Package",
+                    IncludePrerelease: false,
+                    IncludeUnlisted: false,
+                    MaxVersions: 1)
             ],
             []);
         SetupCommon(CreateSettings(source));
@@ -131,19 +143,19 @@ public sealed class IndexCoordinatorTests
             .ReturnsAsync(candidates);
         _sourceClient
             .Setup(client => client.DownloadAsync(
-                It.IsAny<IndexSourceDefinition>(),
-                It.IsAny<PackageVersionCandidate>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()))
+                source: It.IsAny<IndexSourceDefinition>(),
+                package: It.IsAny<PackageVersionCandidate>(),
+                limits: It.IsAny<PackageProcessingLimits>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("download failed"));
         _indexStore
             .Setup(store => store.PublishSourceAsync(
-                It.IsAny<string>(),
-                It.IsAny<IndexSourceDefinition>(),
-                It.IsAny<DateTimeOffset>(),
-                It.IsAny<IReadOnlyList<PackageIndexData>>(),
-                It.IsAny<IReadOnlyList<IndexRunError>>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                source: It.IsAny<IndexSourceDefinition>(),
+                startedAt: It.IsAny<DateTimeOffset>(),
+                packages: It.IsAny<IReadOnlyList<PackageIndexData>>(),
+                errors: It.IsAny<IReadOnlyList<IndexRunError>>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(EmptyPublishResult());
 
         // act
@@ -168,22 +180,22 @@ public sealed class IndexCoordinatorTests
             Times.Once);
         _sourceClient.Verify(
             client => client.DownloadAsync(
-                source,
-                It.IsAny<PackageVersionCandidate>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()),
+                source: source,
+                package: It.IsAny<PackageVersionCandidate>(),
+                limits: It.IsAny<PackageProcessingLimits>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Exactly(candidates.Count));
         _indexStore.Verify(
             store => store.PublishSourceAsync(
-                DatabasePath,
-                source,
-                It.IsAny<DateTimeOffset>(),
-                It.Is<IReadOnlyList<PackageIndexData>>(packages =>
+                databasePath: DatabasePath,
+                source: source,
+                startedAt: It.IsAny<DateTimeOffset>(),
+                packages: It.Is<IReadOnlyList<PackageIndexData>>(packages =>
                     packages.Count == 0),
-                It.Is<IReadOnlyList<IndexRunError>>(errors =>
+                errors: It.Is<IReadOnlyList<IndexRunError>>(errors =>
                     errors.Count == candidates.Count
                     && errors.All(error => error.Code == "package_index_failed")),
-                It.IsAny<CancellationToken>()),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _indexStore.Verify(
             store => store.GetIndexedLibrariesAsync(
@@ -192,10 +204,10 @@ public sealed class IndexCoordinatorTests
             Times.Once);
         _packageProcessor.Verify(
             processor => processor.ProcessAsync(
-                It.IsAny<PackageVersionCandidate>(),
-                It.IsAny<DownloadedPackage>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()),
+                candidate: It.IsAny<PackageVersionCandidate>(),
+                package: It.IsAny<DownloadedPackage>(),
+                limits: It.IsAny<PackageProcessingLimits>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         VerifyDocumentationNotCalled();
         VerifyNoOtherCalls();
@@ -215,8 +227,16 @@ public sealed class IndexCoordinatorTests
         var documentation = new DocumentationIndexData(
             "hash",
             [
-                new ArtifactRecord("api.md", "company_document", "a", 1),
-                new ArtifactRecord("nested/design.md", "company_document", "b", 1)
+                new ArtifactRecord(
+                    Path: "api.md",
+                    Kind: "company_document",
+                    ContentHash: "a",
+                    Size: 1),
+                new ArtifactRecord(
+                    Path: "nested/design.md",
+                    Kind: "company_document",
+                    ContentHash: "b",
+                    Size: 1)
             ],
             []);
         _documentationReader
@@ -227,11 +247,11 @@ public sealed class IndexCoordinatorTests
             .ReturnsAsync(documentation);
         _indexStore
             .Setup(store => store.PublishDocumentationAsync(
-                DatabasePath,
-                documentationSource,
-                It.IsAny<DateTimeOffset>(),
-                documentation,
-                It.IsAny<CancellationToken>()))
+                databasePath: DatabasePath,
+                source: documentationSource,
+                startedAt: It.IsAny<DateTimeOffset>(),
+                documentation: documentation,
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(EmptyPublishResult());
 
         var actual = await _target.IndexAllAsync(CancellationToken.None);
@@ -269,11 +289,11 @@ public sealed class IndexCoordinatorTests
             Times.Never);
         _indexStore.Verify(
             store => store.PublishDocumentationAsync(
-                It.IsAny<string>(),
-                It.IsAny<DocumentationSourceDefinition>(),
-                It.IsAny<DateTimeOffset>(),
-                It.IsAny<DocumentationIndexData>(),
-                It.IsAny<CancellationToken>()),
+                databasePath: It.IsAny<string>(),
+                source: It.IsAny<DocumentationSourceDefinition>(),
+                startedAt: It.IsAny<DateTimeOffset>(),
+                documentation: It.IsAny<DocumentationIndexData>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

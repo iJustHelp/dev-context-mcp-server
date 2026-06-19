@@ -26,13 +26,17 @@ internal sealed class ResolveLibraryTool(
         [Description("Optional indexed environment such as qa or production.")] string? environment = null,
         CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(query, includePrerelease, limit, environment);
+        var request = CreateRequest(
+            query: query,
+            includePrerelease: includePrerelease,
+            limit: limit,
+            environment: environment);
 
         return invocationLogger.InvokeAsync(
-            "resolve_library",
-            request,
-            token => handler.HandleAsync(request, token),
-            cancellationToken);
+            toolName: "resolve_library",
+            request: request,
+            invoke: token => handler.HandleAsync(request, token),
+            cancellationToken: cancellationToken);
     }
 
     private static ResolveLibraryRequest CreateRequest(

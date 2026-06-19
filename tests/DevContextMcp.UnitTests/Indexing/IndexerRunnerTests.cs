@@ -69,22 +69,22 @@ public sealed class IndexerRunnerTests
     {
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
-            "fixture",
-            "succeeded",
-            "qa",
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow,
-            4,
-            4,
-            3,
-            1,
-            [
+            SourceName: "fixture",
+            Status: "succeeded",
+            Environment: "qa",
+            StartedAt: DateTimeOffset.UtcNow,
+            CompletedAt: DateTimeOffset.UtcNow,
+            Discovered: 4,
+            Indexed: 4,
+            Changed: 3,
+            Unchanged: 1,
+            Added: [
                 new PackageIdentityKey("Zulu.Package", "2.0.0"),
                 new PackageIdentityKey("Alpha.Package", "1.0.0")
             ],
-            [new PackageIdentityKey("Updated.Package", "3.0.0")],
-            [],
-            []);
+            Updated: [new PackageIdentityKey("Updated.Package", "3.0.0")],
+            Deleted: [],
+            Errors: []);
         var runner = CreateRunner(new StubCoordinator([summary]), logger);
 
         var succeeded = await runner.RunAsync(CancellationToken.None);
@@ -108,19 +108,19 @@ public sealed class IndexerRunnerTests
     {
         var logger = new CapturingLogger();
         var summary = new IndexRunSummary(
-            "fixture",
-            "succeeded",
-            "qa",
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow,
-            1,
-            1,
-            0,
-            1,
-            [],
-            [],
-            [],
-            []);
+            SourceName: "fixture",
+            Status: "succeeded",
+            Environment: "qa",
+            StartedAt: DateTimeOffset.UtcNow,
+            CompletedAt: DateTimeOffset.UtcNow,
+            Discovered: 1,
+            Indexed: 1,
+            Changed: 0,
+            Unchanged: 1,
+            Added: [],
+            Updated: [],
+            Deleted: [],
+            Errors: []);
         var runner = CreateRunner(new StubCoordinator([summary]), logger);
 
         var succeeded = await runner.RunAsync(CancellationToken.None);
