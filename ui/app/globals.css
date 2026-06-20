@@ -22,6 +22,47 @@ body {
     sans-serif;
 }
 
+.app-nav {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.app-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.app-link:hover,
+.app-link-active {
+  background: #e0f2fe;
+  color: #075985;
+}
+
 .page {
   max-width: 1200px;
   margin: 0 auto;
@@ -155,6 +196,55 @@ body {
   font-weight: 600;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-search {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 320px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.table-search input {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text);
+}
+
+.sort-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sort-button-right {
+  justify-content: flex-end;
+}
+
+.sort-marker {
+  display: inline-block;
+  min-width: 8px;
+  font-size: 11px;
+}
+
 .data-table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -219,6 +309,12 @@ body {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
+}
+
+.generated-at {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
 }
 
 @media (max-width: 900px) {
