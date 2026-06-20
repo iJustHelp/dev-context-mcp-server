@@ -1,0 +1,451 @@
+﻿{
+    "openapi":  "3.1.1",
+    "info":  {
+                 "title":  "DevContextMcp.Server | v1",
+                 "version":  "1.0.0"
+             },
+    "servers":  [
+                    {
+                        "url":  "http://127.0.0.1:2222/"
+                    }
+                ],
+    "paths":  {
+                  "/api/analytics/summary":  {
+                                                 "get":  {
+                                                             "tags":  [
+                                                                          "Analytics"
+                                                                      ],
+                                                             "operationId":  "GetSummary",
+                                                             "parameters":  [
+                                                                                {
+                                                                                    "name":  "from",
+                                                                                    "in":  "query",
+                                                                                    "schema":  {
+                                                                                                   "type":  "string"
+                                                                                               }
+                                                                                },
+                                                                                {
+                                                                                    "name":  "to",
+                                                                                    "in":  "query",
+                                                                                    "schema":  {
+                                                                                                   "type":  "string"
+                                                                                               }
+                                                                                }
+                                                                            ],
+                                                             "responses":  {
+                                                                               "200":  {
+                                                                                           "description":  "OK",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+                                                                                                                                                   "$ref":  "#/components/schemas/AnalyticsSummary"
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       },
+                                                                               "400":  {
+                                                                                           "description":  "Bad Request",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+                                                                                                                                                   "$ref":  "#/components/schemas/ApiError"
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       }
+                                                                           }
+                                                         }
+                                             },
+                  "/api/analytics/timeseries":  {
+                                                    "get":  {
+                                                                "tags":  [
+                                                                             "Analytics"
+                                                                         ],
+                                                                "operationId":  "GetTimeSeries",
+                                                                "parameters":  [
+                                                                                   {
+                                                                                       "name":  "from",
+                                                                                       "in":  "query",
+                                                                                       "schema":  {
+                                                                                                      "type":  "string"
+                                                                                                  }
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "to",
+                                                                                       "in":  "query",
+                                                                                       "schema":  {
+                                                                                                      "type":  "string"
+                                                                                                  }
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "bucket",
+                                                                                       "in":  "query",
+                                                                                       "schema":  {
+                                                                                                      "type":  "string"
+                                                                                                  }
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "tool",
+                                                                                       "in":  "query",
+                                                                                       "schema":  {
+                                                                                                      "type":  "string"
+                                                                                                  }
+                                                                                   }
+                                                                               ],
+                                                                "responses":  {
+                                                                                  "200":  {
+                                                                                              "description":  "OK",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/AnalyticsTimeSeries"
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          },
+                                                                                  "400":  {
+                                                                                              "description":  "Bad Request",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/ApiError"
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          }
+                                                                              }
+                                                            }
+                                                },
+                  "/api/analytics/tools":  {
+                                               "get":  {
+                                                           "tags":  [
+                                                                        "Analytics"
+                                                                    ],
+                                                           "operationId":  "GetTools",
+                                                           "parameters":  [
+                                                                              {
+                                                                                  "name":  "from",
+                                                                                  "in":  "query",
+                                                                                  "schema":  {
+                                                                                                 "type":  "string"
+                                                                                             }
+                                                                              },
+                                                                              {
+                                                                                  "name":  "to",
+                                                                                  "in":  "query",
+                                                                                  "schema":  {
+                                                                                                 "type":  "string"
+                                                                                             }
+                                                                              }
+                                                                          ],
+                                                           "responses":  {
+                                                                             "200":  {
+                                                                                         "description":  "OK",
+                                                                                         "content":  {
+                                                                                                         "application/json":  {
+                                                                                                                                  "schema":  {
+                                                                                                                                                 "$ref":  "#/components/schemas/ToolBreakdownResponse"
+                                                                                                                                             }
+                                                                                                                              }
+                                                                                                     }
+                                                                                     },
+                                                                             "400":  {
+                                                                                         "description":  "Bad Request",
+                                                                                         "content":  {
+                                                                                                         "application/json":  {
+                                                                                                                                  "schema":  {
+                                                                                                                                                 "$ref":  "#/components/schemas/ApiError"
+                                                                                                                                             }
+                                                                                                                              }
+                                                                                                     }
+                                                                                     }
+                                                                         }
+                                                       }
+                                           },
+                  "/api/analytics/recent":  {
+                                                "get":  {
+                                                            "tags":  [
+                                                                         "Analytics"
+                                                                     ],
+                                                            "operationId":  "GetRecent",
+                                                            "parameters":  [
+                                                                               {
+                                                                                   "name":  "from",
+                                                                                   "in":  "query",
+                                                                                   "schema":  {
+                                                                                                  "type":  "string"
+                                                                                              }
+                                                                               },
+                                                                               {
+                                                                                   "name":  "to",
+                                                                                   "in":  "query",
+                                                                                   "schema":  {
+                                                                                                  "type":  "string"
+                                                                                              }
+                                                                               },
+                                                                               {
+                                                                                   "name":  "limit",
+                                                                                   "in":  "query",
+                                                                                   "schema":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int32"
+                                                                                              }
+                                                                               }
+                                                                           ],
+                                                            "responses":  {
+                                                                              "200":  {
+                                                                                          "description":  "OK",
+                                                                                          "content":  {
+                                                                                                          "application/json":  {
+                                                                                                                                   "schema":  {
+                                                                                                                                                  "$ref":  "#/components/schemas/RecentCallsResponse"
+                                                                                                                                              }
+                                                                                                                               }
+                                                                                                      }
+                                                                                      },
+                                                                              "400":  {
+                                                                                          "description":  "Bad Request",
+                                                                                          "content":  {
+                                                                                                          "application/json":  {
+                                                                                                                                   "schema":  {
+                                                                                                                                                  "$ref":  "#/components/schemas/ApiError"
+                                                                                                                                              }
+                                                                                                                               }
+                                                                                                      }
+                                                                                      }
+                                                                          }
+                                                        }
+                                            }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "AnalyticsSummary":  {
+                                                                "required":  [
+                                                                                 "from",
+                                                                                 "to",
+                                                                                 "totalCalls",
+                                                                                 "statusCounts",
+                                                                                 "latencyMs"
+                                                                             ],
+                                                                "type":  "object",
+                                                                "properties":  {
+                                                                                   "from":  {
+                                                                                                "type":  "string",
+                                                                                                "format":  "date-time"
+                                                                                            },
+                                                                                   "to":  {
+                                                                                              "type":  "string",
+                                                                                              "format":  "date-time"
+                                                                                          },
+                                                                                   "totalCalls":  {
+                                                                                                      "type":  "integer",
+                                                                                                      "format":  "int64"
+                                                                                                  },
+                                                                                   "statusCounts":  {
+                                                                                                        "$ref":  "#/components/schemas/StatusBreakdown"
+                                                                                                    },
+                                                                                   "latencyMs":  {
+                                                                                                     "$ref":  "#/components/schemas/LatencySummary"
+                                                                                                 }
+                                                                               }
+                                                            },
+                                       "AnalyticsTimeSeries":  {
+                                                                   "required":  [
+                                                                                    "bucket",
+                                                                                    "tool",
+                                                                                    "points"
+                                                                                ],
+                                                                   "type":  "object",
+                                                                   "properties":  {
+                                                                                      "bucket":  {
+                                                                                                     "type":  "string"
+                                                                                                 },
+                                                                                      "tool":  {
+                                                                                                   "type":  [
+                                                                                                                "null",
+                                                                                                                "string"
+                                                                                                            ]
+                                                                                               },
+                                                                                      "points":  {
+                                                                                                     "type":  "array",
+                                                                                                     "items":  {
+                                                                                                                   "$ref":  "#/components/schemas/TimeBucketPoint"
+                                                                                                               }
+                                                                                                 }
+                                                                                  }
+                                                               },
+                                       "ApiError":  {
+                                                        "required":  [
+                                                                         "error"
+                                                                     ],
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                                           "error":  {
+                                                                                         "type":  "string"
+                                                                                     }
+                                                                       }
+                                                    },
+                                       "LatencySummary":  {
+                                                              "required":  [
+                                                                               "avg",
+                                                                               "p50",
+                                                                               "p95",
+                                                                               "max"
+                                                                           ],
+                                                              "type":  "object",
+                                                              "properties":  {
+                                                                                 "avg":  {
+                                                                                             "type":  "number",
+                                                                                             "format":  "double"
+                                                                                         },
+                                                                                 "p50":  {
+                                                                                             "type":  "number",
+                                                                                             "format":  "double"
+                                                                                         },
+                                                                                 "p95":  {
+                                                                                             "type":  "number",
+                                                                                             "format":  "double"
+                                                                                         },
+                                                                                 "max":  {
+                                                                                             "type":  "number",
+                                                                                             "format":  "double"
+                                                                                         }
+                                                                             }
+                                                          },
+                                       "RecentCall":  {
+                                                          "required":  [
+                                                                           "id",
+                                                                           "toolName",
+                                                                           "userName",
+                                                                           "startedAt",
+                                                                           "durationMs",
+                                                                           "status"
+                                                                       ],
+                                                          "type":  "object",
+                                                          "properties":  {
+                                                                             "id":  {
+                                                                                        "type":  "string"
+                                                                                    },
+                                                                             "toolName":  {
+                                                                                              "type":  "string"
+                                                                                          },
+                                                                             "userName":  {
+                                                                                              "type":  "string"
+                                                                                          },
+                                                                             "startedAt":  {
+                                                                                               "type":  "string",
+                                                                                               "format":  "date-time"
+                                                                                           },
+                                                                             "durationMs":  {
+                                                                                                "type":  "number",
+                                                                                                "format":  "double"
+                                                                                            },
+                                                                             "status":  {
+                                                                                            "type":  "string"
+                                                                                        }
+                                                                         }
+                                                      },
+                                       "RecentCallsResponse":  {
+                                                                   "required":  [
+                                                                                    "calls"
+                                                                                ],
+                                                                   "type":  "object",
+                                                                   "properties":  {
+                                                                                      "calls":  {
+                                                                                                    "type":  "array",
+                                                                                                    "items":  {
+                                                                                                                  "$ref":  "#/components/schemas/RecentCall"
+                                                                                                              }
+                                                                                                }
+                                                                                  }
+                                                               },
+                                       "StatusBreakdown":  {
+                                                               "required":  [
+                                                                                "success",
+                                                                                "error",
+                                                                                "canceled"
+                                                                            ],
+                                                               "type":  "object",
+                                                               "properties":  {
+                                                                                  "success":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int64"
+                                                                                              },
+                                                                                  "error":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            },
+                                                                                  "canceled":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "format":  "int64"
+                                                                                               }
+                                                                              }
+                                                           },
+                                       "TimeBucketPoint":  {
+                                                               "required":  [
+                                                                                "bucketStart",
+                                                                                "count"
+                                                                            ],
+                                                               "type":  "object",
+                                                               "properties":  {
+                                                                                  "bucketStart":  {
+                                                                                                      "type":  "string",
+                                                                                                      "format":  "date-time"
+                                                                                                  },
+                                                                                  "count":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            }
+                                                                              }
+                                                           },
+                                       "ToolBreakdownResponse":  {
+                                                                     "required":  [
+                                                                                      "tools"
+                                                                                  ],
+                                                                     "type":  "object",
+                                                                     "properties":  {
+                                                                                        "tools":  {
+                                                                                                      "type":  "array",
+                                                                                                      "items":  {
+                                                                                                                    "$ref":  "#/components/schemas/ToolUsage"
+                                                                                                                }
+                                                                                                  }
+                                                                                    }
+                                                                 },
+                                       "ToolUsage":  {
+                                                         "required":  [
+                                                                          "toolName",
+                                                                          "count",
+                                                                          "share",
+                                                                          "statusCounts",
+                                                                          "latencyMs"
+                                                                      ],
+                                                         "type":  "object",
+                                                         "properties":  {
+                                                                            "toolName":  {
+                                                                                             "type":  "string"
+                                                                                         },
+                                                                            "count":  {
+                                                                                          "type":  "integer",
+                                                                                          "format":  "int64"
+                                                                                      },
+                                                                            "share":  {
+                                                                                          "type":  "number",
+                                                                                          "format":  "double"
+                                                                                      },
+                                                                            "statusCounts":  {
+                                                                                                 "$ref":  "#/components/schemas/StatusBreakdown"
+                                                                                             },
+                                                                            "latencyMs":  {
+                                                                                              "$ref":  "#/components/schemas/LatencySummary"
+                                                                                          }
+                                                                        }
+                                                     }
+                                   }
+                   },
+    "tags":  [
+                 {
+                     "name":  "Analytics"
+                 }
+             ]
+}

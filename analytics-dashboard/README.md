@@ -51,6 +51,31 @@ npm run build
 npm run start
 ```
 
+## Typed API client (generated)
+
+The dashboard talks to the analytics API through a **generated** client, so the
+TypeScript types are always in sync with the server contract:
+
+- `openapi.json` — the OpenAPI document, exported from the .NET server.
+- `lib/generated/schema.d.ts` — types generated from it by
+  [`openapi-typescript`](https://openapi-ts.dev/) (do not edit by hand).
+- `lib/client.ts` — a tiny [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/)
+  client (`apiClient`) used by `app/page.tsx`. Its `baseUrl` is relative, so calls
+  still go through the proxy described below.
+
+Regenerate after the server's analytics contract changes:
+
+```bash
+# 1. Refresh openapi.json from the running server (analytics enabled):
+curl http://127.0.0.1:2222/openapi/v1.json -o openapi.json
+# 2. Regenerate the TypeScript types:
+npm run gen:api
+```
+
+`npm run gen:api` reads the committed `openapi.json`. To generate straight from a
+running server instead, point it at the live document:
+`openapi-typescript http://127.0.0.1:2222/openapi/v1.json -o ./lib/generated/schema.d.ts`.
+
 ## How it fits together
 
 ```

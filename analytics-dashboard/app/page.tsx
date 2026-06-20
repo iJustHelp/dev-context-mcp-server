@@ -9,12 +9,7 @@ import { LatencyPanel } from "@/components/LatencyPanel";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatusDistribution } from "@/components/StatusDistribution";
 import { ToolBreakdownTable } from "@/components/ToolBreakdownTable";
-import {
-  fetchRecent,
-  fetchSummary,
-  fetchTimeSeries,
-  fetchTools,
-} from "@/lib/api";
+import { apiClient } from "@/lib/client";
 import type {
   AnalyticsQuery,
   AnalyticsSummary,
@@ -47,17 +42,37 @@ export default function Page() {
     setLoading(true);
     setError(undefined);
     try {
+      const window = { from: current.from, to: current.to };
       const [summaryResult, toolsResult, seriesResult, recentResult] =
         await Promise.all([
-          fetchSummary(current),
-          fetchTools(current),
-          fetchTimeSeries(current),
-          fetchRecent(current, 50),
+          apiClient.GET("/api/analytics/summary", {
+            params: { query: window },
+          }),
+          apiClient.GET("/api/analytics/tools", {
+            params: { query: window },
+          }),
+          apiClient.GET("/api/analytics/timeseries", {
+            params: { query: { ...window, bucket: current.bucket } },
+          }),
+          apiClient.GET("/api/analytics/recent", {
+            params: { query: { ...window, limit: 50 } },
+          }),
         ]);
-      setSummary(summaryResult);
-      setTools(toolsResult);
-      setSeries(seriesResult);
-      setRecent(recentResult);
+
+      const failed = [summaryResult, toolsResult, seriesResult, recentResult].find(
+        (result) => result.error !== undefined,
+      );
+      if (failed) {
+        throw new Error(
+          failed.error?.error ??
+            `Analytics request failed (${failed.response.status}).`,
+        );
+      }
+
+      setSummary(summaryResult.data);
+      setTools(toolsResult.data);
+      setSeries(seriesResult.data);
+      setRecent(recentResult.data);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {

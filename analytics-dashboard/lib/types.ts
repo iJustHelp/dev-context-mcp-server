@@ -1,67 +1,29 @@
-// Shapes mirror the .NET analytics API (spec section 7). Kept camelCase to match
-// the server's JSON responses.
+// API contract types, sourced from the generated OpenAPI schema so the rest of the app
+// keeps importing stable names from "@/lib/types". Regenerate with `npm run gen:api`.
+import type { components } from "./generated/schema";
 
-export interface StatusCounts {
-  success: number;
-  error: number;
-  canceled: number;
-}
+type Schemas = components["schemas"];
 
-export interface LatencySummary {
-  avg: number;
-  p50: number;
-  p95: number;
-  max: number;
-}
+export type AnalyticsSummary = Schemas["AnalyticsSummary"];
+export type AnalyticsTimeSeries = Schemas["AnalyticsTimeSeries"];
+export type LatencySummary = Schemas["LatencySummary"];
+export type RecentCall = Schemas["RecentCall"];
+export type TimeBucketPoint = Schemas["TimeBucketPoint"];
+export type ToolUsage = Schemas["ToolUsage"];
 
-export interface AnalyticsSummary {
-  from: string;
-  to: string;
-  totalCalls: number;
-  statusCounts: StatusCounts;
-  latencyMs: LatencySummary;
-}
+// The server schema names the status counters StatusBreakdown; the dashboard refers to
+// the same shape as StatusCounts.
+export type StatusCounts = Schemas["StatusBreakdown"];
 
-export interface ToolUsage {
-  toolName: string;
-  count: number;
-  share: number;
-  statusCounts: StatusCounts;
-  latencyMs: LatencySummary;
-}
+// Response envelopes.
+export type ToolsResponse = Schemas["ToolBreakdownResponse"];
+export type RecentResponse = Schemas["RecentCallsResponse"];
 
-export interface ToolsResponse {
-  tools: ToolUsage[];
-}
-
-export interface TimeBucketPoint {
-  bucketStart: string;
-  count: number;
-}
-
-export interface AnalyticsTimeSeries {
-  bucket: string;
-  tool: string | null;
-  points: TimeBucketPoint[];
-}
-
-export interface RecentCall {
-  id: string;
-  toolName: string;
-  userName: string;
-  startedAt: string;
-  durationMs: number;
-  status: string;
-}
-
-export interface RecentResponse {
-  calls: RecentCall[];
-}
-
+// Request-shaping helpers (query inputs, not response schemas).
 export type Bucket = "hour" | "day";
 
 export interface AnalyticsQuery {
-  from: string; // ISO-8601 UTC
-  to: string; // ISO-8601 UTC
+  from: string;
+  to: string;
   bucket: Bucket;
 }
