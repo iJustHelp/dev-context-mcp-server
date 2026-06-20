@@ -167,7 +167,8 @@ public sealed class EnvironmentAwareRetrievalTests
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "qa",
-                    FixtureNuGetPackage.PackageId),
+                    FixtureNuGetPackage.PackageId,
+                    Versions: "2.1.0,2.0.0"),
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "production",
                     FixtureNuGetPackage.PackageId));

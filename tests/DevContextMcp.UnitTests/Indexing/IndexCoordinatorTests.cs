@@ -34,8 +34,6 @@ public sealed class IndexCoordinatorTests
         var source = CreateSource(
             [new PackageSelectionDefinition(
                 PackageId: "Active.Package",
-                IncludePrerelease: false,
-                IncludeUnlisted: false,
                 MaxVersions: 1)],
             ["Deleted.Package"]);
         SetupCommon(CreateSettings(source));
@@ -125,13 +123,9 @@ public sealed class IndexCoordinatorTests
             [
                 new PackageSelectionDefinition(
                     PackageId: "Alpha.Package",
-                    IncludePrerelease: false,
-                    IncludeUnlisted: false,
                     MaxVersions: 2),
                 new PackageSelectionDefinition(
                     PackageId: "Beta.Package",
-                    IncludePrerelease: false,
-                    IncludeUnlisted: false,
                     MaxVersions: 1)
             ],
             []);

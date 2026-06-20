@@ -40,7 +40,9 @@ public sealed class NuGetRetrievalPipelineTests
             var coordinator = provider.GetRequiredService<IIndexCoordinator>();
             var indexResult = await coordinator.IndexAllAsync(CancellationToken.None);
             var indexed = Assert.Single(indexResult.Summaries);
-            Assert.Equal("succeeded", indexed.Status);
+            Assert.True(
+                string.Equals(indexed.Status, "succeeded", StringComparison.Ordinal),
+                string.Join(Environment.NewLine, indexed.Errors.Select(error => $"{error.Code}: {error.Message}")));
             Assert.Equal(3, indexed.Indexed);
             var indexedLibrary = Assert.Single(indexResult.IndexedLibraries);
             Assert.Equal(
@@ -180,7 +182,7 @@ public sealed class NuGetRetrievalPipelineTests
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
                 FixtureNuGetPackage.PackageId,
-                IncludePrerelease: true));
+                Versions: "3.0.0-beta.1,2.0.0,1.2.3"));
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {

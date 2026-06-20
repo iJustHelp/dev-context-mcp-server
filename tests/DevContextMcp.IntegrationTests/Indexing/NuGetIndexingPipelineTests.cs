@@ -385,7 +385,7 @@ public sealed class NuGetIndexingPipelineTests
                     .GetRequiredService<IIndexCoordinator>()
                     .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Equal(2, summary.Discovered);
-                Assert.Equal(3, summary.Indexed);
+                Assert.Equal(2, summary.Indexed);
             }
 
             FixtureNuGetConfiguration.CreatePackageFolder(
@@ -410,7 +410,6 @@ public sealed class NuGetIndexingPipelineTests
                 Assert.Equal(0, summary.Changed);
                 Assert.Equal(
                     [
-                        new PackageIdentityKey(FixtureNuGetPackage.PackageId, olderVersion),
                         new PackageIdentityKey(
                             FixtureNuGetPackage.PackageId,
                             FixtureNuGetPackage.Version)
