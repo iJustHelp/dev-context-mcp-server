@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using DevContextMcp.Server.Core.Models.Analytics;
 
-namespace DevContextMcp.Server.Analytics;
+namespace DevContextMcp.Server.api.Analytics;
 
 /// <summary>
 /// Buffers captured events on a bounded channel drained by <see cref="AnalyticsWriterHostedService"/>.

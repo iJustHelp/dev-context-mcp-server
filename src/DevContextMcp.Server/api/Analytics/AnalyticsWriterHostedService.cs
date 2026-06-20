@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DevContextMcp.Server.Analytics;
+namespace DevContextMcp.Server.api.Analytics;
 
 /// <summary>
 /// Drains the <see cref="AnalyticsRecorder"/> channel and persists events in batches.

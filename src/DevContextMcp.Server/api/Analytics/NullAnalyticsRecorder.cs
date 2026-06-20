@@ -1,6 +1,6 @@
 using DevContextMcp.Server.Core.Models.Analytics;
 
-namespace DevContextMcp.Server.Analytics;
+namespace DevContextMcp.Server.api.Analytics;
 
 /// <summary>
 /// No-op recorder registered when analytics is disabled.

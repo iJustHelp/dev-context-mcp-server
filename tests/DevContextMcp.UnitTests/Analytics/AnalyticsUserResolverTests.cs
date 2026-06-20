@@ -1,6 +1,6 @@
 using System.Net;
 using System.Security.Claims;
-using DevContextMcp.Server.Analytics;
+using DevContextMcp.Server.api.Analytics;
 using DevContextMcp.Server.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;

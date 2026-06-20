@@ -1,7 +1,7 @@
 using DevContextMcp.Server;
-using DevContextMcp.Server.Analytics;
+using DevContextMcp.Server.api.Analytics;
+using DevContextMcp.Server.api.Context;
 using DevContextMcp.Server.Configuration;
-using DevContextMcp.Server.Context;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

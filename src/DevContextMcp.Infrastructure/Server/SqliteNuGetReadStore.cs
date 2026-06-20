@@ -667,7 +667,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                     LastIndexedAt: group.Max(row => row.IndexedAt));
             })
             .OrderBy(item => item.PackageId, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(item => item.Environment, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(item => item.Environment, StringComparer.OrdinalIgnoreCase)
             .ThenBy(item => item.SourceName, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }

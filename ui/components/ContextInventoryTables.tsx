@@ -11,7 +11,6 @@ type Direction = "asc" | "desc";
 
 type DocumentSortKey =
   | "name"
-  | "sourceName"
   | "length"
   | "chunkCount"
   | "lastIndexedAt";
@@ -19,7 +18,6 @@ type DocumentSortKey =
 type NuGetSortKey =
   | "displayName"
   | "environment"
-  | "sourceName"
   | "latestVersion"
   | "versionCount"
   | "lastIndexedAt";
@@ -48,7 +46,6 @@ export function DocumentInventoryTable({
           ? true
           : [
               document.name,
-              document.sourceName,
               document.environment ?? "",
               String(document.length),
             ]
@@ -79,12 +76,6 @@ export function DocumentInventoryTable({
                 onSort={setDocumentSort}
               />
               <SortableHeader
-                label="Source"
-                sortKey="sourceName"
-                sort={sort}
-                onSort={setDocumentSort}
-              />
-              <SortableHeader
                 label="Length"
                 sortKey="length"
                 sort={sort}
@@ -110,7 +101,6 @@ export function DocumentInventoryTable({
             {rows.map((document) => (
               <tr key={`${document.sourceName}:${document.name}`}>
                 <td>{document.name}</td>
-                <td>{document.sourceName}</td>
                 <td className="num">{formatCount(document.length)}</td>
                 <td className="num">{formatCount(document.chunkCount)}</td>
                 <td>{formatOptionalDate(document.lastIndexedAt)}</td>
@@ -148,7 +138,6 @@ export function NuGetInventoryTable({
           : [
               nuget.displayName,
               nuget.packageId,
-              nuget.sourceName,
               nuget.environment ?? "",
               nuget.latestVersion ?? "",
               nuget.versions.join(" "),
@@ -182,12 +171,6 @@ export function NuGetInventoryTable({
                 onSort={setNuGetSort}
               />
               <SortableHeader
-                label="Source"
-                sortKey="sourceName"
-                sort={sort}
-                onSort={setNuGetSort}
-              />
-              <SortableHeader
                 label="Latest"
                 sortKey="latestVersion"
                 sort={sort}
@@ -216,7 +199,6 @@ export function NuGetInventoryTable({
               <tr key={nuget.libraryId}>
                 <td>{nuget.displayName}</td>
                 <td>{nuget.environment ?? "-"}</td>
-                <td>{nuget.sourceName}</td>
                 <td>{nuget.latestVersion ?? "-"}</td>
                 <td>{nuget.versions.join(", ")}</td>
                 <td className="num">{formatCount(nuget.versionCount)}</td>
@@ -318,6 +300,10 @@ function nugetSortValue(
     return dateValue(item.lastIndexedAt);
   }
 
+  if (key === "environment") {
+    return environmentSortValue(item.environment);
+  }
+
   return item[key] ?? "";
 }
 
@@ -339,6 +325,13 @@ function compareValues(
 
 function dateValue(value: string | null): number {
   return value ? new Date(value).getTime() : 0;
+}
+
+function environmentSortValue(value: string | null): string {
+  const environment = value?.toLowerCase() ?? "";
+  const order = ["qa", "prod", "public"];
+  const index = order.indexOf(environment);
+  return `${index === -1 ? order.length : index}:${environment}`;
 }
 
 function formatOptionalDate(value: string | null): string {

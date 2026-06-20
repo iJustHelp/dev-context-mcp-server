@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace DevContextMcp.Server.Context;
+namespace DevContextMcp.Server.api.Context;
 
 internal static class ContextEndpoints
 {

@@ -2,7 +2,7 @@ using DevContextMcp.Server.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace DevContextMcp.Server.Analytics;
+namespace DevContextMcp.Server.api.Analytics;
 
 /// <summary>
 /// Resolves the audited caller identity for an invocation. This is a trust-the-header

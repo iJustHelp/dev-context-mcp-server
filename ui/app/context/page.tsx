@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/Card";
 import {
@@ -73,10 +74,13 @@ export default function ContextPage() {
 
       {context && (
         <>
-          <div className="kpi-row">
-            <Kpi value={context.totals.sourceCount} label="Sources" />
-            <Kpi value={context.totals.environmentCount} label="Environments" />
-            <Kpi value={context.totals.nuGetLibraryCount} label="NuGets" />
+          <div className="kpi-row context-kpi-row">
+            <Kpi value={context.totals.environmentCount} label="Environments">
+              <EnvironmentNames nugets={context.nugets} />
+            </Kpi>
+            <Kpi value={context.totals.nuGetLibraryCount} label="NuGets">
+              <EnvironmentBreakdown nugets={context.nugets} />
+            </Kpi>
             <Kpi value={context.totals.documentCount} label="Documents" />
           </div>
 
@@ -95,11 +99,80 @@ export default function ContextPage() {
   );
 }
 
-function Kpi({ value, label }: { value: number; label: string }) {
+function Kpi({
+  value,
+  label,
+  children,
+}: {
+  value: number;
+  label: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="kpi">
       <div className="kpi-value">{formatCount(value)}</div>
       <div className="kpi-label">{label}</div>
+      {children}
     </div>
   );
+}
+
+function EnvironmentNames({
+  nugets,
+}: {
+  nugets: IndexedContextResponse["nugets"];
+}) {
+  const environments = Array.from(
+    new Set(nugets.map((nuget) => nuget.environment ?? "Unspecified")),
+  ).sort(compareEnvironment);
+
+  return (
+    <div className="kpi-breakdown">
+      {environments.map((environment) => (
+        <span className="kpi-breakdown-item" key={environment}>
+          <span>{environment}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function EnvironmentBreakdown({
+  nugets,
+}: {
+  nugets: IndexedContextResponse["nugets"];
+}) {
+  const counts = nugets.reduce<Map<string, number>>((totals, nuget) => {
+    const environment = nuget.environment ?? "Unspecified";
+    totals.set(environment, (totals.get(environment) ?? 0) + 1);
+    return totals;
+  }, new Map<string, number>());
+
+  const rows = Array.from(counts.entries()).sort(([left], [right]) =>
+    compareEnvironment(left, right),
+  );
+
+  return (
+    <div className="kpi-breakdown">
+      {rows.map(([environment, count]) => (
+        <span className="kpi-breakdown-item" key={environment}>
+          <span>{environment}</span>
+          <strong>{formatCount(count)}</strong>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function compareEnvironment(left: string, right: string): number {
+  const order = ["qa", "prod", "public"];
+  const leftIndex = order.indexOf(left.toLowerCase());
+  const rightIndex = order.indexOf(right.toLowerCase());
+
+  if (leftIndex !== -1 || rightIndex !== -1) {
+    return (leftIndex === -1 ? order.length : leftIndex)
+      - (rightIndex === -1 ? order.length : rightIndex);
+  }
+
+  return left.localeCompare(right, undefined, { sensitivity: "base" });
 }
