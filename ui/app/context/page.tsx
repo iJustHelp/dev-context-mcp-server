@@ -84,13 +84,14 @@ export default function ContextPage() {
             <Kpi value={context.totals.documentCount} label="Documents" />
           </div>
 
-          <div className="dashboard-grid">
-            <Card title="Documents" span={12}>
-              <DocumentInventoryTable documents={context.documents} />
-            </Card>
+          <div className="dashboard-grid">           
 
             <Card title="NuGet packages" span={12}>
               <NuGetInventoryTable nugets={context.nugets} />
+            </Card>
+
+             <Card title="Documents" span={12}>
+              <DocumentInventoryTable documents={context.documents} />
             </Card>
           </div>
         </>

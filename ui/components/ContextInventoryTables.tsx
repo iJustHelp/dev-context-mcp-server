@@ -19,7 +19,7 @@ type NuGetSortKey =
   | "displayName"
   | "environment"
   | "latestVersion"
-  | "versionCount"
+  | "documentCount"
   | "lastIndexedAt";
 
 interface SortState<TKey extends string> {
@@ -140,7 +140,6 @@ export function NuGetInventoryTable({
               nuget.packageId,
               nuget.environment ?? "",
               nuget.latestVersion ?? "",
-              nuget.versions.join(" "),
             ]
               .join(" ")
               .toLowerCase()
@@ -171,21 +170,18 @@ export function NuGetInventoryTable({
                 onSort={setNuGetSort}
               />
               <SortableHeader
-                label="Latest"
+                label="Latest Version"
                 sortKey="latestVersion"
                 sort={sort}
                 onSort={setNuGetSort}
               />
-              <th>All versions</th>
               <SortableHeader
-                label="Versions"
-                sortKey="versionCount"
+                label="Chunks"
+                sortKey="documentCount"
                 sort={sort}
                 onSort={setNuGetSort}
                 align="right"
               />
-              <th className="num">Docs</th>
-              <th className="num">Symbols</th>
               <SortableHeader
                 label="Last indexed"
                 sortKey="lastIndexedAt"
@@ -200,10 +196,7 @@ export function NuGetInventoryTable({
                 <td>{nuget.displayName}</td>
                 <td>{nuget.environment ?? "-"}</td>
                 <td>{nuget.latestVersion ?? "-"}</td>
-                <td>{nuget.versions.join(", ")}</td>
-                <td className="num">{formatCount(nuget.versionCount)}</td>
                 <td className="num">{formatCount(nuget.documentCount)}</td>
-                <td className="num">{formatCount(nuget.symbolCount)}</td>
                 <td>{formatOptionalDate(nuget.lastIndexedAt)}</td>
               </tr>
             ))}
