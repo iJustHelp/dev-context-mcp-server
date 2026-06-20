@@ -104,56 +104,68 @@ public sealed class DevContextMcpOptionsValidatorTests
         AssertFailure(result, "ToolLogging:MaxPayloadBytes");
     }
 
+    // Purpose: fails when analytics is enabled with an empty database path
     [Fact]
-    public void EnabledAnalyticsWithEmptyDatabasePathFails()
+    public void Validate_EnabledAnalyticsEmptyDatabasePath_Fails()
     {
-        var result = _validator.Validate(
-            null,
-            new DevContextMcpOptions
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
             {
-                Analytics = new AnalyticsOptions
-                {
-                    Enabled = true,
-                    DatabasePath = " "
-                }
-            });
+                Enabled = true,
+                DatabasePath = " "
+            }
+        };
 
-        AssertFailure(result, "Analytics:DatabasePath");
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        AssertFailure(actual, "Analytics:DatabasePath");
     }
 
+    // Purpose: fails when analytics is enabled with an empty user header name
     [Fact]
-    public void EnabledAnalyticsWithEmptyUserHeaderFails()
+    public void Validate_EnabledAnalyticsEmptyUserHeader_Fails()
     {
-        var result = _validator.Validate(
-            null,
-            new DevContextMcpOptions
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
             {
-                Analytics = new AnalyticsOptions
-                {
-                    Enabled = true,
-                    UserHeaderName = " "
-                }
-            });
+                Enabled = true,
+                UserHeaderName = " "
+            }
+        };
 
-        AssertFailure(result, "Analytics:UserHeaderName");
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        AssertFailure(actual, "Analytics:UserHeaderName");
     }
 
+    // Purpose: skips analytics validation when analytics is disabled
     [Fact]
-    public void DisabledAnalyticsSkipsValidation()
+    public void Validate_DisabledAnalytics_SkipsAnalyticsValidation()
     {
-        var result = _validator.Validate(
-            null,
-            new DevContextMcpOptions
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
             {
-                Analytics = new AnalyticsOptions
-                {
-                    Enabled = false,
-                    DatabasePath = " ",
-                    UserHeaderName = " "
-                }
-            });
+                Enabled = false,
+                DatabasePath = " ",
+                UserHeaderName = " "
+            }
+        };
 
-        Assert.Equal(ValidateOptionsResult.Success, result);
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        Assert.Equal(ValidateOptionsResult.Success, actual);
     }
 
     private static void AssertFailure(

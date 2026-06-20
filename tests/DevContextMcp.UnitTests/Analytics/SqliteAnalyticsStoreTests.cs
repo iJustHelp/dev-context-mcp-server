@@ -3,62 +3,111 @@ using DevContextMcp.Server.Core.Models.Analytics;
 
 namespace DevContextMcp.UnitTests.Analytics;
 
+// SqliteAnalyticsStore has no injected collaborators, so per the test standard it
+// is exercised directly without Moq, against a temporary database file.
 public sealed class SqliteAnalyticsStoreTests : IDisposable
 {
     private static readonly DateTimeOffset Base =
         new(2026, 6, 19, 10, 0, 0, TimeSpan.Zero);
 
-    private readonly string _databasePath =
-        Path.Combine(Path.GetTempPath(), $"analytics-{Guid.NewGuid():N}.db");
-
-    private readonly SqliteAnalyticsStore _store = new();
-
-    private readonly AnalyticsWindow _window = new(
+    private static readonly AnalyticsWindow Window = new(
         new DateTimeOffset(2026, 6, 19, 9, 0, 0, TimeSpan.Zero),
         new DateTimeOffset(2026, 6, 19, 12, 0, 0, TimeSpan.Zero));
 
-    [Fact]
-    public async Task ReadsReturnEmptyWhenDatabaseMissing()
-    {
-        var summary = await _store.GetSummaryAsync(_databasePath, _window, default);
-        var tools = await _store.GetToolBreakdownAsync(_databasePath, _window, default);
-        var series = await _store.GetTimeSeriesAsync(_databasePath, _window, "hour", null, default);
-        var recent = await _store.GetRecentAsync(_databasePath, _window, 50, default);
+    private readonly string _databasePath =
+        Path.Combine(Path.GetTempPath(), $"analytics-{Guid.NewGuid():N}.db");
 
+    private readonly SqliteAnalyticsStore _target = new();
+
+    // Purpose: returns an empty summary when the analytics database does not exist
+    [Fact]
+    public async Task GetSummaryAsync_DatabaseMissing_ReturnsEmptySummary()
+    {
+        // arrange
+
+        // act
+        var actual = await _target.GetSummaryAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
         Assert.False(File.Exists(_databasePath));
-        Assert.Equal(0, summary.TotalCalls);
-        Assert.Empty(tools);
-        Assert.Empty(series.Points);
-        Assert.Empty(recent);
+        Assert.Equal(0, actual.TotalCalls);
+        Assert.Equal(0, actual.StatusCounts.Success);
+        Assert.Equal(0, actual.LatencyMs.Max);
     }
 
+    // Purpose: returns no tool rows when the analytics database does not exist
     [Fact]
-    public async Task AppendThenSummaryAggregatesStatusAndLatency()
+    public async Task GetToolBreakdownAsync_DatabaseMissing_ReturnsEmpty()
     {
-        await SeedAsync();
+        // arrange
 
-        var summary = await _store.GetSummaryAsync(_databasePath, _window, default);
+        // act
+        var actual = await _target.GetToolBreakdownAsync(_databasePath, Window, CancellationToken.None);
 
-        Assert.Equal(6, summary.TotalCalls);
-        Assert.Equal(5, summary.StatusCounts.Success);
-        Assert.Equal(1, summary.StatusCounts.Error);
-        Assert.Equal(0, summary.StatusCounts.Canceled);
-        Assert.Equal(25.833, summary.LatencyMs.Avg, 3);
-        Assert.Equal(25, summary.LatencyMs.P50, 3);
-        Assert.Equal(47.5, summary.LatencyMs.P95, 3);
-        Assert.Equal(50, summary.LatencyMs.Max, 3);
+        // assert
+        Assert.Empty(actual);
     }
 
+    // Purpose: returns no time buckets when the analytics database does not exist
     [Fact]
-    public async Task ToolBreakdownComputesPerToolCountsSharesAndLatency()
+    public async Task GetTimeSeriesAsync_DatabaseMissing_ReturnsEmpty()
     {
+        // arrange
+
+        // act
+        var actual = await _target.GetTimeSeriesAsync(_databasePath, Window, "hour", null, CancellationToken.None);
+
+        // assert
+        Assert.Empty(actual.Points);
+    }
+
+    // Purpose: returns no recent calls when the analytics database does not exist
+    [Fact]
+    public async Task GetRecentAsync_DatabaseMissing_ReturnsEmpty()
+    {
+        // arrange
+
+        // act
+        var actual = await _target.GetRecentAsync(_databasePath, Window, 50, CancellationToken.None);
+
+        // assert
+        Assert.Empty(actual);
+    }
+
+    // Purpose: aggregates total, status counts, and latency for the window
+    [Fact]
+    public async Task GetSummaryAsync_WithSeededEvents_AggregatesStatusAndLatency()
+    {
+        // arrange
         await SeedAsync();
 
-        var tools = await _store.GetToolBreakdownAsync(_databasePath, _window, default);
+        // act
+        var actual = await _target.GetSummaryAsync(_databasePath, Window, CancellationToken.None);
 
-        // Ordered by count descending.
+        // assert
+        Assert.Equal(6, actual.TotalCalls);
+        Assert.Equal(5, actual.StatusCounts.Success);
+        Assert.Equal(1, actual.StatusCounts.Error);
+        Assert.Equal(0, actual.StatusCounts.Canceled);
+        Assert.Equal(25.833, actual.LatencyMs.Avg, 3);
+        Assert.Equal(25, actual.LatencyMs.P50, 3);
+        Assert.Equal(47.5, actual.LatencyMs.P95, 3);
+        Assert.Equal(50, actual.LatencyMs.Max, 3);
+    }
+
+    // Purpose: computes per-tool counts, shares, and latency ordered by count
+    [Fact]
+    public async Task GetToolBreakdownAsync_WithSeededEvents_ComputesCountsSharesAndLatency()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetToolBreakdownAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
         Assert.Collection(
-            tools,
+            actual,
             queryDocs =>
             {
                 Assert.Equal("query_docs", queryDocs.ToolName);
@@ -80,16 +129,20 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
             });
     }
 
+    // Purpose: groups call counts into hourly buckets
     [Fact]
-    public async Task TimeSeriesBucketsByHour()
+    public async Task GetTimeSeriesAsync_HourBucket_GroupsByHour()
     {
+        // arrange
         await SeedAsync();
 
-        var series = await _store.GetTimeSeriesAsync(_databasePath, _window, "hour", null, default);
+        // act
+        var actual = await _target.GetTimeSeriesAsync(_databasePath, Window, "hour", null, CancellationToken.None);
 
-        Assert.Equal("hour", series.Bucket);
+        // assert
+        Assert.Equal("hour", actual.Bucket);
         Assert.Collection(
-            series.Points,
+            actual.Points,
             ten =>
             {
                 Assert.Equal(new DateTimeOffset(2026, 6, 19, 10, 0, 0, TimeSpan.Zero), ten.BucketStart);
@@ -102,48 +155,58 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
             });
     }
 
+    // Purpose: restricts the time series to the requested tool
     [Fact]
-    public async Task TimeSeriesFiltersByTool()
+    public async Task GetTimeSeriesAsync_ToolFilter_ReturnsOnlyMatchingTool()
     {
+        // arrange
         await SeedAsync();
 
-        var series = await _store.GetTimeSeriesAsync(_databasePath, _window, "hour", "ping", default);
+        // act
+        var actual = await _target.GetTimeSeriesAsync(_databasePath, Window, "hour", "ping", CancellationToken.None);
 
-        Assert.Equal("ping", series.Tool);
-        var point = Assert.Single(series.Points);
+        // assert
+        Assert.Equal("ping", actual.Tool);
+        var point = Assert.Single(actual.Points);
         Assert.Equal(1, point.Count);
     }
 
+    // Purpose: returns the newest calls first and respects the limit
     [Fact]
-    public async Task RecentReturnsNewestFirstAndRespectsLimit()
+    public async Task GetRecentAsync_WithLimit_ReturnsNewestFirst()
     {
+        // arrange
         await SeedAsync();
 
-        var recent = await _store.GetRecentAsync(_databasePath, _window, 2, default);
+        // act
+        var actual = await _target.GetRecentAsync(_databasePath, Window, 2, CancellationToken.None);
 
-        Assert.Equal(2, recent.Count);
-        Assert.Equal("ping", recent[0].ToolName);
-        Assert.Equal("bob", recent[0].UserName);
-        Assert.True(recent[0].StartedAt >= recent[1].StartedAt);
+        // assert
+        Assert.Equal(2, actual.Count);
+        Assert.Equal("ping", actual[0].ToolName);
+        Assert.Equal("bob", actual[0].UserName);
+        Assert.True(actual[0].StartedAt >= actual[1].StartedAt);
     }
 
+    // Purpose: excludes events that fall outside the requested window
     [Fact]
-    public async Task WindowExcludesEventsOutsideRange()
+    public async Task GetSummaryAsync_NarrowWindow_ExcludesEventsOutsideRange()
     {
+        // arrange
         await SeedAsync();
         var narrow = new AnalyticsWindow(
             new DateTimeOffset(2026, 6, 19, 10, 30, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 6, 19, 12, 0, 0, TimeSpan.Zero));
 
-        var summary = await _store.GetSummaryAsync(_databasePath, narrow, default);
+        // act
+        var actual = await _target.GetSummaryAsync(_databasePath, narrow, CancellationToken.None);
 
-        // Only the 11:00 ping falls inside the narrowed window.
-        Assert.Equal(1, summary.TotalCalls);
+        // assert
+        Assert.Equal(1, actual.TotalCalls);
     }
 
-    private async Task SeedAsync()
-    {
-        await _store.AppendAsync(
+    private Task SeedAsync() =>
+        _target.AppendAsync(
             _databasePath,
             [
                 Record("q1", "query_docs", "alice", Base, 10, AnalyticsStatus.Success, null),
@@ -153,8 +216,7 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
                 Record("q5", "query_docs", "alice", Base.AddMinutes(4), 50, AnalyticsStatus.Error, "InvalidOperationException"),
                 Record("p1", "ping", "bob", Base.AddHours(1), 5, AnalyticsStatus.Success, null),
             ],
-            default);
-    }
+            CancellationToken.None);
 
     private static ToolInvocationRecord Record(
         string id,
@@ -168,14 +230,9 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
 
     public void Dispose()
     {
-        if (File.Exists(_databasePath))
+        foreach (var suffix in new[] { string.Empty, "-wal", "-shm" })
         {
-            File.Delete(_databasePath);
-        }
-
-        foreach (var sidecar in new[] { "-wal", "-shm" })
-        {
-            var path = _databasePath + sidecar;
+            var path = _databasePath + suffix;
             if (File.Exists(path))
             {
                 File.Delete(path);

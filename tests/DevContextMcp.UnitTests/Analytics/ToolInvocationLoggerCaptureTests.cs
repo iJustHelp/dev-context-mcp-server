@@ -5,106 +5,139 @@ using DevContextMcp.Server.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace DevContextMcp.UnitTests.Analytics;
 
+// IAnalyticsRecorder is the injected interface collaborator and is mocked. The logger
+// (NullLogger) and the sealed AnalyticsUserResolver are framework/value collaborators
+// supplied as real instances per the test standard.
 public sealed class ToolInvocationLoggerCaptureTests
 {
-    [Fact]
-    public async Task SuccessRecordsSuccessEventWithUser()
-    {
-        var recorder = new FakeRecorder();
-        var target = CreateTarget(recorder, "alice");
+    private readonly Mock<IAnalyticsRecorder> _recorder = new();
+    private readonly ToolInvocationLogger _target;
+    private ToolInvocationRecord? _captured;
 
-        var actual = await target.InvokeAsync(
-            toolName: "query_docs",
-            request: "request",
-            invoke: _ => Task.FromResult("response"),
-            cancellationToken: CancellationToken.None);
-
-        Assert.Equal("response", actual);
-        var record = Assert.Single(recorder.Records);
-        Assert.Equal("query_docs", record.ToolName);
-        Assert.Equal(AnalyticsStatus.Success, record.Status);
-        Assert.Equal("alice", record.UserName);
-        Assert.Null(record.ErrorType);
-        Assert.True(record.DurationMs >= 0);
-    }
-
-    [Fact]
-    public async Task FaultRecordsErrorEventWithExceptionType()
-    {
-        var recorder = new FakeRecorder();
-        var target = CreateTarget(recorder, "alice");
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            target.InvokeAsync<string, string>(
-                toolName: "query_docs",
-                request: "request",
-                invoke: _ => throw new InvalidOperationException("boom"),
-                cancellationToken: CancellationToken.None));
-
-        var record = Assert.Single(recorder.Records);
-        Assert.Equal(AnalyticsStatus.Error, record.Status);
-        Assert.Equal(nameof(InvalidOperationException), record.ErrorType);
-    }
-
-    [Fact]
-    public async Task CancellationRecordsCanceledEvent()
-    {
-        var recorder = new FakeRecorder();
-        var target = CreateTarget(recorder, "alice");
-        using var cancellation = new CancellationTokenSource();
-        await cancellation.CancelAsync();
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            target.InvokeAsync<string, string>(
-                toolName: "query_docs",
-                request: "request",
-                invoke: _ => Task.FromCanceled<string>(cancellation.Token),
-                cancellationToken: cancellation.Token));
-
-        var record = Assert.Single(recorder.Records);
-        Assert.Equal(AnalyticsStatus.Canceled, record.Status);
-        Assert.Null(record.ErrorType);
-    }
-
-    [Fact]
-    public async Task DisabledRecorderCapturesNothing()
-    {
-        var recorder = new FakeRecorder { Enabled = false };
-        var target = CreateTarget(recorder, "alice");
-
-        await target.InvokeAsync(
-            toolName: "query_docs",
-            request: "request",
-            invoke: _ => Task.FromResult("response"),
-            cancellationToken: CancellationToken.None);
-
-        Assert.Empty(recorder.Records);
-    }
-
-    private static ToolInvocationLogger CreateTarget(IAnalyticsRecorder recorder, string user)
+    public ToolInvocationLoggerCaptureTests()
     {
         var context = new DefaultHttpContext();
-        context.Request.Headers["X-User-Name"] = user;
+        context.Request.Headers["X-User-Name"] = "alice";
         var resolver = new AnalyticsUserResolver(
             new HttpContextAccessor { HttpContext = context },
             Options.Create(new DevContextMcpOptions()));
+        _recorder
+            .Setup(recorder => recorder.Record(It.IsAny<ToolInvocationRecord>()))
+            .Callback<ToolInvocationRecord>(record => _captured = record);
 
-        return new ToolInvocationLogger(
+        _target = new ToolInvocationLogger(
             Options.Create(new DevContextMcpOptions()),
             NullLogger<ToolInvocationLogger>.Instance,
-            recorder,
+            _recorder.Object,
             resolver);
     }
 
-    private sealed class FakeRecorder : IAnalyticsRecorder
+    // Purpose: records one success event carrying the resolved user
+    [Fact]
+    public async Task InvokeAsync_Success_RecordsSuccessEvent()
     {
-        public List<ToolInvocationRecord> Records { get; } = [];
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
 
-        public bool Enabled { get; init; } = true;
+        // act
+        var actual = await _target.InvokeAsync(
+            "query_docs",
+            "request",
+            _ => Task.FromResult("response"),
+            CancellationToken.None);
 
-        public void Record(ToolInvocationRecord record) => Records.Add(record);
+        // assert
+        Assert.Equal("response", actual);
+        Assert.NotNull(_captured);
+        Assert.Equal("query_docs", _captured.ToolName);
+        Assert.Equal("alice", _captured.UserName);
+        Assert.Null(_captured.ErrorType);
+        Assert.True(_captured.DurationMs >= 0);
+        VerifyRecorded(AnalyticsStatus.Success);
+    }
+
+    // Purpose: records an error event with the exception type when the call faults
+    [Fact]
+    public async Task InvokeAsync_WhenInvokeThrows_RecordsErrorEvent()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
+
+        // act
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _target.InvokeAsync<string, string>(
+                "query_docs",
+                "request",
+                _ => throw new InvalidOperationException("boom"),
+                CancellationToken.None));
+
+        // assert
+        Assert.Equal("boom", actual.Message);
+        Assert.NotNull(_captured);
+        Assert.Equal(nameof(InvalidOperationException), _captured.ErrorType);
+        VerifyRecorded(AnalyticsStatus.Error);
+    }
+
+    // Purpose: records a canceled event when the call is canceled
+    [Fact]
+    public async Task InvokeAsync_WhenCanceled_RecordsCanceledEvent()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        // act
+        var actual = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _target.InvokeAsync<string, string>(
+                "query_docs",
+                "request",
+                _ => Task.FromCanceled<string>(cancellation.Token),
+                cancellation.Token));
+
+        // assert
+        Assert.NotNull(actual);
+        Assert.NotNull(_captured);
+        Assert.Equal(AnalyticsStatus.Canceled, _captured.Status);
+        Assert.Null(_captured.ErrorType);
+        VerifyRecorded(AnalyticsStatus.Canceled);
+    }
+
+    // Purpose: does not record when the recorder is disabled
+    [Fact]
+    public async Task InvokeAsync_RecorderDisabled_DoesNotRecord()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(false);
+
+        // act
+        var actual = await _target.InvokeAsync(
+            "query_docs",
+            "request",
+            _ => Task.FromResult("response"),
+            CancellationToken.None);
+
+        // assert
+        Assert.Equal("response", actual);
+        Assert.Null(_captured);
+        _recorder.VerifyGet(recorder => recorder.Enabled, Times.Once);
+        _recorder.Verify(
+            recorder => recorder.Record(It.IsAny<ToolInvocationRecord>()),
+            Times.Never);
+        _recorder.VerifyNoOtherCalls();
+    }
+
+    private void VerifyRecorded(string expectedStatus)
+    {
+        _recorder.VerifyGet(recorder => recorder.Enabled, Times.Once);
+        _recorder.Verify(
+            recorder => recorder.Record(
+                It.Is<ToolInvocationRecord>(record => record.Status == expectedStatus)),
+            Times.Once);
+        _recorder.VerifyNoOtherCalls();
     }
 }

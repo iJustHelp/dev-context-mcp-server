@@ -39,11 +39,11 @@ public sealed class ToolInvocationLoggerTests
         Assert.False(requestLog.Property<bool>("PayloadTruncated"));
         Assert.False(responseLog.Property<bool>("PayloadTruncated"));
         Assert.Contains(
-            "\"libraryId\":\"nuget:qa/Demo.Cities\"",
+            "\"libraryId\": \"nuget:qa/Demo.Cities\"",
             requestLog.Property<string>("Payload"),
             StringComparison.Ordinal);
         Assert.Contains(
-            "\"status\":\"ok\"",
+            "\"status\": \"ok\"",
             responseLog.Property<string>("Payload"),
             StringComparison.Ordinal);
         Assert.True(responseLog.Property<double>("ElapsedMilliseconds") >= 0);
@@ -200,7 +200,7 @@ public sealed class ToolInvocationLoggerTests
                 Limit: 3,
                 Environment: "qa"),
             It.IsAny<CancellationToken>()), Times.Once);
-        AssertToolLogs(logger, "resolve_library", "\"query\":\"wrapped\"");
+        AssertToolLogs(logger, "resolve_library", "\"query\": \"wrapped\"");
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public sealed class ToolInvocationLoggerTests
         AssertToolLogs(
             logger,
             "query_docs",
-            "\"question\":\"testing guidance\"");
+            "\"question\": \"testing guidance\"");
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public sealed class ToolInvocationLoggerTests
 
         await tool.GetSymbolAsync("nuget:qa/Demo.Cities", "CityClient");
 
-        AssertToolLogs(logger, "get_symbol", "\"symbol\":\"CityClient\"");
+        AssertToolLogs(logger, "get_symbol", "\"symbol\": \"CityClient\"");
     }
 
     [Fact]
@@ -262,7 +262,7 @@ public sealed class ToolInvocationLoggerTests
         AssertToolLogs(
             logger,
             "list_versions",
-            "\"includePrerelease\":true");
+            "\"includePrerelease\": true");
     }
 
     private static ToolInvocationLogger CreateTarget(
