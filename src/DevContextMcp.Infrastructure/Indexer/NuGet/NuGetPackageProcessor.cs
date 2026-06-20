@@ -20,12 +20,12 @@ internal sealed class NuGetPackageProcessor(
         CancellationToken cancellationToken)
     {
         await using var stream = new FileStream(
-            package.FilePath,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            81_920,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+            path: package.FilePath,
+            mode: FileMode.Open,
+            access: FileAccess.Read,
+            share: FileShare.Read,
+            bufferSize: 81_920,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan);
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false);
         var entries = ArchiveSafetyValidator.Validate(archive, limits);
         var nuspecEntry = entries.SingleOrDefault(entry =>
@@ -58,10 +58,10 @@ internal sealed class NuGetPackageProcessor(
                     ContentHash: contentHasher.Hash(bytes),
                     Size: bytes.LongLength));
                 documents.AddRange(documentChunker.Chunk(
-                    path,
-                    kind,
-                    content,
-                    limits.MaxDocumentChars));
+                    path: path,
+                    kind: kind,
+                    content: content,
+                    maxCharacters: limits.MaxDocumentChars));
             }
         }
 

@@ -655,7 +655,11 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             : "text/plain";
 
     private static DateTimeOffset? ParseDate(string? value) =>
-        DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed)
+        DateTimeOffset.TryParse(
+            input: value,
+            formatProvider: CultureInfo.InvariantCulture,
+            styles: DateTimeStyles.RoundtripKind,
+            result:out  var parsed)
             ? parsed
             : null;
 }

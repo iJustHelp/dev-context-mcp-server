@@ -55,14 +55,14 @@ internal sealed class QueryDocsHandler(
         try
         {
             var resolution = await libraryResolver.ResolveAsync(
-                settings.DatabasePath,
-                libraryId,
-                settings.EnvironmentOrder,
-                settings.SourceOrder,
-                request.Version,
-                request.ProjectVersion,
-                request.IncludePrerelease,
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                libraryId: libraryId,
+                environmentOrder: settings.EnvironmentOrder,
+                sourceOrder: settings.SourceOrder,
+                requestedVersion: request.Version,
+                projectVersion: request.ProjectVersion,
+                includePrerelease: request.IncludePrerelease,
+                cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {
                 return NotFound(
@@ -81,10 +81,10 @@ internal sealed class QueryDocsHandler(
             if (selection.Library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
             {
                 return await QueryDocumentationAsync(
-                    settings,
-                    selection,
-                    request,
-                    timeout.Token);
+                    settings: settings,
+                    selection: selection,
+                    request: request,
+                    cancellationToken: timeout.Token);
             }
 
             var version = selection.Version;
@@ -98,18 +98,18 @@ internal sealed class QueryDocsHandler(
 
             var maximumResults = Math.Min(request.MaxResults, settings.Limits.MaxResults);
             var documents = await store.SearchDocumentsAsync(
-                settings.DatabasePath,
-                version.Version.LibraryVersionId,
-                request.Question,
-                Math.Max(maximumResults * 3, 20),
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                libraryVersionId: version.Version.LibraryVersionId,
+                question: request.Question,
+                limit: Math.Max(maximumResults * 3, 20),
+                cancellationToken: timeout.Token);
             var symbols = await SearchSymbolsAsync(
-                settings,
-                version.Version.LibraryVersionId,
-                request.Question,
-                request.TargetFramework,
-                Math.Max(maximumResults * 2, 20),
-                timeout.Token);
+                settings: settings,
+                libraryVersionId: version.Version.LibraryVersionId,
+                question: request.Question,
+                targetFramework: request.TargetFramework,
+                limit: Math.Max(maximumResults * 2, 20),
+                cancellationToken: timeout.Token);
 
             var ranked = new List<RankedEvidence>();
             ranked.AddRange(documents.Select(document =>
@@ -118,10 +118,10 @@ internal sealed class QueryDocsHandler(
                     + (document.Kind == "readme" ? 0.10
                         : document.Kind == "xml_documentation" ? 0.05 : 0);
                 var uri = citationFactory.ArtifactUri(
-                    selection.Library.SourceName,
-                    selection.Library.PackageId,
-                    version.Version.Version,
-                    document.Path);
+                    source: selection.Library.SourceName,
+                    packageId: selection.Library.PackageId,
+                    version: version.Version.Version,
+                    path: document.Path);
                 return new RankedEvidence(
                     Kind: document.Kind,
                     Title: document.MemberName ?? document.Path,
@@ -143,10 +143,10 @@ internal sealed class QueryDocsHandler(
                     _ => 0.80
                 };
                 var uri = citationFactory.SymbolUri(
-                    selection.Library.SourceName,
-                    selection.Library.PackageId,
-                    version.Version.Version,
-                    symbol.FullyQualifiedName);
+                    source: selection.Library.SourceName,
+                    packageId: selection.Library.PackageId,
+                    version: version.Version.Version,
+                    qualifiedName: symbol.FullyQualifiedName);
                 var text = symbol.Documentation is null
                     ? symbol.Signature
                     : $"{symbol.Signature}{Environment.NewLine}{symbol.Documentation}";
@@ -182,11 +182,11 @@ internal sealed class QueryDocsHandler(
                 .ThenBy(item => item.Text, StringComparer.Ordinal)
                 .ToArray();
             var selected = responseBudget.Take(
-                ordered,
-                maximumResults,
-                settings.Limits.MaxResponseBytes,
-                item => item.Text,
-                out var truncated);
+                values: ordered,
+                maximumCount: maximumResults,
+                maximumBytes: settings.Limits.MaxResponseBytes,
+                textSelector: item => item.Text,
+                truncated:                out  var truncated);
 
             var warnings = BuildWarnings(version, truncated);
             var context = Context(selection, version);
@@ -295,11 +295,11 @@ internal sealed class QueryDocsHandler(
 
         var maximumResults = Math.Min(request.MaxResults, settings.Limits.MaxResults);
         var documents = await store.SearchDocumentsAsync(
-            settings.DatabasePath,
-            snapshot.LibraryVersionId,
-            request.Question,
-            Math.Max(maximumResults * 3, 20),
-            cancellationToken);
+            databasePath: settings.DatabasePath,
+            libraryVersionId: snapshot.LibraryVersionId,
+            question: request.Question,
+            limit: Math.Max(maximumResults * 3, 20),
+            cancellationToken: cancellationToken);
         var ranked = documents
             .Select(document => new RankedEvidence(
                 Kind: document.Kind,
@@ -317,11 +317,11 @@ internal sealed class QueryDocsHandler(
             .ThenBy(item => item.Uri, StringComparer.Ordinal)
             .ToArray();
         var selected = responseBudget.Take(
-            ranked,
-            maximumResults,
-            settings.Limits.MaxResponseBytes,
-            item => item.Text,
-            out var truncated);
+            values: ranked,
+            maximumCount: maximumResults,
+            maximumBytes: settings.Limits.MaxResponseBytes,
+            textSelector: item => item.Text,
+            truncated:            out  var truncated);
         var warnings = new List<ToolWarning>();
         if (request.Version is not null
             || request.ProjectVersion is not null
@@ -406,12 +406,12 @@ internal sealed class QueryDocsHandler(
         foreach (var term in RetrievalHandlerSupport.SymbolTerms(question))
         {
             values.AddRange(await store.SearchSymbolsAsync(
-                settings.DatabasePath,
-                libraryVersionId,
-                term,
-                targetFramework,
-                limit,
-                cancellationToken));
+                databasePath: settings.DatabasePath,
+                libraryVersionId: libraryVersionId,
+                query: term,
+                targetFramework: targetFramework,
+                limit: limit,
+                cancellationToken: cancellationToken));
         }
 
         return values

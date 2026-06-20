@@ -54,10 +54,10 @@ internal sealed class ResolveLibraryHandler(
 
             var limit = Math.Min(request.Limit, settings.Limits.MaxResults);
             var rawCandidates = await store.SearchLibrariesAsync(
-                settings.DatabasePath,
-                request.Query,
-                Math.Max(limit * 4, 20),
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                query: request.Query,
+                limit: Math.Max(limit * 4, 20),
+                cancellationToken: timeout.Token);
             var matches = new List<RankedLibraryMatch>();
 
             foreach (var candidate in rawCandidates.Where(candidate =>
@@ -111,11 +111,11 @@ internal sealed class ResolveLibraryHandler(
                     candidate.LibraryId,
                     timeout.Token);
                 var resolution = versionResolver.Resolve(
-                    versions,
-                    null,
-                    null,
-                    null,
-                    request.IncludePrerelease);
+                    versions: versions,
+                    requestedVersion: null,
+                    projectVersion: null,
+                    recommendedVersion: null,
+                    includePrerelease: request.IncludePrerelease);
                 if (resolution is null)
                 {
                     continue;

@@ -26,9 +26,9 @@ internal sealed class ListVersionsTool(
         var request = new ListVersionsRequest(libraryId, includePrerelease);
 
         return invocationLogger.InvokeAsync(
-            "list_versions",
-            request,
-            token => handler.HandleAsync(request, token),
-            cancellationToken);
+            toolName: "list_versions",
+            request: request,
+            invoke: token => handler.HandleAsync(request, token),
+            cancellationToken: cancellationToken);
     }
 }

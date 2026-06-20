@@ -10,7 +10,12 @@ public sealed class VersionResolverTests
     [Fact]
     public void RequestedVersionWins()
     {
-        var result = _resolver.Resolve(Versions(), "1.0.0", "2.0.0", "2.0.0", true);
+        var result = _resolver.Resolve(
+            versions: Versions(),
+            requestedVersion: "1.0.0",
+            projectVersion: "2.0.0",
+            recommendedVersion: "2.0.0",
+            includePrerelease: true);
 
         Assert.NotNull(result);
         Assert.Equal("1.0.0", result.Version.Version);
@@ -20,7 +25,12 @@ public sealed class VersionResolverTests
     [Fact]
     public void RecommendationWinsWhenNoContextVersionExists()
     {
-        var result = _resolver.Resolve(Versions(), null, null, "2.0.0", false);
+        var result = _resolver.Resolve(
+            versions: Versions(),
+            requestedVersion: null,
+            projectVersion: null,
+            recommendedVersion: "2.0.0",
+            includePrerelease: false);
 
         Assert.NotNull(result);
         Assert.Equal("2.0.0", result.Version.Version);
@@ -34,7 +44,12 @@ public sealed class VersionResolverTests
             .Append(new("four", "10.0.0", true, false, false, null))
             .ToArray();
 
-        var result = _resolver.Resolve(versions, null, null, null, false);
+        var result = _resolver.Resolve(
+            versions: versions,
+            requestedVersion: null,
+            projectVersion: null,
+            recommendedVersion: null,
+            includePrerelease: false);
 
         Assert.NotNull(result);
         Assert.Equal("10.0.0", result.Version.Version);
@@ -45,13 +60,29 @@ public sealed class VersionResolverTests
     {
         var prerelease = new[]
         {
-            new IndexedVersionRecord("one", "3.0.0-beta.1", true, true, false, null)
+            new IndexedVersionRecord(
+                LibraryVersionId: "one",
+                Version: "3.0.0-beta.1",
+                Listed: true,
+                Prerelease: true,
+                Deprecated: false,
+                PublishedAt: null)
         };
 
-        Assert.Null(_resolver.Resolve(prerelease, null, null, null, false));
+        Assert.Null(_resolver.Resolve(
+            versions: prerelease,
+            requestedVersion: null,
+            projectVersion: null,
+            recommendedVersion: null,
+            includePrerelease: false));
         Assert.Equal(
             "3.0.0-beta.1",
-            _resolver.Resolve(prerelease, null, null, null, true)!.Version.Version);
+            _resolver.Resolve(
+                versions: prerelease,
+                requestedVersion: null,
+                projectVersion: null,
+                recommendedVersion: null,
+                includePrerelease: true)!.Version.Version);
     }
 
     private static IReadOnlyList<IndexedVersionRecord> Versions() =>

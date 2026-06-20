@@ -14,4 +14,6 @@ public sealed class DevContextMcpOptions
     public RetrievalOptions Retrieval { get; set; } = new RetrievalOptions();
 
     public ToolLoggingOptions ToolLogging { get; set; } = new ToolLoggingOptions();
+
+    public AnalyticsOptions Analytics { get; set; } = new AnalyticsOptions();
 }

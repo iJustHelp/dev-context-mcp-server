@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Core.Contracts.GetSymbol;
@@ -8,6 +9,7 @@ using DevContextMcp.Server.Core.Contracts.QueryDocs;
 using DevContextMcp.Server.Core.Contracts.ResolveLibrary;
 using DevContextMcp.Server.Core.Services;
 using DevContextMcp.Server.Tools;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -25,10 +27,10 @@ public sealed class ToolInvocationLoggerTests
         var response = Response();
 
         var actual = await target.InvokeAsync(
-            "list_versions",
-            request,
-            _ => Task.FromResult(response),
-            CancellationToken.None);
+            toolName: "list_versions",
+            request: request,
+            invoke: _ => Task.FromResult(response),
+            cancellationToken: CancellationToken.None);
 
         Assert.Same(response, actual);
         var (requestLog, responseLog) = AssertPairedLogs(logger);
@@ -37,11 +39,11 @@ public sealed class ToolInvocationLoggerTests
         Assert.False(requestLog.Property<bool>("PayloadTruncated"));
         Assert.False(responseLog.Property<bool>("PayloadTruncated"));
         Assert.Contains(
-            "\"libraryId\":\"nuget:qa/Demo.Cities\"",
+            "\"libraryId\": \"nuget:qa/Demo.Cities\"",
             requestLog.Property<string>("Payload"),
             StringComparison.Ordinal);
         Assert.Contains(
-            "\"status\":\"ok\"",
+            "\"status\": \"ok\"",
             responseLog.Property<string>("Payload"),
             StringComparison.Ordinal);
         Assert.True(responseLog.Property<double>("ElapsedMilliseconds") >= 0);
@@ -56,10 +58,10 @@ public sealed class ToolInvocationLoggerTests
         var request = new { Query = new string('x', 2_000) };
 
         await target.InvokeAsync(
-            "resolve_library",
-            request,
-            _ => Task.FromResult(new { Status = "ok" }),
-            CancellationToken.None);
+            toolName: "resolve_library",
+            request: request,
+            invoke: _ => Task.FromResult(new { Status = "ok" }),
+            cancellationToken: CancellationToken.None);
 
         var requestLog = AssertPairedLogs(logger).Request;
         Assert.True(requestLog.Property<bool>("PayloadTruncated"));
@@ -82,10 +84,10 @@ public sealed class ToolInvocationLoggerTests
         var request = new ThrowingPayload();
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            request,
-            _ => Task.FromResult("ok"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: request,
+            invoke: _ => Task.FromResult("ok"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("ok", actual);
         Assert.Equal(0, request.GetterCalls);
@@ -99,10 +101,10 @@ public sealed class ToolInvocationLoggerTests
         var target = CreateTarget(logger);
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            new ThrowingPayload(),
-            _ => Task.FromResult("response"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: new ThrowingPayload(),
+            invoke: _ => Task.FromResult("response"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("response", actual);
         Assert.Contains(
@@ -119,10 +121,10 @@ public sealed class ToolInvocationLoggerTests
 
         var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             target.InvokeAsync<string, string>(
-                "fixture",
-                "request",
-                _ => Task.FromException<string>(expected),
-                CancellationToken.None));
+                toolName: "fixture",
+                request: "request",
+                invoke: _ => Task.FromException<string>(expected),
+                cancellationToken: CancellationToken.None));
 
         Assert.Same(expected, actual);
         var error = Assert.Single(
@@ -143,10 +145,10 @@ public sealed class ToolInvocationLoggerTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             target.InvokeAsync<string, string>(
-                "fixture",
-                "request",
-                _ => Task.FromCanceled<string>(cancellation.Token),
-                cancellation.Token));
+                toolName: "fixture",
+                request: "request",
+                invoke: _ => Task.FromCanceled<string>(cancellation.Token),
+                cancellationToken: cancellation.Token));
 
         Assert.Contains(
             logger.Entries,
@@ -159,13 +161,15 @@ public sealed class ToolInvocationLoggerTests
     {
         var target = new ToolInvocationLogger(
             Options.Create(new DevContextMcpOptions()),
-            new ThrowingLogger());
+            new ThrowingLogger(),
+            new NullAnalyticsRecorder(),
+            CreateUserResolver());
 
         var actual = await target.InvokeAsync(
-            "fixture",
-            "request",
-            _ => Task.FromResult("response"),
-            CancellationToken.None);
+            toolName: "fixture",
+            request: "request",
+            invoke: _ => Task.FromResult("response"),
+            cancellationToken: CancellationToken.None);
 
         Assert.Equal("response", actual);
     }
@@ -190,9 +194,13 @@ public sealed class ToolInvocationLoggerTests
             """{"query":"wrapped","includePrerelease":true,"limit":3,"environment":"qa"}""");
 
         handler.Verify(value => value.HandleAsync(
-            new ResolveLibraryRequest("wrapped", true, 3, "qa"),
+            new ResolveLibraryRequest(
+                Query: "wrapped",
+                IncludePrerelease: true,
+                Limit: 3,
+                Environment: "qa"),
             It.IsAny<CancellationToken>()), Times.Once);
-        AssertToolLogs(logger, "resolve_library", "\"query\":\"wrapped\"");
+        AssertToolLogs(logger, "resolve_library", "\"query\": \"wrapped\"");
     }
 
     [Fact]
@@ -215,7 +223,7 @@ public sealed class ToolInvocationLoggerTests
         AssertToolLogs(
             logger,
             "query_docs",
-            "\"question\":\"testing guidance\"");
+            "\"question\": \"testing guidance\"");
     }
 
     [Fact]
@@ -235,7 +243,7 @@ public sealed class ToolInvocationLoggerTests
 
         await tool.GetSymbolAsync("nuget:qa/Demo.Cities", "CityClient");
 
-        AssertToolLogs(logger, "get_symbol", "\"symbol\":\"CityClient\"");
+        AssertToolLogs(logger, "get_symbol", "\"symbol\": \"CityClient\"");
     }
 
     [Fact]
@@ -254,7 +262,7 @@ public sealed class ToolInvocationLoggerTests
         AssertToolLogs(
             logger,
             "list_versions",
-            "\"includePrerelease\":true");
+            "\"includePrerelease\": true");
     }
 
     private static ToolInvocationLogger CreateTarget(
@@ -268,7 +276,12 @@ public sealed class ToolInvocationLoggerTests
                     MaxPayloadBytes = maximumPayloadBytes
                 }
             }),
-            logger);
+            logger,
+            new NullAnalyticsRecorder(),
+            CreateUserResolver());
+
+    private static AnalyticsUserResolver CreateUserResolver() =>
+        new(new HttpContextAccessor(), Options.Create(new DevContextMcpOptions()));
 
     private static ListVersionsResponse Response() =>
         new()

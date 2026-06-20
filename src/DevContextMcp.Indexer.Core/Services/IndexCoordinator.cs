@@ -62,11 +62,11 @@ internal sealed class IndexCoordinator(
                 settings.Limits,
                 cancellationToken);
             var publish = await indexStore.PublishDocumentationAsync(
-                settings.DatabasePath,
-                source,
-                startedAt,
-                documentation,
-                cancellationToken);
+                databasePath: settings.DatabasePath,
+                source: source,
+                startedAt: startedAt,
+                documentation: documentation,
+                cancellationToken: cancellationToken);
 
             return new DocumentationIndexResult(
                 new IndexRunSummary(
@@ -141,12 +141,12 @@ internal sealed class IndexCoordinator(
             var discoveryError = new IndexRunError("source_discovery_failed", exception.Message);
             var completedAt = DateTimeOffset.UtcNow;
             await indexStore.PublishSourceAsync(
-                settings.DatabasePath,
-                source with { DeletedPackageIds = [] },
-                startedAt,
-                [],
-                [discoveryError],
-                cancellationToken);
+                databasePath: settings.DatabasePath,
+                source: source with { DeletedPackageIds = [] },
+                startedAt: startedAt,
+                packages: [],
+                errors: [discoveryError],
+                cancellationToken: cancellationToken);
 
             return new IndexRunSummary(
                 SourceName: source.Name,
@@ -174,16 +174,16 @@ internal sealed class IndexCoordinator(
             try
             {
                 await using var package = await sourceClient.DownloadAsync(
-                    source,
-                    candidate,
-                    settings.Limits,
-                    cancellationToken);
+                    source: source,
+                    package: candidate,
+                    limits: settings.Limits,
+                    cancellationToken: cancellationToken);
 
                 indexedPackages.Add(await packageProcessor.ProcessAsync(
-                    candidate,
-                    package,
-                    settings.Limits,
-                    cancellationToken));
+                    candidate: candidate,
+                    package: package,
+                    limits: settings.Limits,
+                    cancellationToken: cancellationToken));
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -200,12 +200,12 @@ internal sealed class IndexCoordinator(
         }
 
         var publish = await indexStore.PublishSourceAsync(
-            settings.DatabasePath,
-            source,
-            startedAt,
-            indexedPackages,
-            errors,
-            cancellationToken);
+            databasePath: settings.DatabasePath,
+            source: source,
+            startedAt: startedAt,
+            packages: indexedPackages,
+            errors: errors,
+            cancellationToken: cancellationToken);
 
         var status = indexedPackages.Count == 0 && errors.Count > 0
             ? "failed"

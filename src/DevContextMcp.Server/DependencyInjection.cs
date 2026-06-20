@@ -1,4 +1,5 @@
 using DevContextMcp.Infrastructure;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core;
 using DevContextMcp.Server.Core.Models;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
         services.AddSingleton<IValidateOptions<DevContextMcpOptions>, DevContextMcpOptionsValidator>();
         var optionsSection = configuration.GetSection(DevContextMcpOptions.SectionName);
         services.AddOptions<DevContextMcpOptions>()
@@ -45,13 +47,37 @@ public static class DependencyInjection
         services.AddSingleton<ToolRegistrationCatalog>();
         services.AddSingleton<ToolInvocationLogger>();
         services.AddHostedService<StartupDiagnosticsHostedService>();
+        AddAnalytics(services, optionsSection);
 
         return services;
+    }
+
+    private static void AddAnalytics(
+        IServiceCollection services,
+        IConfigurationSection optionsSection)
+    {
+        services.AddSingleton<AnalyticsUserResolver>();
+
+        var enabled = optionsSection
+            .GetSection(nameof(DevContextMcpOptions.Analytics))
+            .GetValue(nameof(AnalyticsOptions.Enabled), true);
+        if (!enabled)
+        {
+            services.AddSingleton<IAnalyticsRecorder, NullAnalyticsRecorder>();
+            return;
+        }
+
+        services.AddSingleton<AnalyticsRecorder>();
+        services.AddSingleton<IAnalyticsRecorder>(
+            provider => provider.GetRequiredService<AnalyticsRecorder>());
+        services.AddAnalyticsInfrastructure();
+        services.AddHostedService<AnalyticsWriterHostedService>();
     }
 
     public static IMcpServerBuilder WithDevContextMcpTools(this IMcpServerBuilder builder)
     {
         return builder
+            .WithTools<PingTool>()
             .WithTools<ResolveLibraryTool>()
             .WithTools<QueryDocsTool>()
             .WithTools<GetSymbolTool>()

@@ -38,9 +38,9 @@ internal sealed class QueryDocsTool(
             IncludePrerelease: includePrerelease);
 
         return invocationLogger.InvokeAsync(
-            "query_docs",
-            request,
-            token => handler.HandleAsync(request, token),
-            cancellationToken);
+            toolName: "query_docs",
+            request: request,
+            invoke: token => handler.HandleAsync(request, token),
+            cancellationToken: cancellationToken);
     }
 }

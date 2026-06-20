@@ -13,7 +13,7 @@ public sealed class ToolDiscoveryTests
 
         var tools = await server.Client.ListToolsAsync(cancellationToken: timeout.Token);
 
-        Assert.Equal(4, tools.Count);
+        Assert.Equal(5, tools.Count);
         Assert.Equal(
             ToolRegistrationCatalog.ExpectedNames.Order(StringComparer.Ordinal),
             tools.Select(tool => tool.Name).Order(StringComparer.Ordinal));

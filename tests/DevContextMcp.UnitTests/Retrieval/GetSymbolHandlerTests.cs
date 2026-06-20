@@ -23,10 +23,10 @@ public sealed class GetSymbolHandlerTests
     public GetSymbolHandlerTests()
     {
         _target = new GetSymbolHandler(
-            CreateSettings(),
-            _libraryResolver.Object,
-            _store.Object,
-            _citationFactory.Object);
+            settings: CreateSettings(),
+            libraryResolver: _libraryResolver.Object,
+            store: _store.Object,
+            citationFactory: _citationFactory.Object);
     }
 
     // Purpose: rejects symbol lookup for the versionless company documentation library
@@ -56,14 +56,14 @@ public sealed class GetSymbolHandlerTests
             "Company.Widget");
         _libraryResolver
             .Setup(resolver => resolver.ResolveAsync(
-                It.IsAny<string>(),
-                It.IsAny<LibraryId>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<string?>(),
-                It.IsAny<string?>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryId: It.IsAny<LibraryId>(),
+                environmentOrder: It.IsAny<IReadOnlyList<string>>(),
+                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
+                requestedVersion: It.IsAny<string?>(),
+                projectVersion: It.IsAny<string?>(),
+                includePrerelease: It.IsAny<bool>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LibraryResolutionResult(
                 LibraryResolutionStatus.EnvironmentNotFound));
 
@@ -93,12 +93,12 @@ public sealed class GetSymbolHandlerTests
         SetupResolvedLibrary();
         _store
             .Setup(store => store.SearchSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string?>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                query: It.IsAny<string>(),
+                targetFramework: It.IsAny<string?>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         // act
@@ -111,21 +111,21 @@ public sealed class GetSymbolHandlerTests
         VerifySettingsAndResolution(request, SourceName);
         _store.Verify(
             store => store.SearchSymbolsAsync(
-                DatabasePath,
-                LibraryVersionId,
-                request.Symbol,
-                request.TargetFramework,
-                12,
-                It.IsAny<CancellationToken>()),
+                databasePath: DatabasePath,
+                libraryVersionId: LibraryVersionId,
+                query: request.Symbol,
+                targetFramework: request.TargetFramework,
+                limit: 12,
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _store.Verify(
             store => store.GetRelatedSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()),
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                containingType: It.IsAny<string>(),
+                fullyQualifiedName: It.IsAny<string>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         _citationFactory.VerifyNoOtherCalls();
         VerifyNoOtherCalls();
@@ -151,19 +151,19 @@ public sealed class GetSymbolHandlerTests
         SetupResolvedLibrary();
         _store
             .Setup(store => store.SearchSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string?>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                query: It.IsAny<string>(),
+                targetFramework: It.IsAny<string?>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync([first, firstDuplicateFramework, second]);
         _citationFactory
             .Setup(factory => factory.SymbolUri(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
+                source: It.IsAny<string>(),
+                packageId: It.IsAny<string>(),
+                version: It.IsAny<string>(),
+                qualifiedName: It.IsAny<string>()))
             .Returns<string, string, string, string>(
                 (source, package, version, symbol) =>
                     $"nuget://{source}/{package}/{version}/symbol/{symbol}");
@@ -181,28 +181,28 @@ public sealed class GetSymbolHandlerTests
         VerifySettingsAndResolution(request, SourceName);
         _store.Verify(
             store => store.SearchSymbolsAsync(
-                DatabasePath,
-                LibraryVersionId,
-                request.Symbol,
-                null,
-                12,
-                It.IsAny<CancellationToken>()),
+                databasePath: DatabasePath,
+                libraryVersionId: LibraryVersionId,
+                query: request.Symbol,
+                targetFramework: null,
+                limit: 12,
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _store.Verify(
             store => store.GetRelatedSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()),
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                containingType: It.IsAny<string>(),
+                fullyQualifiedName: It.IsAny<string>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         _citationFactory.Verify(
             factory => factory.SymbolUri(
-                SourceName,
-                PackageId,
-                Version,
-                It.IsAny<string>()),
+                source: SourceName,
+                packageId: PackageId,
+                version: Version,
+                qualifiedName: It.IsAny<string>()),
             Times.Exactly(2));
         VerifyNoOtherCalls();
     }
@@ -231,28 +231,28 @@ public sealed class GetSymbolHandlerTests
             warningCodes: ["recommended_version_not_indexed"]);
         _store
             .Setup(store => store.SearchSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string?>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                query: It.IsAny<string>(),
+                targetFramework: It.IsAny<string?>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync([symbol]);
         _store
             .Setup(store => store.GetRelatedSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                containingType: It.IsAny<string>(),
+                fullyQualifiedName: It.IsAny<string>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync([related]);
         _citationFactory
             .Setup(factory => factory.SymbolUri(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
+                source: It.IsAny<string>(),
+                packageId: It.IsAny<string>(),
+                version: It.IsAny<string>(),
+                qualifiedName: It.IsAny<string>()))
             .Returns("nuget://qa/Company.Package/1.2.3/symbol/Company.Widget");
 
         // act
@@ -276,28 +276,28 @@ public sealed class GetSymbolHandlerTests
         VerifySettingsAndResolution(request, SourceName);
         _store.Verify(
             store => store.SearchSymbolsAsync(
-                DatabasePath,
-                LibraryVersionId,
-                request.Symbol,
-                null,
-                12,
-                It.IsAny<CancellationToken>()),
+                databasePath: DatabasePath,
+                libraryVersionId: LibraryVersionId,
+                query: request.Symbol,
+                targetFramework: null,
+                limit: 12,
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _store.Verify(
             store => store.GetRelatedSymbolsAsync(
-                DatabasePath,
-                LibraryVersionId,
-                "Company.Widget",
-                "Company.Widget",
-                10,
-                It.IsAny<CancellationToken>()),
+                databasePath: DatabasePath,
+                libraryVersionId: LibraryVersionId,
+                containingType: "Company.Widget",
+                fullyQualifiedName: "Company.Widget",
+                limit: 10,
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _citationFactory.Verify(
             factory => factory.SymbolUri(
-                SourceName,
-                PackageId,
-                Version,
-                "Company.Widget"),
+                source: SourceName,
+                packageId: PackageId,
+                version: Version,
+                qualifiedName: "Company.Widget"),
             Times.Once);
         VerifyNoOtherCalls();
     }
@@ -312,14 +312,14 @@ public sealed class GetSymbolHandlerTests
             "Company.Widget");
         _libraryResolver
             .Setup(resolver => resolver.ResolveAsync(
-                It.IsAny<string>(),
-                It.IsAny<LibraryId>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<string?>(),
-                It.IsAny<string?>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryId: It.IsAny<LibraryId>(),
+                environmentOrder: It.IsAny<IReadOnlyList<string>>(),
+                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
+                requestedVersion: It.IsAny<string?>(),
+                projectVersion: It.IsAny<string?>(),
+                includePrerelease: It.IsAny<bool>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IndexUnavailableException("missing index"));
 
         // act
@@ -340,14 +340,14 @@ public sealed class GetSymbolHandlerTests
     {
         _libraryResolver
             .Setup(resolver => resolver.ResolveAsync(
-                It.IsAny<string>(),
-                It.IsAny<LibraryId>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<string?>(),
-                It.IsAny<string?>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
+                databasePath: It.IsAny<string>(),
+                libraryId: It.IsAny<LibraryId>(),
+                environmentOrder: It.IsAny<IReadOnlyList<string>>(),
+                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
+                requestedVersion: It.IsAny<string?>(),
+                projectVersion: It.IsAny<string?>(),
+                includePrerelease: It.IsAny<bool>(),
+                cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateResolution(deprecated, warningCodes ?? []));
     }
 
@@ -357,16 +357,16 @@ public sealed class GetSymbolHandlerTests
     {
         _libraryResolver.Verify(
             resolver => resolver.ResolveAsync(
-                DatabasePath,
-                It.Is<LibraryId>(libraryId =>
+                databasePath: DatabasePath,
+                libraryId: It.Is<LibraryId>(libraryId =>
                     libraryId.PackageId == PackageId
                     && libraryId.Environment == environment),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                request.Version,
-                request.ProjectVersion,
-                request.IncludePrerelease,
-                It.IsAny<CancellationToken>()),
+                environmentOrder: It.IsAny<IReadOnlyList<string>>(),
+                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
+                requestedVersion: request.Version,
+                projectVersion: request.ProjectVersion,
+                includePrerelease: request.IncludePrerelease,
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -374,21 +374,21 @@ public sealed class GetSymbolHandlerTests
     {
         _store.Verify(
             store => store.SearchSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string?>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()),
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                query: It.IsAny<string>(),
+                targetFramework: It.IsAny<string?>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
         _store.Verify(
             store => store.GetRelatedSymbolsAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()),
+                databasePath: It.IsAny<string>(),
+                libraryVersionId: It.IsAny<string>(),
+                containingType: It.IsAny<string>(),
+                fullyQualifiedName: It.IsAny<string>(),
+                limit: It.IsAny<int>(),
+                cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -412,33 +412,33 @@ public sealed class GetSymbolHandlerTests
             [SourceName],
             [SourceName],
             new RetrievalLimits(
-                8,
-                10,
-                100_000,
-                TimeSpan.FromSeconds(10),
-                0.2,
-                3));
+                DefaultMaxResults: 8,
+                MaxResults: 10,
+                MaxResponseBytes: 100_000,
+                QueryTimeout: TimeSpan.FromSeconds(10),
+                MinimumEvidenceScore: 0.2,
+                AmbiguousSymbolLimit: 3));
 
     private static LibraryResolutionResult CreateResolution(
         bool deprecated,
         IReadOnlyList<string> warningCodes)
     {
         var indexedVersion = new IndexedVersionRecord(
-            LibraryVersionId,
-            Version,
-            true,
-            false,
-            deprecated,
-            null);
+            LibraryVersionId: LibraryVersionId,
+            Version: Version,
+            Listed: true,
+            Prerelease: false,
+            Deprecated: deprecated,
+            PublishedAt: null);
         var selection = new ResolvedLibrarySelection(
             new ResolvedLibraryRecord(
-                "stored-library-id",
-                "nuget",
-                PackageId,
-                SourceName,
-                SourceName,
-                PackageId,
-                "Fixture package"),
+                LibraryId: "stored-library-id",
+                Kind: "nuget",
+                DisplayName: PackageId,
+                SourceName: SourceName,
+                Environment: SourceName,
+                PackageId: PackageId,
+                Description: "Fixture package"),
             [indexedVersion],
             new VersionResolution(
                 indexedVersion,

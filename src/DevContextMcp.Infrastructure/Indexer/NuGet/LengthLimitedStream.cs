@@ -65,7 +65,11 @@ internal sealed class LengthLimitedStream(Stream inner, long maximumLength) : St
     {
         EnsureCapacity(count);
         _written += count;
-        return WriteCoreAsync(buffer, offset, count, cancellationToken);
+        return WriteCoreAsync(
+            buffer: buffer,
+            offset: offset,
+            count: count,
+            cancellationToken: cancellationToken);
     }
 
     protected override void Dispose(bool disposing)

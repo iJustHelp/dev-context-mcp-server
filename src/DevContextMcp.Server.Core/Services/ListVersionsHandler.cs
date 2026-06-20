@@ -31,14 +31,14 @@ internal sealed class ListVersionsHandler(
         try
         {
             var resolution = await libraryResolver.ResolveAsync(
-                settings.DatabasePath,
-                libraryId,
-                settings.EnvironmentOrder,
-                settings.SourceOrder,
-                null,
-                null,
-                request.IncludePrerelease,
-                timeout.Token);
+                databasePath: settings.DatabasePath,
+                libraryId: libraryId,
+                environmentOrder: settings.EnvironmentOrder,
+                sourceOrder: settings.SourceOrder,
+                requestedVersion: null,
+                projectVersion: null,
+                includePrerelease: request.IncludePrerelease,
+                cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {
                 return NotFound(

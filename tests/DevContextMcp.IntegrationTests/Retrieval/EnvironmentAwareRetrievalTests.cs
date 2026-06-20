@@ -171,8 +171,18 @@ public sealed class EnvironmentAwareRetrievalTests
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "production",
                     FixtureNuGetPackage.PackageId));
-        AddSource(values, 0, "qaNuget", "qa", qa);
-        AddSource(values, 1, "productionNuget", "production", production);
+        AddSource(
+            values: values,
+            index: 0,
+            name: "qaNuget",
+            environment: "qa",
+            serviceIndex: qa);
+        AddSource(
+            values: values,
+            index: 1,
+            name: "productionNuget",
+            environment: "production",
+            serviceIndex: production);
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(values)

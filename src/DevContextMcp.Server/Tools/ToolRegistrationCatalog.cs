@@ -7,6 +7,7 @@ public sealed class ToolRegistrationCatalog
 {
     public static readonly IReadOnlyList<string> ExpectedNames =
     [
+        "ping",
         "resolve_library",
         "query_docs",
         "get_symbol",

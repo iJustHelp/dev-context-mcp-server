@@ -104,6 +104,70 @@ public sealed class DevContextMcpOptionsValidatorTests
         AssertFailure(result, "ToolLogging:MaxPayloadBytes");
     }
 
+    // Purpose: fails when analytics is enabled with an empty database path
+    [Fact]
+    public void Validate_EnabledAnalyticsEmptyDatabasePath_Fails()
+    {
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
+            {
+                Enabled = true,
+                DatabasePath = " "
+            }
+        };
+
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        AssertFailure(actual, "Analytics:DatabasePath");
+    }
+
+    // Purpose: fails when analytics is enabled with an empty user header name
+    [Fact]
+    public void Validate_EnabledAnalyticsEmptyUserHeader_Fails()
+    {
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
+            {
+                Enabled = true,
+                UserHeaderName = " "
+            }
+        };
+
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        AssertFailure(actual, "Analytics:UserHeaderName");
+    }
+
+    // Purpose: skips analytics validation when analytics is disabled
+    [Fact]
+    public void Validate_DisabledAnalytics_SkipsAnalyticsValidation()
+    {
+        // arrange
+        var options = new DevContextMcpOptions
+        {
+            Analytics = new AnalyticsOptions
+            {
+                Enabled = false,
+                DatabasePath = " ",
+                UserHeaderName = " "
+            }
+        };
+
+        // act
+        var actual = _validator.Validate(null, options);
+
+        // assert
+        Assert.Equal(ValidateOptionsResult.Success, actual);
+    }
+
     private static void AssertFailure(
         ValidateOptionsResult result,
         string expectedText)

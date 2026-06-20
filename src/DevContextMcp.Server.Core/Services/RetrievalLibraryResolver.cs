@@ -32,10 +32,10 @@ internal sealed class RetrievalLibraryResolver(
         }
 
         var libraries = await store.FindLibrariesAsync(
-            databasePath,
-            libraryId.Kind,
-            libraryId.PackageId,
-            cancellationToken);
+            databasePath: databasePath,
+            kind: libraryId.Kind,
+            packageId: libraryId.PackageId,
+            cancellationToken: cancellationToken);
         var matchingLibraries = libraryId.Environment is null
             ? libraries
             : libraries
@@ -66,11 +66,11 @@ internal sealed class RetrievalLibraryResolver(
                 library,
                 versions,
                 versionResolver.Resolve(
-                    versions,
-                    requestedVersion,
-                    projectVersion,
-                    null,
-                    includePrerelease)));
+                    versions: versions,
+                    requestedVersion: requestedVersion,
+                    projectVersion: projectVersion,
+                    recommendedVersion: null,
+                    includePrerelease: includePrerelease)));
         }
 
         var selected = candidates

@@ -49,11 +49,11 @@ public sealed class ToolContractSerializationTests
     public void RequestAndResponseContractsRoundTrip()
     {
         var request = new QueryDocsRequest(
-            "nuget:qa/Company.Customer.Client",
-            "How do I register the client?",
-            "4.2.0",
-            "net10.0",
-            8);
+            LibraryId: "nuget:qa/Company.Customer.Client",
+            Question: "How do I register the client?",
+            Version: "4.2.0",
+            TargetFramework: "net10.0",
+            MaxResults: 8);
         var response = new QueryDocsResponse
         {
             Status = ToolResultStatus.Ok,
