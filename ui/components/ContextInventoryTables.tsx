@@ -18,7 +18,7 @@ type DocumentSortKey =
 type NuGetSortKey =
   | "displayName"
   | "environment"
-  | "latestVersion"
+  | "versions"
   | "documentCount"
   | "lastIndexedAt";
 
@@ -139,7 +139,7 @@ export function NuGetInventoryTable({
               nuget.displayName,
               nuget.packageId,
               nuget.environment ?? "",
-              nuget.latestVersion ?? "",
+              nuget.versions.join(" "),
             ]
               .join(" ")
               .toLowerCase()
@@ -170,8 +170,8 @@ export function NuGetInventoryTable({
                 onSort={setNuGetSort}
               />
               <SortableHeader
-                label="Latest Version"
-                sortKey="latestVersion"
+                label="Versions"
+                sortKey="versions"
                 sort={sort}
                 onSort={setNuGetSort}
               />
@@ -195,7 +195,7 @@ export function NuGetInventoryTable({
               <tr key={nuget.libraryId}>
                 <td>{nuget.displayName}</td>
                 <td>{nuget.environment ?? "-"}</td>
-                <td>{nuget.latestVersion ?? "-"}</td>
+                <td className="version-list">{formatVersions(nuget.versions)}</td>
                 <td className="num">{formatCount(nuget.documentCount)}</td>
                 <td>{formatOptionalDate(nuget.lastIndexedAt)}</td>
               </tr>
@@ -297,6 +297,10 @@ function nugetSortValue(
     return environmentSortValue(item.environment);
   }
 
+  if (key === "versions") {
+    return item.versions.join(" ");
+  }
+
   return item[key] ?? "";
 }
 
@@ -329,4 +333,8 @@ function environmentSortValue(value: string | null): string {
 
 function formatOptionalDate(value: string | null): string {
   return value ? formatDateTime(value) : "-";
+}
+
+function formatVersions(versions: string[]): string {
+  return versions.length === 0 ? "-" : versions.join(", ");
 }

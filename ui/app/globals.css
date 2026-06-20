@@ -278,6 +278,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.version-list {
+  max-width: 280px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
 .status-pill {
   display: inline-block;
   padding: 2px 8px;

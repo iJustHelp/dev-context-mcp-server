@@ -77,15 +77,15 @@ public sealed class NuGetRetrievalPipelineTests
                 .HandleAsync(
                     new QueryDocsRequest(
                         $"nuget:{FixtureNuGetPackage.PackageId}",
-                        "indexed package behavior",
-                        Version: "1.2.3"),
+                        "distinct retrieval marker",
+                        Version: "2.0.0"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, docs.Status);
-            Assert.Equal("1.2.3", docs.ResolvedContext!.Version);
+            Assert.Equal("2.0.0", docs.ResolvedContext!.Version);
             Assert.Contains(docs.Evidence, item =>
-                item.Text.Contains("Version 1.2.3", StringComparison.Ordinal));
-            Assert.DoesNotContain(docs.Evidence, item =>
                 item.Text.Contains("Version 2.0.0", StringComparison.Ordinal));
+            Assert.DoesNotContain(docs.Evidence, item =>
+                item.Text.Contains("Version 1.2.3", StringComparison.Ordinal));
             Assert.All(docs.Evidence, item => Assert.StartsWith("nuget://", item.CitationUri));
 
             var symbol = await provider.GetRequiredService<IGetSymbolHandler>()
@@ -93,7 +93,7 @@ public sealed class NuGetRetrievalPipelineTests
                     new GetSymbolRequest(
                         $"nuget:{FixtureNuGetPackage.PackageId}",
                         "DevContextMcp.Indexer.Core.Models.PackageIndexData",
-                        Version: "1.2.3"),
+                        Version: "2.0.0"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, symbol.Status);
             Assert.Contains("PackageIndexData", symbol.Data!.Symbol!.Signature, StringComparison.Ordinal);
@@ -104,7 +104,7 @@ public sealed class NuGetRetrievalPipelineTests
                     new GetSymbolRequest(
                         $"nuget:{FixtureNuGetPackage.PackageId}",
                         "Definitely.Missing",
-                        Version: "1.2.3"),
+                        Version: "2.0.0"),
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.NotFound, missing.Status);
 
@@ -160,10 +160,10 @@ public sealed class NuGetRetrievalPipelineTests
                 template.UriTemplate.Contains("/symbol/", StringComparison.Ordinal));
 
             var resource = await server.Client.ReadResourceAsync(
-                "nuget://test/Fixture.Documentation/1.2.3/artifact/README.md",
+                "nuget://test/Fixture.Documentation/2.0.0/artifact/README.md",
                 cancellationToken: timeout.Token);
             var text = Assert.IsType<TextResourceContents>(Assert.Single(resource.Contents));
-            Assert.Contains("Version 1.2.3", text.Text, StringComparison.Ordinal);
+            Assert.Contains("Version 2.0.0", text.Text, StringComparison.Ordinal);
         }
         finally
         {
