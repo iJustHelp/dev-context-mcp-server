@@ -1,0 +1,134 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Card } from "@/components/Card";
+import { CallsOverTimeChart } from "@/components/CallsOverTimeChart";
+import { DateRangeControl } from "@/components/DateRangeControl";
+import { KpiCards } from "@/components/KpiCards";
+import { LatencyPanel } from "@/components/LatencyPanel";
+import { RecentCallsTable } from "@/components/RecentCallsTable";
+import { StatusDistribution } from "@/components/StatusDistribution";
+import { ToolBreakdownTable } from "@/components/ToolBreakdownTable";
+import {
+  fetchRecent,
+  fetchSummary,
+  fetchTimeSeries,
+  fetchTools,
+} from "@/lib/api";
+import type {
+  AnalyticsQuery,
+  AnalyticsSummary,
+  AnalyticsTimeSeries,
+  RecentResponse,
+  ToolsResponse,
+} from "@/lib/types";
+
+function defaultQuery(): AnalyticsQuery {
+  const now = new Date();
+  const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return { from: from.toISOString(), to: now.toISOString(), bucket: "hour" };
+}
+
+export default function Page() {
+  const [query, setQuery] = useState<AnalyticsQuery | null>(null);
+  const [summary, setSummary] = useState<AnalyticsSummary>();
+  const [tools, setTools] = useState<ToolsResponse>();
+  const [series, setSeries] = useState<AnalyticsTimeSeries>();
+  const [recent, setRecent] = useState<RecentResponse>();
+  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(false);
+
+  // Set the initial range on the client to avoid SSR/CSR time mismatches.
+  useEffect(() => {
+    setQuery(defaultQuery());
+  }, []);
+
+  const load = useCallback(async (current: AnalyticsQuery) => {
+    setLoading(true);
+    setError(undefined);
+    try {
+      const [summaryResult, toolsResult, seriesResult, recentResult] =
+        await Promise.all([
+          fetchSummary(current),
+          fetchTools(current),
+          fetchTimeSeries(current),
+          fetchRecent(current, 50),
+        ]);
+      setSummary(summaryResult);
+      setTools(toolsResult);
+      setSeries(seriesResult);
+      setRecent(recentResult);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (query) {
+      void load(query);
+    }
+  }, [query, load]);
+
+  return (
+    <main className="page">
+      <header className="page-header">
+        <div>
+          <h1>MCP Server Analytics</h1>
+          <p>Tool-call usage, latency, and recent activity.</p>
+        </div>
+        {query && <DateRangeControl query={query} onApply={setQuery} />}
+      </header>
+
+      {error && <div className="banner banner-error">{error}</div>}
+      {loading && !error && (
+        <div className="banner banner-loading">Loading analytics…</div>
+      )}
+
+      {summary && <KpiCards summary={summary} />}
+
+      <div className="dashboard-grid">
+        <Card title="Calls over time" span={8}>
+          {series ? (
+            <CallsOverTimeChart series={series} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+
+        <Card title="Status distribution" span={4}>
+          {summary ? (
+            <StatusDistribution counts={summary.statusCounts} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+
+        <Card title="Per-tool breakdown" span={8}>
+          {tools ? (
+            <ToolBreakdownTable tools={tools.tools} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+
+        <Card title="Latency (ms)" span={4}>
+          {summary ? (
+            <LatencyPanel latency={summary.latencyMs} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+
+        <Card title="Recent calls" span={12}>
+          {recent ? (
+            <RecentCallsTable calls={recent.calls} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+      </div>
+    </main>
+  );
+}
