@@ -214,6 +214,15 @@ internal sealed partial class SqliteIndexStore : IIndexStore
             sourceId: sourceId,
             packageIds: source.DeletedPackageIds,
             cancellationToken: cancellationToken));
+        deleted.AddRange(await PruneStoredPackageVersionsAsync(
+            connection: connection,
+            transaction: transaction,
+            sourceId: sourceId,
+            packageIds: packages
+                .Select(package => package.PackageId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
+            cancellationToken: cancellationToken));
 
         await RefreshSourceLibrarySearchAsync(
             connection: connection,

@@ -42,9 +42,8 @@ internal sealed class OptionsIndexingConfigurationProvider(
                         .Where(package => !package.Delete)
                         .Select(package => new PackageSelectionDefinition(
                             PackageId: package.PackageId,
-                            IncludePrerelease: package.IncludePrerelease,
-                            IncludeUnlisted: package.IncludeUnlisted,
-                            MaxVersions: package.MaxVersionsPerPackage))
+                            MaxVersions: package.MaxVersionsPerPackage,
+                            Versions: SplitVersions(package.Versions)))
                         .ToArray(),
                     DeletedPackageIds = packages
                         .Where(package => string.Equals(
@@ -81,6 +80,14 @@ internal sealed class OptionsIndexingConfigurationProvider(
         extension.Trim().StartsWith('.')
             ? extension.Trim()
             : $".{extension.Trim()}";
+
+    private static IReadOnlyList<string> SplitVersions(string? versions) =>
+        string.IsNullOrWhiteSpace(versions)
+            ? []
+            : versions
+                .Split(',', StringSplitOptions.TrimEntries)
+                .Where(version => version.Length > 0)
+                .ToArray();
 
     private static string ResolveSource(string source)
     {

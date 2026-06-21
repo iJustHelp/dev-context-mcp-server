@@ -10,6 +10,11 @@ export type LatencySummary = Schemas["LatencySummary"];
 export type RecentCall = Schemas["RecentCall"];
 export type TimeBucketPoint = Schemas["TimeBucketPoint"];
 export type ToolUsage = Schemas["ToolUsage"];
+export type IndexedContextResponse = Schemas["IndexedContextResponse"];
+export type IndexedContextTotals = Schemas["IndexedContextTotals"];
+export type IndexedDocumentInventoryItem =
+  Schemas["IndexedDocumentInventoryItem"];
+export type IndexedNuGetInventoryItem = Schemas["IndexedNuGetInventoryItem"];
 
 // The server schema names the status counters StatusBreakdown; the dashboard refers to
 // the same shape as StatusCounts.

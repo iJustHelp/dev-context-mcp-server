@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using NuGet.Versioning;
 using System.Text.RegularExpressions;
 
 namespace DevContextMcp.Indexer.Configuration;
@@ -293,6 +294,11 @@ public sealed class IndexerOptionsValidator :
                 failures.Add(
                     $"NuGet package '{package.PackageId}' MaxVersionsPerPackage must be positive.");
             }
+
+            if (!package.Delete)
+            {
+                ValidateExplicitVersions(package, failures);
+            }
         }
 
         var duplicates = packages
@@ -341,4 +347,38 @@ public sealed class IndexerOptionsValidator :
     private static bool IsSlug(string value) =>
         !string.IsNullOrWhiteSpace(value)
         && EnvironmentPattern.IsMatch(value);
+
+    private static void ValidateExplicitVersions(
+        NuGetPackageOptions package,
+        List<string> failures)
+    {
+        if (string.IsNullOrWhiteSpace(package.Versions))
+        {
+            return;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var version in package.Versions.Split(',', StringSplitOptions.TrimEntries))
+        {
+            if (version.Length == 0)
+            {
+                failures.Add(
+                    $"NuGet package '{package.PackageId}' Versions contains an empty version.");
+                continue;
+            }
+
+            if (!NuGetVersion.TryParse(version, out var parsed))
+            {
+                failures.Add(
+                    $"NuGet package '{package.PackageId}' Versions contains invalid version '{version}'.");
+                continue;
+            }
+
+            if (!seen.Add(parsed.ToNormalizedString()))
+            {
+                failures.Add(
+                    $"NuGet package '{package.PackageId}' Versions contains duplicate version '{version}'.");
+            }
+        }
+    }
 }

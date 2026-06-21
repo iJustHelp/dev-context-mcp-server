@@ -2,6 +2,7 @@ using System.Globalization;
 using DevContextMcp.Indexer.Core.Infrastructure;
 using DevContextMcp.Indexer.Core.Models;
 using Microsoft.Data.Sqlite;
+using NuGet.Versioning;
 
 namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 
@@ -10,6 +11,8 @@ namespace DevContextMcp.Infrastructure.Indexer.Persistence;
 /// </summary>
 internal sealed partial class SqliteIndexStore
 {
+    private const int MaxStoredNuGetVersionsPerMajor = 2;
+
     private static async Task InsertPackageAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -255,6 +258,54 @@ internal sealed partial class SqliteIndexStore
                 sql: "DELETE FROM libraries WHERE id = $libraryId;",
                 parameters: [("$libraryId", library.Value.LibraryId)],
                 cancellationToken: cancellationToken);
+        }
+
+        return deleted;
+    }
+
+    private static async Task<IReadOnlyList<PackageIdentityKey>> PruneStoredPackageVersionsAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string sourceId,
+        IReadOnlyList<string> packageIds,
+        CancellationToken cancellationToken)
+    {
+        var deleted = new List<PackageIdentityKey>();
+
+        foreach (var packageId in packageIds)
+        {
+            var library = await GetLibraryAsync(
+                connection: connection,
+                transaction: transaction,
+                sourceId: sourceId,
+                packageId: packageId,
+                cancellationToken: cancellationToken);
+            if (library is null)
+            {
+                continue;
+            }
+
+            var versions = await GetLibraryVersionsAsync(
+                connection: connection,
+                transaction: transaction,
+                libraryId: library.Value.LibraryId,
+                cancellationToken: cancellationToken);
+            var pruned = versions
+                .GroupBy(version => NuGetVersion.Parse(version.Version).Major)
+                .SelectMany(majorGroup => majorGroup
+                    .OrderByDescending(version => NuGetVersion.Parse(version.Version), VersionComparer.VersionRelease)
+                    .Skip(MaxStoredNuGetVersionsPerMajor))
+                .ToArray();
+
+            foreach (var version in pruned)
+            {
+                await DeleteVersionAsync(
+                    connection: connection,
+                    transaction: transaction,
+                    versionId: version.VersionId,
+                    cancellationToken: cancellationToken);
+                deleted.Add(new PackageIdentityKey(library.Value.PackageId, version.Version));
+            }
         }
 
         return deleted;

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
-namespace DevContextMcp.Server.Analytics;
+namespace DevContextMcp.Server.api;
 
 /// <summary>
 /// Read-only HTTP endpoints serving aggregate and recent-call analytics. Window

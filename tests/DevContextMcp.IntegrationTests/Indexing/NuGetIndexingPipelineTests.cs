@@ -295,21 +295,24 @@ public sealed class NuGetIndexingPipelineTests
     }
 
     [Fact]
-    public async Task ReducingVersionLimitDoesNotDeleteIndexedVersions()
+    public async Task IndexingNewerMinorVersionKeepsTwoNewestVersionsPerMajor()
     {
         const string olderVersion = "1.0.0";
-        const string newerVersion = "2.0.0";
+        const string middleVersion = "1.1.0";
+        const string newerVersion = "1.2.0";
+        const string nextMajorVersion = "2.1.0";
         var root = Path.Combine(Path.GetTempPath(), $"mcp-doc-version-limit-{Guid.NewGuid():N}");
         var feed = Path.Combine(root, "feed");
         var databasePath = Path.Combine(root, "index", "docs.db");
         FixtureNuGetPackage.Create(feed, version: olderVersion);
-        FixtureNuGetPackage.Create(feed, version: newerVersion);
+        FixtureNuGetPackage.Create(feed, version: middleVersion);
+        FixtureNuGetPackage.Create(feed, version: nextMajorVersion);
         var sourcesPath = FixtureNuGetConfiguration.CreatePackageFolder(
             root,
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
                 FixtureNuGetPackage.PackageId,
-                MaxVersionsPerPackage: 2));
+                Versions: $"{nextMajorVersion},{middleVersion},{olderVersion}"));
 
         try
         {
@@ -319,12 +322,13 @@ public sealed class NuGetIndexingPipelineTests
                     .IndexAllAsync(CancellationToken.None);
             }
 
+            FixtureNuGetPackage.Create(feed, version: newerVersion);
             FixtureNuGetConfiguration.CreatePackageFolder(
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "test",
                     FixtureNuGetPackage.PackageId,
-                    MaxVersionsPerPackage: 1));
+                    Versions: $"{nextMajorVersion},{newerVersion},{middleVersion},{olderVersion}"));
 
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
@@ -334,9 +338,11 @@ public sealed class NuGetIndexingPipelineTests
                 var library = Assert.Single(result.IndexedLibraries);
                 var environment = Assert.Single(library.Environments);
 
-                Assert.Empty(summary.Deleted);
                 Assert.Equal(
-                    [olderVersion, newerVersion],
+                    [new PackageIdentityKey(FixtureNuGetPackage.PackageId, olderVersion)],
+                    summary.Deleted);
+                Assert.Equal(
+                    [middleVersion, newerVersion, nextMajorVersion],
                     environment.Versions.Order(StringComparer.Ordinal));
             }
 
@@ -344,7 +350,7 @@ public sealed class NuGetIndexingPipelineTests
                 $"Data Source={databasePath};Pooling=False");
             await connection.OpenAsync();
             Assert.Equal(
-                2L,
+                3L,
                 await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
         }
         finally
@@ -385,7 +391,7 @@ public sealed class NuGetIndexingPipelineTests
                     .GetRequiredService<IIndexCoordinator>()
                     .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Equal(2, summary.Discovered);
-                Assert.Equal(3, summary.Indexed);
+                Assert.Equal(2, summary.Indexed);
             }
 
             FixtureNuGetConfiguration.CreatePackageFolder(
@@ -410,7 +416,6 @@ public sealed class NuGetIndexingPipelineTests
                 Assert.Equal(0, summary.Changed);
                 Assert.Equal(
                     [
-                        new PackageIdentityKey(FixtureNuGetPackage.PackageId, olderVersion),
                         new PackageIdentityKey(
                             FixtureNuGetPackage.PackageId,
                             FixtureNuGetPackage.Version)

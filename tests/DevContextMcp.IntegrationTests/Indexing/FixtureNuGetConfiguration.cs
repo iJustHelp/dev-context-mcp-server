@@ -31,8 +31,7 @@ internal static class FixtureNuGetConfiguration
                     package.Environment,
                     package.PackageId,
                     package.MaxVersionsPerPackage,
-                    package.IncludePrerelease,
-                    package.IncludeUnlisted
+                    package.Versions
                 }));
         }
 
@@ -43,7 +42,6 @@ internal static class FixtureNuGetConfiguration
         string Environment,
         string PackageId,
         int MaxVersionsPerPackage = 10,
-        bool IncludePrerelease = false,
-        bool IncludeUnlisted = false,
+        string? Versions = null,
         bool Delete = false);
 }

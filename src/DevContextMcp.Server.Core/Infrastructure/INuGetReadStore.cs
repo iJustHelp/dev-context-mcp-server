@@ -1,4 +1,5 @@
 using DevContextMcp.Server.Core.Models;
+using DevContextMcp.Server.Core.Models.Context;
 
 namespace DevContextMcp.Server.Core.Infrastructure;
 
@@ -71,5 +72,9 @@ public interface INuGetReadStore
     Task<ResourceDocumentRecord?> ReadDocumentationAsync(
         string databasePath,
         string path,
+        CancellationToken cancellationToken);
+
+    Task<IndexedContextResponse> GetIndexedContextAsync(
+        string databasePath,
         CancellationToken cancellationToken);
 }

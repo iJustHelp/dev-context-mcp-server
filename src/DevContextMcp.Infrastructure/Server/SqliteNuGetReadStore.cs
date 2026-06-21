@@ -1,7 +1,9 @@
 using DevContextMcp.Server.Core.Infrastructure;
 using DevContextMcp.Server.Core.Models;
+using DevContextMcp.Server.Core.Models.Context;
 using DevContextMcp.Server.Core.Services;
 using Microsoft.Data.Sqlite;
+using NuGet.Versioning;
 using System.Globalization;
 
 namespace DevContextMcp.Infrastructure.Server;
@@ -12,6 +14,18 @@ namespace DevContextMcp.Infrastructure.Server;
 /// </summary>
 internal sealed class SqliteNuGetReadStore : INuGetReadStore
 {
+    private sealed record NuGetInventoryVersionRow(
+        string LibraryId,
+        string PackageId,
+        string DisplayName,
+        string SourceName,
+        string? Environment,
+        string Version,
+        long ArtifactCount,
+        long DocumentCount,
+        long SymbolCount,
+        DateTimeOffset? IndexedAt);
+
     public async Task<IReadOnlyList<LibraryCandidateRecord>> SearchLibrariesAsync(
         string databasePath,
         string query,
@@ -522,6 +536,186 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                 MimeType(path));
     }
 
+    public async Task<IndexedContextResponse> GetIndexedContextAsync(
+        string databasePath,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(databasePath, cancellationToken);
+
+        var documents = await ReadDocumentsAsync(connection, cancellationToken);
+        var nugets = await ReadNuGetsAsync(connection, cancellationToken);
+        var totals = await ReadTotalsAsync(
+            connection,
+            nugets,
+            documents,
+            cancellationToken);
+
+        return new IndexedContextResponse(
+            GeneratedAt: DateTimeOffset.UtcNow,
+            Totals: totals,
+            Documents: documents,
+            Nugets: nugets);
+    }
+
+    private static async Task<IReadOnlyList<IndexedDocumentInventoryItem>> ReadDocumentsAsync(
+        SqliteConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT
+                a.path,
+                s.name,
+                s.environment,
+                a.size,
+                COUNT(dc.id),
+                COALESCE(s.last_indexed_at, lv.indexed_at)
+            FROM artifacts a
+            INNER JOIN library_versions lv ON lv.id = a.library_version_id
+            INNER JOIN libraries l ON l.id = lv.library_id
+            INNER JOIN sources s ON s.id = l.source_id
+            LEFT JOIN document_chunks dc ON dc.artifact_id = a.id
+            WHERE l.kind = 'docs'
+            GROUP BY a.id, a.path, s.name, s.environment, a.size, s.last_indexed_at, lv.indexed_at
+            ORDER BY a.path;
+            """;
+
+        var documents = new List<IndexedDocumentInventoryItem>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            documents.Add(new IndexedDocumentInventoryItem(
+                Name: reader.GetString(0),
+                SourceName: reader.GetString(1),
+                Environment: NullIfEmpty(reader.GetString(2)),
+                Length: reader.GetInt64(3),
+                ChunkCount: reader.GetInt64(4),
+                LastIndexedAt: ParseDate(GetNullableString(reader, 5))));
+        }
+
+        return documents;
+    }
+
+    private static async Task<IReadOnlyList<IndexedNuGetInventoryItem>> ReadNuGetsAsync(
+        SqliteConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT
+                l.id,
+                l.package_id,
+                COALESCE(l.display_name, l.package_id),
+                s.name,
+                s.environment,
+                lv.version,
+                (SELECT COUNT(*) FROM artifacts a WHERE a.library_version_id = lv.id),
+                (SELECT COUNT(*) FROM document_chunks dc WHERE dc.library_version_id = lv.id),
+                (SELECT COUNT(*) FROM symbols sym WHERE sym.library_version_id = lv.id),
+                lv.indexed_at
+            FROM libraries l
+            INNER JOIN sources s ON s.id = l.source_id
+            INNER JOIN library_versions lv ON lv.library_id = l.id
+            WHERE l.kind = 'nuget'
+            ORDER BY l.normalized_package_id, s.environment, lv.version;
+            """;
+
+        var rows = new List<NuGetInventoryVersionRow>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            rows.Add(new NuGetInventoryVersionRow(
+                LibraryId: reader.GetString(0),
+                PackageId: reader.GetString(1),
+                DisplayName: reader.GetString(2),
+                SourceName: reader.GetString(3),
+                Environment: NullIfEmpty(reader.GetString(4)),
+                Version: reader.GetString(5),
+                ArtifactCount: reader.GetInt64(6),
+                DocumentCount: reader.GetInt64(7),
+                SymbolCount: reader.GetInt64(8),
+                IndexedAt: ParseDate(GetNullableString(reader, 9))));
+        }
+
+        return rows
+            .GroupBy(row => row.LibraryId, StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var first = group.First();
+                var versions = group
+                    .Select(row => row.Version)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderByDescending(version => TryParseNuGetVersion(version), VersionComparer.VersionRelease)
+                    .ThenBy(version => version, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(version => version, StringComparer.Ordinal)
+                    .ToArray();
+
+                return new IndexedNuGetInventoryItem(
+                    LibraryId: first.LibraryId,
+                    PackageId: first.PackageId,
+                    DisplayName: first.DisplayName,
+                    SourceName: first.SourceName,
+                    Environment: first.Environment,
+                    LatestVersion: versions.FirstOrDefault(),
+                    Versions: versions,
+                    VersionCount: versions.LongLength,
+                    ArtifactCount: group.Sum(row => row.ArtifactCount),
+                    DocumentCount: group.Sum(row => row.DocumentCount),
+                    SymbolCount: group.Sum(row => row.SymbolCount),
+                    LastIndexedAt: group.Max(row => row.IndexedAt));
+            })
+            .OrderBy(item => item.PackageId, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(item => item.Environment, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.SourceName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static async Task<IndexedContextTotals> ReadTotalsAsync(
+        SqliteConnection connection,
+        IReadOnlyList<IndexedNuGetInventoryItem> nugets,
+        IReadOnlyList<IndexedDocumentInventoryItem> documents,
+        CancellationToken cancellationToken)
+    {
+        var sourceCount = await ReadLongAsync(
+            connection,
+            "SELECT COUNT(*) FROM sources;",
+            cancellationToken);
+        var environmentCount = await ReadLongAsync(
+            connection,
+            """
+            SELECT COUNT(DISTINCT environment)
+            FROM sources
+            WHERE kind = 'nuget' AND environment <> '';
+            """,
+            cancellationToken);
+        var libraryCount = await ReadLongAsync(
+            connection,
+            "SELECT COUNT(*) FROM libraries;",
+            cancellationToken);
+
+        return new IndexedContextTotals(
+            SourceCount: sourceCount,
+            EnvironmentCount: environmentCount,
+            LibraryCount: libraryCount,
+            NuGetLibraryCount: nugets.Count,
+            NuGetVersionCount: nugets.Sum(item => item.VersionCount),
+            DocumentCount: documents.Count);
+    }
+
+    private static async Task<long> ReadLongAsync(
+        SqliteConnection connection,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return Convert.ToInt64(
+            await command.ExecuteScalarAsync(cancellationToken),
+            CultureInfo.InvariantCulture);
+    }
+
     private static async Task<ResourceDocumentRecord?> ReadResourceAsync(
         string databasePath,
         string sql,
@@ -653,6 +847,11 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         || Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase)
             ? "text/markdown"
             : "text/plain";
+
+    private static NuGetVersion TryParseNuGetVersion(string version) =>
+        NuGetVersion.TryParse(version, out var parsed)
+            ? parsed
+            : new NuGetVersion(0, 0, 0, version);
 
     private static DateTimeOffset? ParseDate(string? value) =>
         DateTimeOffset.TryParse(

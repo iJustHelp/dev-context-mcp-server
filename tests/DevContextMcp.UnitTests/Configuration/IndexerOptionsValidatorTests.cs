@@ -61,7 +61,14 @@ public sealed class IndexerOptionsValidatorTests
     public void InvalidFeedAndLimitValuesFail()
     {
         using var folder = PackageFolder.Create(
-            ("Invalid.json", Package("bad environment", "Company.Package", 0)));
+            ("Invalid.json",
+                """
+                {
+                  "Environment": "bad environment",
+                  "PackageId": "Company.Package",
+                  "MaxVersionsPerPackage": 0
+                }
+                """));
         var result = Validate(new IndexerOptions
         {
             IndexerSource = Source(folder.Path),
@@ -200,6 +207,30 @@ public sealed class IndexerOptionsValidatorTests
         var package = Assert.Single(new NuGetPackageOptionsLoader().Load(folder.Path));
 
         Assert.False(package.Delete);
+        Assert.Equal(2, package.MaxVersionsPerPackage);
+    }
+
+    [Fact]
+    public void ExplicitVersionsMustBeValidAndUnique()
+    {
+        using var folder = PackageFolder.Create(
+            ("Package.json",
+                """
+                {
+                  "Environment": "qa",
+                  "PackageId": "Company.Package",
+                  "Versions": "1.0.0, nope, 1.0"
+                }
+                """));
+
+        var result = Validate(new IndexerOptions
+        {
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
+        });
+
+        AssertFailure(result, "invalid version 'nope'");
+        AssertFailure(result, "duplicate version '1.0'");
     }
 
     [Fact]
@@ -313,14 +344,12 @@ public sealed class IndexerOptionsValidatorTests
     private static string Package(
         string environment,
         string packageId,
-        int maxVersions = 3) =>
+        int maxVersions = 2) =>
         JsonSerializer.Serialize(new
         {
             Environment = environment,
             PackageId = packageId,
-            MaxVersionsPerPackage = maxVersions,
-            IncludePrerelease = false,
-            IncludeUnlisted = false
+            MaxVersionsPerPackage = maxVersions
         });
 
     private static void AssertFailure(

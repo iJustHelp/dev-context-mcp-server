@@ -47,28 +47,27 @@ internal sealed class NuGetPackageSourceClient(
         {
             var metadata = await metadataResource.GetMetadataAsync(
                 packageId: package.PackageId,
-                includePrerelease: package.IncludePrerelease,
-                includeUnlisted: package.IncludeUnlisted,
+                includePrerelease: false,
+                includeUnlisted: false,
                 sourceCacheContext: cache,
                 log: NullLogger.Instance,
                 token: cancellationToken);
 
-            var selectedMetadata = metadata
-                .Where(item => package.IncludePrerelease || !item.Identity.Version.IsPrerelease)
-                .Where(item => package.IncludeUnlisted || item.IsListed)
-                .OrderByDescending(item => item.Identity.Version, VersionComparer.VersionRelease)
-                .Take(package.MaxVersions)
-                .ToArray();
-
-            foreach (var item in selectedMetadata)
+            var metadataArray = metadata.ToArray();
+            if (package.Versions is { Count: > 0 })
             {
-                var deprecation = await item.GetDeprecationMetadataAsync();
-                candidates.Add(new PackageVersionCandidate(
-                    PackageId: item.Identity.Id,
-                    Version: item.Identity.Version.ToNormalizedString(),
-                    IsListed: item.IsListed,
-                    IsDeprecated: deprecation is not null,
-                    PublishedAt: item.Published));
+                candidates.AddRange(await SelectExplicitCandidatesAsync(
+                    repository,
+                    cache,
+                    package,
+                    metadataArray,
+                    cancellationToken));
+                continue;
+            }
+
+            foreach (var item in SelectDefaultMetadata(package, metadataArray))
+            {
+                candidates.Add(await ToCandidateAsync(item));
             }
         }
 
@@ -142,6 +141,107 @@ internal sealed class NuGetPackageSourceClient(
             File.Delete(tempPath);
             throw;
         }
+    }
+
+    private static async Task<IReadOnlyList<PackageVersionCandidate>> SelectExplicitCandidatesAsync(
+        SourceRepository repository,
+        SourceCacheContext cache,
+        PackageSelectionDefinition package,
+        IReadOnlyList<IPackageSearchMetadata> metadata,
+        CancellationToken cancellationToken)
+    {
+        var selected = new List<PackageVersionCandidate>();
+        var missing = new List<string>();
+        FindPackageByIdResource? findPackageResource = null;
+        IReadOnlyList<NuGetVersion>? availableVersions = null;
+
+        foreach (var version in package.Versions ?? [])
+        {
+            var parsed = NuGetVersion.Parse(version);
+            var match = metadata.FirstOrDefault(item =>
+                VersionComparer.VersionRelease.Equals(item.Identity.Version, parsed));
+            if (match is not null)
+            {
+                selected.Add(await ToCandidateAsync(match));
+                continue;
+            }
+
+            findPackageResource ??= await repository.GetResourceAsync<FindPackageByIdResource>(
+                cancellationToken);
+            availableVersions ??= (await findPackageResource.GetAllVersionsAsync(
+                package.PackageId,
+                cache,
+                NullLogger.Instance,
+                cancellationToken)).ToArray();
+
+            if (availableVersions.Any(candidate =>
+                    VersionComparer.VersionRelease.Equals(candidate, parsed)))
+            {
+                selected.Add(new PackageVersionCandidate(
+                    PackageId: package.PackageId,
+                    Version: parsed.ToNormalizedString(),
+                    IsListed: true,
+                    IsDeprecated: false,
+                    PublishedAt: null));
+                continue;
+            }
+
+            missing.Add(version);
+        }
+
+        if (missing.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"NuGet package '{package.PackageId}' explicit versions were not found: {string.Join(", ", missing)}.");
+        }
+
+        return selected;
+    }
+
+    private static async Task<PackageVersionCandidate> ToCandidateAsync(IPackageSearchMetadata item)
+    {
+        var deprecation = await item.GetDeprecationMetadataAsync();
+        return new PackageVersionCandidate(
+            PackageId: item.Identity.Id,
+            Version: item.Identity.Version.ToNormalizedString(),
+            IsListed: item.IsListed,
+            IsDeprecated: deprecation is not null,
+            PublishedAt: item.Published);
+    }
+
+    private static IReadOnlyList<IPackageSearchMetadata> SelectDefaultMetadata(
+        PackageSelectionDefinition package,
+        IReadOnlyList<IPackageSearchMetadata> metadata)
+    {
+        var stableListed = metadata
+            .Where(item => item.IsListed)
+            .Where(item => !item.Identity.Version.IsPrerelease)
+            .ToArray();
+        var selectedVersions = SelectDefaultVersions(
+            stableListed.Select(item => item.Identity.Version),
+            package.MaxVersions);
+
+        return selectedVersions
+            .Select(version => stableListed.First(item =>
+                VersionComparer.VersionRelease.Equals(item.Identity.Version, version)))
+            .ToArray();
+    }
+
+    internal static IReadOnlyList<NuGetVersion> SelectDefaultVersions(
+        IEnumerable<NuGetVersion> versions,
+        int maxVersions)
+    {
+        return versions
+            .OrderByDescending(version => version, VersionComparer.VersionRelease)
+            .GroupBy(version => version.Major)
+            .OrderByDescending(group => group.Key)
+            .Take(2)
+            .Select(majorGroup => majorGroup
+                .OrderByDescending(version => version, VersionComparer.VersionRelease)
+                .First())
+            .OrderByDescending(version => version, VersionComparer.VersionRelease)
+            .Take(maxVersions)
+            .ToArray();
     }
 
     private SourceRepository CreateRepository(IndexSourceDefinition source)

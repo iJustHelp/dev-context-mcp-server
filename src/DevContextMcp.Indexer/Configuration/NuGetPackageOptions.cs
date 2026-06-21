@@ -11,9 +11,7 @@ public sealed class NuGetPackageOptions
 
     public bool Delete { get; set; }
 
-    public int MaxVersionsPerPackage { get; set; } = 3;
+    public string? Versions { get; set; }
 
-    public bool IncludePrerelease { get; set; }
-
-    public bool IncludeUnlisted { get; set; }
+    public int MaxVersionsPerPackage { get; set; } = 2;
 }
