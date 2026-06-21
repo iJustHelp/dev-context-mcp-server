@@ -16,7 +16,7 @@ Prompts + Agentic Harness + Context + LLM = plan --> code.
 I have used Codex + GPT 5.5 and Claude + Opus 4.8 with identical results. Copilot is not as strong yet, but Microsoft will fix it soon. Anyway, they provide enough for development. 
 
 What changed for us? I think only developers who are close to the business are safe, like you, Javier, and James. Others just get requirements, work with an agent, review code, and do integration testing. This whole process is at least three times faster. I guess you will see it soon.
-It means your current stories can be three times bigger with the same estimate, which makes development much cheaper. The good news is that we can rewrite tons of old code, which I hope will keep us in business.
+It means your current stories can be three times bigger with the same estimate, which makes development much cheaper. The good news is that we can rewrite tons of old code, which I hope will keep us in business :).
 
 About the Context MCP server: how does the agent know about Blazor features?
 It may be partly in the LLM, but some features are recent. The agent can look on the internet or in Microsoft's documentation, but it needs more tokens to find and understand the docs. The agent can use an context MCP server registered in a client like VS Code or the CLI. MCP server exposes tools with descriptions aka endpoints, and the agent knows what to call. It can also use skills to learn how and when to use the MCP server.
