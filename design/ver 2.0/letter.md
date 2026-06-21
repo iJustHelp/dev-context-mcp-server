@@ -6,11 +6,11 @@ This app is just my experiment with agentic development. All code is on your box
 You can see it here: https://github.com/iJustHelp/have-fun/blob/main/design/architecture.md.
 The only disadvantage I see is that the app has to keep the connection open.
 
-Let me share the thoughts I've had over the past few months. Maybe writing is better than talking.
-Our development world has changed forever, and we have to adapt or retire.
+Let me share the thoughts I've had over the past few months. Maybe writing is better than talking.  
+Our development world has changed forever, and we have to adapt or retire.  
 I guess the biggest issue is that developers have generated tons of code, and code is more structured than even English. LLMs handle it easily because it follows standard patterns.
 
-Basically, agentic development is just
+Basically, agentic development is just  
 Prompts + Agentic Harness + Context + LLM = plan --> code.
 
 I have used Codex + GPT 5.5 and Claude + Opus 4.8 with identical results. Copilot is not as strong yet, but Microsoft will fix it soon. Anyway, they provide enough for development.
