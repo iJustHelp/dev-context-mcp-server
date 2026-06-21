@@ -16,7 +16,7 @@ Prompts + Agentic Harness + Context + LLM = plan --> code.
 I have used Codex + GPT 5.5 and Claude + Opus 4.8 with identical results. Copilot is not as strong yet, but Microsoft will fix it soon. Anyway, they provide enough for development.
 
 About the Context MCP server: how does the agent know about Blazor features?
-It may be partly in the LLM, but some features are recent. The agent can look on the internet or in Microsoft's documentation, but it needs more tokens to find and understand the docs. The agent can use an MCP server registered in a client like VS Code or the CLI. MCP exposes tools with descriptions, also known as endpoints, and the agent knows what to call. It can also use skills to learn how and when to use the MCP server.
+It may be partly in the LLM, but some features are recent. The agent can look on the internet or in Microsoft's documentation, but it needs more tokens to find and understand the docs. The agent can use an MCP server registered in a client like VS Code or the CLI. MCP exposes tools with descriptions aka endpoints, and the agent knows what to call. It can also use skills to learn how and when to use the MCP server.
 
 I have used the MCP server at https://context7.com/ for free for the game project. It has recent info, but it is public. How can I code using company internal docs, for example, by using a Smiley NuGet package like STI.Utilities or a NuGet package with OpenAPI clients? This is what dev-context-mcp-server tries to resolve.
 Each NuGet package is deployed with readme.md and XML comments in the nupkg file. This info is used as context for the agent when the prompt mentions internal NuGet packages.
