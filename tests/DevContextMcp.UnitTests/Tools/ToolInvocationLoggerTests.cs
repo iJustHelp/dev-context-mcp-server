@@ -1,7 +1,4 @@
-using System.Text;
-using System.Text.Json;
-
-using DevContextMcp.Server.api.Analytics;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Core.Contracts.GetSymbol;
@@ -14,6 +11,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using System.Text;
+using System.Text.Json;
 
 namespace DevContextMcp.UnitTests.Tools;
 

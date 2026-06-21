@@ -1,6 +1,5 @@
 using DevContextMcp.Server;
-using DevContextMcp.Server.api.Analytics;
-using DevContextMcp.Server.api.Context;
+using DevContextMcp.Server.api;
 using DevContextMcp.Server.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;

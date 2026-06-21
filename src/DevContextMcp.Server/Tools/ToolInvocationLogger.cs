@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using DevContextMcp.Server.api.Analytics;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core.Models.Analytics;
 using Microsoft.Extensions.Options;

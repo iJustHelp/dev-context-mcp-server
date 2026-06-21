@@ -1,6 +1,6 @@
 using DevContextMcp.Server.Core.Models.Analytics;
 
-namespace DevContextMcp.Server.api.Analytics;
+namespace DevContextMcp.Server.Analytics;
 
 /// <summary>
 /// Non-blocking sink for captured tool-invocation events. Implementations must never

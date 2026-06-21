@@ -3,11 +3,9 @@ using DevContextMcp.Server.Core.Infrastructure;
 using DevContextMcp.Server.Core.Models.Analytics;
 using DevContextMcp.Server.Core.Models.Context;
 using DevContextMcp.Server.Core.Services;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace DevContextMcp.Server.api.Context;
+namespace DevContextMcp.Server.api;
 
 internal static class ContextEndpoints
 {

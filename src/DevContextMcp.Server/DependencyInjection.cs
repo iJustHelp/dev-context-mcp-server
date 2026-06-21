@@ -1,5 +1,5 @@
 using DevContextMcp.Infrastructure;
-using DevContextMcp.Server.api.Analytics;
+using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core;
 using DevContextMcp.Server.Core.Models;
