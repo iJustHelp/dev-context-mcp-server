@@ -20,7 +20,7 @@ It may be partly in the LLM, but some features are recent. The agent can look on
 
 I have used the MCP server at https://context7.com/ for free for the game project. It has recent info, but it is public. How can I code using company internal docs, for example, by using a Smiley NuGet package like STI.Utilities or a NuGet package with OpenAPI clients? This is what dev-context-mcp-server tries to resolve.
 Each NuGet package is deployed with readme.md and XML comments in the nupkg file. This info is used as context for the agent when the prompt mentions internal NuGet packages.
-I would love to present it to you, Javier, and Brandon as an option. You can send me a 30-minute Teams meeting invitation for any time that is comfortable for you.
+I would love to present it to you, Javier, and Brandon (optional) if you want. You can send me a 30-minute Teams meeting invitation for any time that is comfortable for you.
 
 What changed for us? I think only developers who are close to the business are safe, like you, Javier, and James. Others just get requirements, work with an agent, review code, and do integration testing. This whole process is at least three times faster. I guess you will see it soon.
 It means your current stories can be three times bigger with the same estimate, which makes development much cheaper. The good news is that we can rewrite tons of old code, which I hope will keep us in business.
