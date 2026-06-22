@@ -15,7 +15,7 @@ flowchart TD
     NuGet[NuGet source]
     Database[(SQLite and FTS5)]
 
-    Client -->|stdio or Streamable HTTP| Host
+    Client -->|Streamable HTTP| Host
     Host --> Application
     Host --> Infrastructure
     Infrastructure --> Application

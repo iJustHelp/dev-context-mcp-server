@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import type { RecentCall } from "@/lib/types";
 import { statusColor } from "@/lib/colors";
-import { formatDateTime, formatMs } from "@/lib/format";
+import { formatCount, formatDateTime, formatMs } from "@/lib/format";
+
+const RECENT_CALL_LIMITS = [10, 25, 50, 100, 500];
 
 type Direction = "asc" | "desc";
 type RecentCallSortKey =
@@ -18,7 +20,17 @@ interface SortState {
   direction: Direction;
 }
 
-export function RecentCallsTable({ calls }: { calls: RecentCall[] }) {
+export function RecentCallsTable({
+  calls,
+  totalCalls,
+  limit,
+  onLimitChange,
+}: {
+  calls: RecentCall[];
+  totalCalls: number;
+  limit: number;
+  onLimitChange: (limit: number) => void;
+}) {
   const [sort, setSort] = useState<SortState>({
     key: "startedAt",
     direction: "desc",
@@ -32,52 +44,72 @@ export function RecentCallsTable({ calls }: { calls: RecentCall[] }) {
     [calls, sort],
   );
 
-  if (calls.length === 0) {
-    return <p className="empty">No calls in this range.</p>;
-  }
-
   return (
-    <div className="table-scroll">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <SortableHeader label="Time" sortKey="startedAt" sort={sort} onSort={setSortKey} />
-            <SortableHeader label="Tool" sortKey="toolName" sort={sort} onSort={setSortKey} />
-            <SortableHeader label="User" sortKey="userName" sort={sort} onSort={setSortKey} />
-            <SortableHeader
-              label="Duration"
-              sortKey="durationMs"
-              sort={sort}
-              onSort={setSortKey}
-              align="right"
-            />
-            <SortableHeader
-              label="Tool result"
-              sortKey="toolResultStatus"
-              sort={sort}
-              onSort={setSortKey}
-            />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((call) => (
-            <tr key={call.id}>
-              <td>{formatDateTime(call.startedAt)}</td>
-              <td>{call.toolName}</td>
-              <td>{call.userName}</td>
-              <td className="num">{formatMs(call.durationMs)}</td>
-              <td>
-                <span
-                  className="status-pill"
-                  style={{ backgroundColor: statusColor(call.toolResultStatus) }}
-                >
-                  {call.toolResultStatus}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <div className="table-toolbar">
+        <span className="table-toolbar-label">
+          Total calls: {formatCount(totalCalls)}
+        </span>
+        <label className="table-toolbar-control">
+          <span>Show</span>
+          <select
+            value={limit}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+          >
+            {RECENT_CALL_LIMITS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {calls.length === 0 ? (
+        <p className="empty">No calls in this range.</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <SortableHeader label="Time" sortKey="startedAt" sort={sort} onSort={setSortKey} />
+                <SortableHeader label="Tool" sortKey="toolName" sort={sort} onSort={setSortKey} />
+                <SortableHeader label="User" sortKey="userName" sort={sort} onSort={setSortKey} />
+                <SortableHeader
+                  label="Duration"
+                  sortKey="durationMs"
+                  sort={sort}
+                  onSort={setSortKey}
+                  align="right"
+                />
+                <SortableHeader
+                  label="Tool result"
+                  sortKey="toolResultStatus"
+                  sort={sort}
+                  onSort={setSortKey}
+                />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((call) => (
+                <tr key={call.id}>
+                  <td>{formatDateTime(call.startedAt)}</td>
+                  <td>{call.toolName}</td>
+                  <td>{call.userName}</td>
+                  <td className="num">{formatMs(call.durationMs)}</td>
+                  <td>
+                    <span
+                      className="status-pill"
+                      style={{ backgroundColor: statusColor(call.toolResultStatus) }}
+                    >
+                      {call.toolResultStatus}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 

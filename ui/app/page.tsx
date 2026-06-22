@@ -37,6 +37,7 @@ export default function Page() {
   const [toolResults, setToolResults] = useState<ToolResultsResponse>();
   const [series, setSeries] = useState<AnalyticsTimeSeries>();
   const [recent, setRecent] = useState<RecentResponse>();
+  const [recentLimit, setRecentLimit] = useState(50);
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
@@ -57,7 +58,6 @@ export default function Page() {
         usersResult,
         toolResultsResult,
         seriesResult,
-        recentResult,
       ] =
         await Promise.all([
           apiClient.GET("/api/analytics/summary", {
@@ -75,9 +75,6 @@ export default function Page() {
           apiClient.GET("/api/analytics/timeseries", {
             params: { query: { ...window, bucket: current.bucket } },
           }),
-          apiClient.GET("/api/analytics/recent", {
-            params: { query: { ...window, limit: 50 } },
-          }),
         ]);
 
       const failed = [
@@ -86,7 +83,6 @@ export default function Page() {
         usersResult,
         toolResultsResult,
         seriesResult,
-        recentResult,
       ].find((result) => result.error !== undefined);
       if (failed) {
         throw new Error(
@@ -100,7 +96,6 @@ export default function Page() {
       setUsers(usersResult.data);
       setToolResults(toolResultsResult.data);
       setSeries(seriesResult.data);
-      setRecent(recentResult.data);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -108,11 +103,38 @@ export default function Page() {
     }
   }, []);
 
+  const loadRecent = useCallback(
+    async (current: AnalyticsQuery, limit: number) => {
+      try {
+        const recentResult = await apiClient.GET("/api/analytics/recent", {
+          params: { query: { from: current.from, to: current.to, limit } },
+        });
+        if (recentResult.error !== undefined) {
+          throw new Error(
+            recentResult.error?.error ??
+              `Analytics request failed (${recentResult.response.status}).`,
+          );
+        }
+
+        setRecent(recentResult.data);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (query) {
       void load(query);
     }
   }, [query, load]);
+
+  useEffect(() => {
+    if (query) {
+      void loadRecent(query, recentLimit);
+    }
+  }, [query, recentLimit, loadRecent]);
 
   useEffect(() => {
     if (!loading) {
@@ -176,7 +198,12 @@ export default function Page() {
 
         <Card title="Recent calls" span={12}>
           {recent ? (
-            <RecentCallsTable calls={recent.calls} />
+            <RecentCallsTable
+              calls={recent.calls}
+              totalCalls={summary?.totalCalls ?? 0}
+              limit={recentLimit}
+              onLimitChange={setRecentLimit}
+            />
           ) : (
             <p className="empty">—</p>
           )}

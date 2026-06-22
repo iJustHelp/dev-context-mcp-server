@@ -174,14 +174,7 @@ export function NuGetInventoryTable({
                 sortKey="versions"
                 sort={sort}
                 onSort={setNuGetSort}
-              />
-              <SortableHeader
-                label="Chunks"
-                sortKey="documentCount"
-                sort={sort}
-                onSort={setNuGetSort}
-                align="right"
-              />
+              />            
               <SortableHeader
                 label="Last indexed"
                 sortKey="lastIndexedAt"
@@ -196,7 +189,6 @@ export function NuGetInventoryTable({
                 <td>{nuget.displayName}</td>
                 <td>{nuget.environment ?? "-"}</td>
                 <td className="version-list">{formatVersions(nuget.versions)}</td>
-                <td className="num">{formatCount(nuget.documentCount)}</td>
                 <td>{formatOptionalDate(nuget.lastIndexedAt)}</td>
               </tr>
             ))}
