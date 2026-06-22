@@ -9,6 +9,38 @@ type RangeMode = "time" | "days" | "hours";
 const DAY_OFFSETS = Array.from({ length: 14 }, (_, index) => -(index + 1));
 const HOUR_OFFSETS = Array.from({ length: 12 }, (_, index) => -(index + 1));
 
+const CONTROL_STORAGE_KEY = "analytics:rangeControl";
+
+interface StoredControl {
+  mode: RangeMode;
+  dayOffset: number;
+  hourOffset: number;
+}
+
+// Restore the dropdown selection so it matches the restored range instead of
+// resetting to defaults when returning to the page.
+function readStoredControl(): StoredControl | null {
+  try {
+    const raw = sessionStorage.getItem(CONTROL_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<StoredControl>;
+    if (parsed.mode === "time" || parsed.mode === "days" || parsed.mode === "hours") {
+      return {
+        mode: parsed.mode,
+        dayOffset: parsed.dayOffset ?? -1,
+        hourOffset: parsed.hourOffset ?? -12,
+      };
+    }
+  } catch {
+    // Ignore malformed/unavailable storage and fall back to defaults.
+  }
+
+  return null;
+}
+
 export function DateRangeControl({
   query,
   onApply,
@@ -16,13 +48,23 @@ export function DateRangeControl({
   query: AnalyticsQuery;
   onApply: (next: AnalyticsQuery) => void;
 }) {
+  const [storedControl] = useState(readStoredControl);
   const [from, setFrom] = useState(() => toLocalInputValue(new Date(query.from)));
   const [to, setTo] = useState(() => toLocalInputValue(new Date(query.to)));
-  const [mode, setMode] = useState<RangeMode>("hours");
-  const [dayOffset, setDayOffset] = useState(-1);
-  const [hourOffset, setHourOffset] = useState(-12);
+  const [mode, setMode] = useState<RangeMode>(storedControl?.mode ?? "hours");
+  const [dayOffset, setDayOffset] = useState(storedControl?.dayOffset ?? -1);
+  const [hourOffset, setHourOffset] = useState(storedControl?.hourOffset ?? -12);
 
   function apply() {
+    try {
+      sessionStorage.setItem(
+        CONTROL_STORAGE_KEY,
+        JSON.stringify({ mode, dayOffset, hourOffset } satisfies StoredControl),
+      );
+    } catch {
+      // Ignore storage failures (e.g. private mode); persistence is best-effort.
+    }
+
     if (mode === "time") {
       onApply({
         from: localInputToIso(from),
