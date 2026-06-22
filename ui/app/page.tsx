@@ -23,10 +23,31 @@ import type {
   UsersResponse,
 } from "@/lib/types";
 
+const QUERY_STORAGE_KEY = "analytics:query";
+
 function defaultQuery(): AnalyticsQuery {
   const now = new Date();
   const from = new Date(now.getTime() - 12 * 60 * 60 * 1000);
   return { from: from.toISOString(), to: now.toISOString(), bucket: "hour" };
+}
+
+// Restore the last-selected range so it survives navigating away and back.
+function readStoredQuery(): AnalyticsQuery | null {
+  try {
+    const raw = sessionStorage.getItem(QUERY_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<AnalyticsQuery>;
+    if (parsed.from && parsed.to && parsed.bucket) {
+      return { from: parsed.from, to: parsed.to, bucket: parsed.bucket };
+    }
+  } catch {
+    // Ignore malformed/unavailable storage and fall back to the default range.
+  }
+
+  return null;
 }
 
 export default function Page() {
@@ -42,10 +63,22 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
 
-  // Set the initial range on the client to avoid SSR/CSR time mismatches.
+  // Set the initial range on the client to avoid SSR/CSR time mismatches,
+  // restoring the last-selected range when returning to the page.
   useEffect(() => {
-    setQuery(defaultQuery());
+    setQuery(readStoredQuery() ?? defaultQuery());
   }, []);
+
+  // Persist the selected range so it survives navigation and reloads.
+  useEffect(() => {
+    if (query) {
+      try {
+        sessionStorage.setItem(QUERY_STORAGE_KEY, JSON.stringify(query));
+      } catch {
+        // Ignore storage failures (e.g. private mode); persistence is best-effort.
+      }
+    }
+  }, [query]);
 
   const load = useCallback(async (current: AnalyticsQuery) => {
     setLoading(true);
