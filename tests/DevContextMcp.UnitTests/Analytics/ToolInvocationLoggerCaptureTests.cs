@@ -1,5 +1,6 @@
 using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
+using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Core.Models.Analytics;
 using DevContextMcp.Server.Tools;
 using Microsoft.AspNetCore.Http;
@@ -56,7 +57,30 @@ public sealed class ToolInvocationLoggerCaptureTests
         Assert.Equal("query_docs", _captured.ToolName);
         Assert.Equal("alice", _captured.UserName);
         Assert.Null(_captured.ErrorType);
+        Assert.Equal("ok", _captured.ToolResultStatus);
         Assert.True(_captured.DurationMs >= 0);
+        VerifyRecorded(AnalyticsStatus.Success);
+    }
+
+    // Purpose: records the tool response status separately from the analytics status
+    [Fact]
+    public async Task InvokeAsync_SuccessWithToolResponse_RecordsToolResultStatus()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
+
+        // act
+        var actual = await _target.InvokeAsync(
+            "query_docs",
+            "request",
+            _ => Task.FromResult(new TestToolResponse { Status = ToolResultStatus.NotFound }),
+            CancellationToken.None);
+
+        // assert
+        Assert.Equal(ToolResultStatus.NotFound, actual.Status);
+        Assert.NotNull(_captured);
+        Assert.Equal(AnalyticsStatus.Success, _captured.Status);
+        Assert.Equal("not_found", _captured.ToolResultStatus);
         VerifyRecorded(AnalyticsStatus.Success);
     }
 
@@ -79,6 +103,7 @@ public sealed class ToolInvocationLoggerCaptureTests
         Assert.Equal("boom", actual.Message);
         Assert.NotNull(_captured);
         Assert.Equal(nameof(InvalidOperationException), _captured.ErrorType);
+        Assert.Equal("error", _captured.ToolResultStatus);
         VerifyRecorded(AnalyticsStatus.Error);
     }
 
@@ -103,6 +128,7 @@ public sealed class ToolInvocationLoggerCaptureTests
         Assert.NotNull(actual);
         Assert.NotNull(_captured);
         Assert.Equal(AnalyticsStatus.Canceled, _captured.Status);
+        Assert.Equal("error", _captured.ToolResultStatus);
         Assert.Null(_captured.ErrorType);
         VerifyRecorded(AnalyticsStatus.Canceled);
     }
@@ -140,4 +166,6 @@ public sealed class ToolInvocationLoggerCaptureTests
             Times.Once);
         _recorder.VerifyNoOtherCalls();
     }
+
+    private sealed record TestToolResponse : ToolResponse<object>;
 }

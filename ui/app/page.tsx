@@ -20,7 +20,7 @@ import type {
 
 function defaultQuery(): AnalyticsQuery {
   const now = new Date();
-  const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const from = new Date(now.getTime() - 12 * 60 * 60 * 1000);
   return { from: from.toISOString(), to: now.toISOString(), bucket: "hour" };
 }
 
@@ -32,6 +32,7 @@ export default function Page() {
   const [recent, setRecent] = useState<RecentResponse>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
 
   // Set the initial range on the client to avoid SSR/CSR time mismatches.
   useEffect(() => {
@@ -86,6 +87,16 @@ export default function Page() {
     }
   }, [query, load]);
 
+  useEffect(() => {
+    if (!loading) {
+      setShowLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowLoading(true), 250);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
+
   return (
     <main className="page">
       <header className="page-header">
@@ -97,7 +108,7 @@ export default function Page() {
       </header>
 
       {error && <div className="banner banner-error">{error}</div>}
-      {loading && !error && (
+      {showLoading && !error && (
         <div className="banner banner-loading">Loading analytics…</div>
       )}
 

@@ -176,6 +176,7 @@ export interface components {
             /** Format: double */
             durationMs: number;
             status: string;
+            toolResultStatus: string;
         };
         RecentCallsResponse: {
             calls: components["schemas"]["RecentCall"][];

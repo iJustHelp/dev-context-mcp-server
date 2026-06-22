@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Analytics;
 using DevContextMcp.Server.Configuration;
 using DevContextMcp.Server.Core.Models.Analytics;
@@ -78,6 +79,7 @@ internal sealed class ToolInvocationLogger(
                 startedAtUtc,
                 elapsedMilliseconds,
                 AnalyticsStatus.Success,
+                ToWireStatus(GetToolResultStatus(response)),
                 errorType: null,
                 requestBytes,
                 responseBytes);
@@ -99,6 +101,7 @@ internal sealed class ToolInvocationLogger(
                 startedAtUtc,
                 elapsedMilliseconds,
                 AnalyticsStatus.Canceled,
+                ToWireStatus(ToolResultStatus.Error),
                 errorType: null,
                 requestBytes,
                 responseBytes: null);
@@ -120,6 +123,7 @@ internal sealed class ToolInvocationLogger(
                 startedAtUtc,
                 elapsedMilliseconds,
                 AnalyticsStatus.Error,
+                ToWireStatus(ToolResultStatus.Error),
                 errorType: exception.GetType().Name,
                 requestBytes,
                 responseBytes: null);
@@ -133,6 +137,7 @@ internal sealed class ToolInvocationLogger(
         DateTimeOffset startedAt,
         double durationMs,
         string status,
+        string toolResultStatus,
         string? errorType,
         long? requestBytes,
         long? responseBytes)
@@ -151,6 +156,7 @@ internal sealed class ToolInvocationLogger(
                 StartedAt: startedAt,
                 DurationMs: durationMs,
                 Status: status,
+                ToolResultStatus: toolResultStatus,
                 ErrorType: errorType,
                 RequestBytes: requestBytes,
                 ResponseBytes: responseBytes));
@@ -172,6 +178,28 @@ internal sealed class ToolInvocationLogger(
             return null;
         }
     }
+
+    private static ToolResultStatus GetToolResultStatus<TResponse>(TResponse response)
+    {
+        var statusProperty = response?.GetType().GetProperty(nameof(ToolResponse<object>.Status));
+        if (statusProperty?.PropertyType == typeof(ToolResultStatus)
+            && statusProperty.GetValue(response) is ToolResultStatus status)
+        {
+            return status;
+        }
+
+        return ToolResultStatus.Ok;
+    }
+
+    private static string ToWireStatus(ToolResultStatus status) => status switch
+    {
+        ToolResultStatus.NotReady => "not_ready",
+        ToolResultStatus.Ok => "ok",
+        ToolResultStatus.NotFound => "not_found",
+        ToolResultStatus.InsufficientEvidence => "insufficient_evidence",
+        ToolResultStatus.Error => "error",
+        _ => "error",
+    };
 
     private bool IsDebugEnabled()
     {

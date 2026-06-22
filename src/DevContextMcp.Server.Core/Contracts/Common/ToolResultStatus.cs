@@ -30,5 +30,11 @@ public enum ToolResultStatus
     /// The index contained too little reliable evidence to answer.
     /// </summary>
     [JsonStringEnumMemberName("insufficient_evidence")]
-    InsufficientEvidence
+    InsufficientEvidence,
+
+    /// <summary>
+    /// The tool failed before it could return a normal response.
+    /// </summary>
+    [JsonStringEnumMemberName("error")]
+    Error
 }

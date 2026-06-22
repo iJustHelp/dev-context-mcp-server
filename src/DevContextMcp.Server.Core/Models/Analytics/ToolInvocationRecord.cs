@@ -11,6 +11,7 @@ public sealed record ToolInvocationRecord(
     DateTimeOffset StartedAt,
     double DurationMs,
     string Status,
+    string ToolResultStatus,
     string? ErrorType,
     long? RequestBytes,
     long? ResponseBytes);

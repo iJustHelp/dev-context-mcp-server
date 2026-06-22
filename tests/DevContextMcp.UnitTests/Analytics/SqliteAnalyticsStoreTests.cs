@@ -185,6 +185,7 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         Assert.Equal(2, actual.Count);
         Assert.Equal("ping", actual[0].ToolName);
         Assert.Equal("bob", actual[0].UserName);
+        Assert.Equal("ok", actual[0].ToolResultStatus);
         Assert.True(actual[0].StartedAt >= actual[1].StartedAt);
     }
 
@@ -209,12 +210,12 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         _target.AppendAsync(
             _databasePath,
             [
-                Record("q1", "query_docs", "alice", Base, 10, AnalyticsStatus.Success, null),
-                Record("q2", "query_docs", "alice", Base.AddMinutes(1), 20, AnalyticsStatus.Success, null),
-                Record("q3", "query_docs", "alice", Base.AddMinutes(2), 30, AnalyticsStatus.Success, null),
-                Record("q4", "query_docs", "alice", Base.AddMinutes(3), 40, AnalyticsStatus.Success, null),
-                Record("q5", "query_docs", "alice", Base.AddMinutes(4), 50, AnalyticsStatus.Error, "InvalidOperationException"),
-                Record("p1", "ping", "bob", Base.AddHours(1), 5, AnalyticsStatus.Success, null),
+                Record("q1", "query_docs", "alice", Base, 10, AnalyticsStatus.Success, "ok", null),
+                Record("q2", "query_docs", "alice", Base.AddMinutes(1), 20, AnalyticsStatus.Success, "not_found", null),
+                Record("q3", "query_docs", "alice", Base.AddMinutes(2), 30, AnalyticsStatus.Success, "insufficient_evidence", null),
+                Record("q4", "query_docs", "alice", Base.AddMinutes(3), 40, AnalyticsStatus.Success, "ok", null),
+                Record("q5", "query_docs", "alice", Base.AddMinutes(4), 50, AnalyticsStatus.Error, "error", "InvalidOperationException"),
+                Record("p1", "ping", "bob", Base.AddHours(1), 5, AnalyticsStatus.Success, "ok", null),
             ],
             CancellationToken.None);
 
@@ -225,8 +226,9 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         DateTimeOffset startedAt,
         double durationMs,
         string status,
+        string toolResultStatus,
         string? errorType) =>
-        new(id, tool, user, startedAt, durationMs, status, errorType, null, null);
+        new(id, tool, user, startedAt, durationMs, status, toolResultStatus, errorType, null, null);
 
     public void Dispose()
     {

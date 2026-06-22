@@ -8,7 +8,7 @@ namespace DevContextMcp.Infrastructure.Analytics;
 /// </summary>
 internal static class AnalyticsSchema
 {
-    internal const int Version = 1;
+    internal const int Version = 2;
 
     internal const string CreateSql =
         """
@@ -19,6 +19,7 @@ internal static class AnalyticsSchema
             started_at     TEXT    NOT NULL,
             duration_ms    REAL    NOT NULL,
             status         TEXT    NOT NULL,
+            tool_result_status TEXT NOT NULL DEFAULT 'ok',
             error_type     TEXT    NULL,
             request_bytes  INTEGER NULL,
             response_bytes INTEGER NULL

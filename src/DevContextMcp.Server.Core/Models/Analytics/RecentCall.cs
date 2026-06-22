@@ -9,4 +9,5 @@ public sealed record RecentCall(
     string UserName,
     DateTimeOffset StartedAt,
     double DurationMs,
-    string Status);
+    string Status,
+    string ToolResultStatus);

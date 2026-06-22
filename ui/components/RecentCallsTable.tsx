@@ -15,7 +15,7 @@ export function RecentCallsTable({ calls }: { calls: RecentCall[] }) {
           <th>Tool</th>
           <th>User</th>
           <th className="num">Duration</th>
-          <th>Status</th>
+          <th>Tool result</th>
         </tr>
       </thead>
       <tbody>
@@ -28,9 +28,9 @@ export function RecentCallsTable({ calls }: { calls: RecentCall[] }) {
             <td>
               <span
                 className="status-pill"
-                style={{ backgroundColor: statusColor(call.status) }}
+                style={{ backgroundColor: statusColor(call.toolResultStatus) }}
               >
-                {call.status}
+                {call.toolResultStatus}
               </span>
             </td>
           </tr>

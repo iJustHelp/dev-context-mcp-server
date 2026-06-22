@@ -30,9 +30,9 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
         command.CommandText =
             """
             INSERT OR IGNORE INTO tool_invocations
-                (id, tool_name, user_name, started_at, duration_ms, status,
+                (id, tool_name, user_name, started_at, duration_ms, status, tool_result_status,
                  error_type, request_bytes, response_bytes)
-            VALUES ($id, $tool, $user, $started, $duration, $status,
+            VALUES ($id, $tool, $user, $started, $duration, $status, $toolResultStatus,
                     $error, $request, $response);
             """;
 
@@ -42,6 +42,7 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
         var started = command.Parameters.Add("$started", SqliteType.Text);
         var duration = command.Parameters.Add("$duration", SqliteType.Real);
         var status = command.Parameters.Add("$status", SqliteType.Text);
+        var toolResultStatus = command.Parameters.Add("$toolResultStatus", SqliteType.Text);
         var error = command.Parameters.Add("$error", SqliteType.Text);
         var request = command.Parameters.Add("$request", SqliteType.Integer);
         var response = command.Parameters.Add("$response", SqliteType.Integer);
@@ -54,6 +55,7 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
             started.Value = FormatTimestamp(record.StartedAt);
             duration.Value = record.DurationMs;
             status.Value = record.Status;
+            toolResultStatus.Value = record.ToolResultStatus;
             error.Value = (object?)record.ErrorType ?? DBNull.Value;
             request.Value = (object?)record.RequestBytes ?? DBNull.Value;
             response.Value = (object?)record.ResponseBytes ?? DBNull.Value;
@@ -227,10 +229,23 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
             return [];
         }
 
+        var hasToolResultStatus = await HasColumnAsync(
+            connection,
+            "tool_invocations",
+            "tool_result_status",
+            cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText =
+            hasToolResultStatus
+                ? """
+            SELECT id, tool_name, user_name, started_at, duration_ms, status, tool_result_status
+            FROM tool_invocations
+            WHERE started_at >= $from AND started_at < $to
+            ORDER BY started_at DESC
+            LIMIT $limit;
             """
-            SELECT id, tool_name, user_name, started_at, duration_ms, status
+                : """
+            SELECT id, tool_name, user_name, started_at, duration_ms, status, status
             FROM tool_invocations
             WHERE started_at >= $from AND started_at < $to
             ORDER BY started_at DESC
@@ -249,7 +264,8 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
                 UserName: reader.GetString(2),
                 StartedAt: ParseTimestamp(reader.GetString(3)),
                 DurationMs: reader.GetDouble(4),
-                Status: reader.GetString(5)));
+                Status: reader.GetString(5),
+                ToolResultStatus: reader.GetString(6)));
         }
 
         return calls;
@@ -377,6 +393,7 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
 
         await ExecuteAsync(connection, "PRAGMA journal_mode=WAL;", cancellationToken);
         await ExecuteAsync(connection, AnalyticsSchema.CreateSql, cancellationToken);
+        await MigrateAsync(connection, cancellationToken);
         await ExecuteAsync(
             connection,
             $"PRAGMA user_version = {AnalyticsSchema.Version};",
@@ -412,6 +429,39 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task MigrateAsync(
+        SqliteConnection connection,
+        CancellationToken cancellationToken)
+    {
+        if (!await HasColumnAsync(connection, "tool_invocations", "tool_result_status", cancellationToken))
+        {
+            await ExecuteAsync(
+                connection,
+                "ALTER TABLE tool_invocations ADD COLUMN tool_result_status TEXT NOT NULL DEFAULT 'ok';",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<bool> HasColumnAsync(
+        SqliteConnection connection,
+        string tableName,
+        string columnName,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info({tableName});";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string FormatTimestamp(DateTimeOffset value) =>

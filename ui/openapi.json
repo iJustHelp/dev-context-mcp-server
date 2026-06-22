@@ -528,7 +528,8 @@
           "userName",
           "startedAt",
           "durationMs",
-          "status"
+          "status",
+          "toolResultStatus"
         ],
         "type": "object",
         "properties": {
@@ -550,6 +551,9 @@
             "format": "double"
           },
           "status": {
+            "type": "string"
+          },
+          "toolResultStatus": {
             "type": "string"
           }
         }
