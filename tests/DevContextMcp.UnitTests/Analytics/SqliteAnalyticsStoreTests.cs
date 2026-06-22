@@ -48,6 +48,32 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         Assert.Empty(actual);
     }
 
+    // Purpose: returns no user rows when the analytics database does not exist
+    [Fact]
+    public async Task GetUserBreakdownAsync_DatabaseMissing_ReturnsEmpty()
+    {
+        // arrange
+
+        // act
+        var actual = await _target.GetUserBreakdownAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
+        Assert.Empty(actual);
+    }
+
+    // Purpose: returns no tool-result rows when the analytics database does not exist
+    [Fact]
+    public async Task GetToolResultBreakdownAsync_DatabaseMissing_ReturnsEmpty()
+    {
+        // arrange
+
+        // act
+        var actual = await _target.GetToolResultBreakdownAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
+        Assert.Empty(actual);
+    }
+
     // Purpose: returns no time buckets when the analytics database does not exist
     [Fact]
     public async Task GetTimeSeriesAsync_DatabaseMissing_ReturnsEmpty()
@@ -126,6 +152,66 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
                 Assert.Equal(1, ping.Count);
                 Assert.Equal(1d / 6d, ping.Share, 5);
                 Assert.Equal(5, ping.LatencyMs.Max, 3);
+            });
+    }
+
+    // Purpose: groups call counts by resolved analytics user
+    [Fact]
+    public async Task GetUserBreakdownAsync_WithSeededEvents_GroupsByUser()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetUserBreakdownAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
+        Assert.Collection(
+            actual,
+            alice =>
+            {
+                Assert.Equal("alice", alice.UserName);
+                Assert.Equal(5, alice.Count);
+            },
+            bob =>
+            {
+                Assert.Equal("bob", bob.UserName);
+                Assert.Equal(1, bob.Count);
+            });
+    }
+
+    // Purpose: groups call counts by tool-level result status
+    [Fact]
+    public async Task GetToolResultBreakdownAsync_WithSeededEvents_GroupsByToolResult()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetToolResultBreakdownAsync(_databasePath, Window, CancellationToken.None);
+
+        // assert
+        Assert.Collection(
+            actual,
+            ok =>
+            {
+                Assert.Equal("ok", ok.ToolResultStatus);
+                Assert.Equal(3, ok.Count);
+            },
+            error =>
+            {
+                Assert.Equal("error", error.ToolResultStatus);
+                Assert.Equal(1, error.Count);
+            },
+            insufficientEvidence =>
+            {
+                Assert.Equal("insufficient_evidence", insufficientEvidence.ToolResultStatus);
+                Assert.Equal(1, insufficientEvidence.Count);
+            },
+            notFound =>
+            {
+                Assert.Equal("not_found", notFound.ToolResultStatus);
+                Assert.Equal(1, notFound.Count);
             });
     }
 

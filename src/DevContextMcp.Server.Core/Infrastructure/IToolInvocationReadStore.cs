@@ -18,6 +18,16 @@ public interface IToolInvocationReadStore
         AnalyticsWindow window,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<UserBreakdownItem>> GetUserBreakdownAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ToolResultBreakdownItem>> GetToolResultBreakdownAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        CancellationToken cancellationToken);
+
     Task<AnalyticsTimeSeries> GetTimeSeriesAsync(
         string databasePath,
         AnalyticsWindow window,

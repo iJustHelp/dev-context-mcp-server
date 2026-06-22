@@ -177,6 +177,83 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<UserBreakdownItem>> GetUserBreakdownAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenReadAsync(databasePath, cancellationToken);
+        if (connection is null)
+        {
+            return [];
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT user_name, COUNT(*)
+            FROM tool_invocations
+            WHERE started_at >= $from AND started_at < $to
+            GROUP BY user_name
+            ORDER BY COUNT(*) DESC, user_name;
+            """;
+        AddWindow(command, window);
+
+        var users = new List<UserBreakdownItem>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            users.Add(new UserBreakdownItem(reader.GetString(0), reader.GetInt64(1)));
+        }
+
+        return users;
+    }
+
+    public async Task<IReadOnlyList<ToolResultBreakdownItem>> GetToolResultBreakdownAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenReadAsync(databasePath, cancellationToken);
+        if (connection is null)
+        {
+            return [];
+        }
+
+        var hasToolResultStatus = await HasColumnAsync(
+            connection,
+            "tool_invocations",
+            "tool_result_status",
+            cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            hasToolResultStatus
+                ? """
+            SELECT tool_result_status, COUNT(*)
+            FROM tool_invocations
+            WHERE started_at >= $from AND started_at < $to
+            GROUP BY tool_result_status
+            ORDER BY COUNT(*) DESC, tool_result_status;
+            """
+                : """
+            SELECT status, COUNT(*)
+            FROM tool_invocations
+            WHERE started_at >= $from AND started_at < $to
+            GROUP BY status
+            ORDER BY COUNT(*) DESC, status;
+            """;
+        AddWindow(command, window);
+
+        var results = new List<ToolResultBreakdownItem>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(new ToolResultBreakdownItem(reader.GetString(0), reader.GetInt64(1)));
+        }
+
+        return results;
+    }
+
     public async Task<AnalyticsTimeSeries> GetTimeSeriesAsync(
         string databasePath,
         AnalyticsWindow window,

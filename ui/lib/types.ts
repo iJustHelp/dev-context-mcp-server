@@ -9,7 +9,9 @@ export type AnalyticsTimeSeries = Schemas["AnalyticsTimeSeries"];
 export type LatencySummary = Schemas["LatencySummary"];
 export type RecentCall = Schemas["RecentCall"];
 export type TimeBucketPoint = Schemas["TimeBucketPoint"];
+export type ToolResultBreakdownItem = Schemas["ToolResultBreakdownItem"];
 export type ToolUsage = Schemas["ToolUsage"];
+export type UserBreakdownItem = Schemas["UserBreakdownItem"];
 export type IndexedContextResponse = Schemas["IndexedContextResponse"];
 export type IndexedContextTotals = Schemas["IndexedContextTotals"];
 export type IndexedDocumentInventoryItem =
@@ -22,6 +24,8 @@ export type StatusCounts = Schemas["StatusBreakdown"];
 
 // Response envelopes.
 export type ToolsResponse = Schemas["ToolBreakdownResponse"];
+export type ToolResultsResponse = Schemas["ToolResultBreakdownResponse"];
+export type UsersResponse = Schemas["UserBreakdownResponse"];
 export type RecentResponse = Schemas["RecentCallsResponse"];
 
 // Request-shaping helpers (query inputs, not response schemas).

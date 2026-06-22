@@ -162,6 +162,98 @@
         }
       }
     },
+    "/api/analytics/users": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "operationId": "GetUsers",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserBreakdownResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/tool-results": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "operationId": "GetToolResults",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResultBreakdownResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analytics/recent": {
       "get": {
         "tags": [
@@ -625,6 +717,36 @@
           }
         }
       },
+      "ToolResultBreakdownItem": {
+        "required": [
+          "toolResultStatus",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "toolResultStatus": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ToolResultBreakdownResponse": {
+        "required": [
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResultBreakdownItem"
+            }
+          }
+        }
+      },
       "ToolUsage": {
         "required": [
           "toolName",
@@ -651,6 +773,36 @@
           },
           "latencyMs": {
             "$ref": "#/components/schemas/LatencySummary"
+          }
+        }
+      },
+      "UserBreakdownItem": {
+        "required": [
+          "userName",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UserBreakdownResponse": {
+        "required": [
+          "users"
+        ],
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserBreakdownItem"
+            }
           }
         }
       }

@@ -1,7 +1,14 @@
 // Server-side proxy: forwards dashboard analytics requests to the .NET MCP server.
 // The browser only ever talks to this route, never directly to the .NET host.
 
-const ALLOWED_ENDPOINTS = new Set(["summary", "timeseries", "tools", "recent"]);
+const ALLOWED_ENDPOINTS = new Set([
+  "summary",
+  "timeseries",
+  "tools",
+  "users",
+  "tool-results",
+  "recent",
+]);
 
 const BASE_URL =
   process.env.MCP_ANALYTICS_API_BASE_URL ?? "http://127.0.0.1:2222";

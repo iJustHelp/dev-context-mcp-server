@@ -52,6 +52,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analytics/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/tool-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetToolResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analytics/recent": {
         parameters: {
             query?: never;
@@ -198,6 +230,14 @@ export interface components {
         ToolBreakdownResponse: {
             tools: components["schemas"]["ToolUsage"][];
         };
+        ToolResultBreakdownItem: {
+            toolResultStatus: string;
+            /** Format: int64 */
+            count: number;
+        };
+        ToolResultBreakdownResponse: {
+            results: components["schemas"]["ToolResultBreakdownItem"][];
+        };
         ToolUsage: {
             toolName: string;
             /** Format: int64 */
@@ -206,6 +246,14 @@ export interface components {
             share: number;
             statusCounts: components["schemas"]["StatusBreakdown"];
             latencyMs: components["schemas"]["LatencySummary"];
+        };
+        UserBreakdownItem: {
+            userName: string;
+            /** Format: int64 */
+            count: number;
+        };
+        UserBreakdownResponse: {
+            users: components["schemas"]["UserBreakdownItem"][];
         };
     };
     responses: never;
@@ -301,6 +349,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolBreakdownResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    GetUsers: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserBreakdownResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    GetToolResults: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolResultBreakdownResponse"];
                 };
             };
             /** @description Bad Request */

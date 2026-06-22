@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/Card";
+import {
+  ToolResultBreakdownChart,
+  UserBreakdownChart,
+} from "@/components/BreakdownBarChart";
 import { CallsOverTimeChart } from "@/components/CallsOverTimeChart";
 import { DateRangeControl } from "@/components/DateRangeControl";
 import { KpiCards } from "@/components/KpiCards";
-import { LatencyPanel } from "@/components/LatencyPanel";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatusDistribution } from "@/components/StatusDistribution";
 import { ToolBreakdownTable } from "@/components/ToolBreakdownTable";
@@ -15,7 +18,9 @@ import type {
   AnalyticsSummary,
   AnalyticsTimeSeries,
   RecentResponse,
+  ToolResultsResponse,
   ToolsResponse,
+  UsersResponse,
 } from "@/lib/types";
 
 function defaultQuery(): AnalyticsQuery {
@@ -28,6 +33,8 @@ export default function Page() {
   const [query, setQuery] = useState<AnalyticsQuery | null>(null);
   const [summary, setSummary] = useState<AnalyticsSummary>();
   const [tools, setTools] = useState<ToolsResponse>();
+  const [users, setUsers] = useState<UsersResponse>();
+  const [toolResults, setToolResults] = useState<ToolResultsResponse>();
   const [series, setSeries] = useState<AnalyticsTimeSeries>();
   const [recent, setRecent] = useState<RecentResponse>();
   const [error, setError] = useState<string>();
@@ -44,12 +51,25 @@ export default function Page() {
     setError(undefined);
     try {
       const window = { from: current.from, to: current.to };
-      const [summaryResult, toolsResult, seriesResult, recentResult] =
+      const [
+        summaryResult,
+        toolsResult,
+        usersResult,
+        toolResultsResult,
+        seriesResult,
+        recentResult,
+      ] =
         await Promise.all([
           apiClient.GET("/api/analytics/summary", {
             params: { query: window },
           }),
           apiClient.GET("/api/analytics/tools", {
+            params: { query: window },
+          }),
+          apiClient.GET("/api/analytics/users", {
+            params: { query: window },
+          }),
+          apiClient.GET("/api/analytics/tool-results", {
             params: { query: window },
           }),
           apiClient.GET("/api/analytics/timeseries", {
@@ -60,9 +80,14 @@ export default function Page() {
           }),
         ]);
 
-      const failed = [summaryResult, toolsResult, seriesResult, recentResult].find(
-        (result) => result.error !== undefined,
-      );
+      const failed = [
+        summaryResult,
+        toolsResult,
+        usersResult,
+        toolResultsResult,
+        seriesResult,
+        recentResult,
+      ].find((result) => result.error !== undefined);
       if (failed) {
         throw new Error(
           failed.error?.error ??
@@ -72,6 +97,8 @@ export default function Page() {
 
       setSummary(summaryResult.data);
       setTools(toolsResult.data);
+      setUsers(usersResult.data);
+      setToolResults(toolResultsResult.data);
       setSeries(seriesResult.data);
       setRecent(recentResult.data);
     } catch (caught) {
@@ -115,7 +142,7 @@ export default function Page() {
       {summary && <KpiCards summary={summary} />}
 
       <div className="dashboard-grid">
-        <Card title="Calls over time" span={8}>
+        <Card title="Calls over time" span={12}>
           {series ? (
             <CallsOverTimeChart series={series} />
           ) : (
@@ -123,25 +150,25 @@ export default function Page() {
           )}
         </Card>
 
-        <Card title="Status distribution" span={4}>
-          {summary ? (
-            <StatusDistribution counts={summary.statusCounts} />
+        <Card title="Calls by tool result" span={6}>
+          {toolResults ? (
+            <ToolResultBreakdownChart results={toolResults.results} />
           ) : (
             <p className="empty">—</p>
           )}
         </Card>
 
-        <Card title="Per-tool breakdown" span={8}>
+        <Card title="Calls by user" span={6}>
+          {users ? (
+            <UserBreakdownChart users={users.users} />
+          ) : (
+            <p className="empty">—</p>
+          )}
+        </Card>
+
+        <Card title="Per-tool breakdown" span={12}>
           {tools ? (
             <ToolBreakdownTable tools={tools.tools} />
-          ) : (
-            <p className="empty">—</p>
-          )}
-        </Card>
-
-        <Card title="Latency (ms)" span={4}>
-          {summary ? (
-            <LatencyPanel latency={summary.latencyMs} />
           ) : (
             <p className="empty">—</p>
           )}

@@ -1,41 +1,141 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import type { RecentCall } from "@/lib/types";
 import { statusColor } from "@/lib/colors";
 import { formatDateTime, formatMs } from "@/lib/format";
 
+type Direction = "asc" | "desc";
+type RecentCallSortKey =
+  | "startedAt"
+  | "toolName"
+  | "userName"
+  | "durationMs"
+  | "toolResultStatus";
+
+interface SortState {
+  key: RecentCallSortKey;
+  direction: Direction;
+}
+
 export function RecentCallsTable({ calls }: { calls: RecentCall[] }) {
+  const [sort, setSort] = useState<SortState>({
+    key: "startedAt",
+    direction: "desc",
+  });
+
+  const rows = useMemo(
+    () =>
+      [...calls].sort((left, right) =>
+        compareValues(sortValue(left, sort.key), sortValue(right, sort.key), sort.direction),
+      ),
+    [calls, sort],
+  );
+
   if (calls.length === 0) {
     return <p className="empty">No calls in this range.</p>;
   }
 
   return (
-    <table className="data-table">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Tool</th>
-          <th>User</th>
-          <th className="num">Duration</th>
-          <th>Tool result</th>
-        </tr>
-      </thead>
-      <tbody>
-        {calls.map((call) => (
-          <tr key={call.id}>
-            <td>{formatDateTime(call.startedAt)}</td>
-            <td>{call.toolName}</td>
-            <td>{call.userName}</td>
-            <td className="num">{formatMs(call.durationMs)}</td>
-            <td>
-              <span
-                className="status-pill"
-                style={{ backgroundColor: statusColor(call.toolResultStatus) }}
-              >
-                {call.toolResultStatus}
-              </span>
-            </td>
+    <div className="table-scroll">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <SortableHeader label="Time" sortKey="startedAt" sort={sort} onSort={setSortKey} />
+            <SortableHeader label="Tool" sortKey="toolName" sort={sort} onSort={setSortKey} />
+            <SortableHeader label="User" sortKey="userName" sort={sort} onSort={setSortKey} />
+            <SortableHeader
+              label="Duration"
+              sortKey="durationMs"
+              sort={sort}
+              onSort={setSortKey}
+              align="right"
+            />
+            <SortableHeader
+              label="Tool result"
+              sortKey="toolResultStatus"
+              sort={sort}
+              onSort={setSortKey}
+            />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((call) => (
+            <tr key={call.id}>
+              <td>{formatDateTime(call.startedAt)}</td>
+              <td>{call.toolName}</td>
+              <td>{call.userName}</td>
+              <td className="num">{formatMs(call.durationMs)}</td>
+              <td>
+                <span
+                  className="status-pill"
+                  style={{ backgroundColor: statusColor(call.toolResultStatus) }}
+                >
+                  {call.toolResultStatus}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
+
+  function setSortKey(key: RecentCallSortKey) {
+    setSort((current) =>
+      current.key === key
+        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: key === "startedAt" || key === "durationMs" ? "desc" : "asc" },
+    );
+  }
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  align,
+}: {
+  label: string;
+  sortKey: RecentCallSortKey;
+  sort: SortState;
+  onSort: (key: RecentCallSortKey) => void;
+  align?: "right";
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <th className={align === "right" ? "num" : undefined}>
+      <button
+        className={align === "right" ? "sort-button sort-button-right" : "sort-button"}
+        type="button"
+        onClick={() => onSort(sortKey)}
+      >
+        <span>{label}</span>
+        <span className="sort-marker">
+          {active ? (sort.direction === "asc" ? "^" : "v") : ""}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+function sortValue(call: RecentCall, key: RecentCallSortKey): string | number {
+  if (key === "startedAt") {
+    return new Date(call.startedAt).getTime();
+  }
+
+  return call[key];
+}
+
+function compareValues(
+  left: string | number,
+  right: string | number,
+  direction: Direction,
+): number {
+  const result =
+    typeof left === "number" && typeof right === "number"
+      ? left - right
+      : String(left).localeCompare(String(right));
+  return direction === "asc" ? result : -result;
 }

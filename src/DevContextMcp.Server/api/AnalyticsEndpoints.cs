@@ -37,6 +37,16 @@ internal static class AnalyticsEndpoints
             .Produces<ToolBreakdownResponse>()
             .Produces<ApiError>(StatusCodes.Status400BadRequest);
 
+        group.MapGet("/users", GetUsersAsync)
+            .WithName("GetUsers")
+            .Produces<UserBreakdownResponse>()
+            .Produces<ApiError>(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/tool-results", GetToolResultsAsync)
+            .WithName("GetToolResults")
+            .Produces<ToolResultBreakdownResponse>()
+            .Produces<ApiError>(StatusCodes.Status400BadRequest);
+
         group.MapGet("/recent", GetRecentAsync)
             .WithName("GetRecent")
             .Produces<RecentCallsResponse>()
@@ -106,6 +116,38 @@ internal static class AnalyticsEndpoints
 
         var tools = await store.GetToolBreakdownAsync(ResolvePath(options.Value), window, cancellationToken);
         return Results.Json(new ToolBreakdownResponse(tools));
+    }
+
+    private static async Task<IResult> GetUsersAsync(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        IToolInvocationReadStore store,
+        IOptions<DevContextMcpOptions> options,
+        CancellationToken cancellationToken)
+    {
+        if (!TryBuildWindow(from, to, out var window, out var error))
+        {
+            return Results.BadRequest(new ApiError(error!));
+        }
+
+        var users = await store.GetUserBreakdownAsync(ResolvePath(options.Value), window, cancellationToken);
+        return Results.Json(new UserBreakdownResponse(users));
+    }
+
+    private static async Task<IResult> GetToolResultsAsync(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        IToolInvocationReadStore store,
+        IOptions<DevContextMcpOptions> options,
+        CancellationToken cancellationToken)
+    {
+        if (!TryBuildWindow(from, to, out var window, out var error))
+        {
+            return Results.BadRequest(new ApiError(error!));
+        }
+
+        var results = await store.GetToolResultBreakdownAsync(ResolvePath(options.Value), window, cancellationToken);
+        return Results.Json(new ToolResultBreakdownResponse(results));
     }
 
     private static async Task<IResult> GetRecentAsync(
