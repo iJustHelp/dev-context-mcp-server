@@ -9,12 +9,12 @@ flowchart TD
 
     UserPrompt --> Agent[Agent receives prompt]
 
-    Agent --> LoadContext[Load  instructions and initial context]
+    Agent --> LoadContext[Agent loads  instructions and initial context]
 
-    LoadContext --> SendToLLM([Send to LLM:<br/>prompt + instructions + more context])
+    LoadContext --> SendToLLM([Agent sends to LLM:<br/>prompt + instructions + more context])
 
 subgraph Loop["Agent Loop"]
-    SendToLLM --> LLMThink[LLM reasons:<br/>what to do next]
+    SendToLLM --> LLMThink([LLM reasoning:<br/>what to do next])
 
     LLMThink --> NeedQuestion{Need more info<br/>from user?}
 
