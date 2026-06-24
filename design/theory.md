@@ -11,7 +11,7 @@ flowchart TD
 
     Agent --> LoadContext[Load  instructions and initial context]
 
-    LoadContext --> SendToLLM[Send to LLM:<br/>prompt + instructions + more context]
+    LoadContext --> SendToLLM([Send to LLM:<br/>prompt + instructions + more context])
 
 subgraph Loop["Agent Loop"]
     SendToLLM --> LLMThink[LLM reasons:<br/>what to do next]
@@ -36,7 +36,7 @@ subgraph Loop["Agent Loop"]
 
 end
 
-    DoneCheck -- Yes --> FinalResult[Agent returns result:<br/>plan, code, explanation, or diff]
+    DoneCheck -- Yes --> FinalResult[Plan or Code]
 
     FinalResult --> End([End])
 ```
@@ -59,20 +59,20 @@ sequenceDiagram
     Agent->>Tools: Run scripts, call MCP tools etc.
     Tools-->>Agent: New context
 
-    Agent->>LLM: Prompt + instructions + richer context
+    Agent->>LLM: Prompt + instructions + more context
     LLM-->>Agent: What to do next
 
     LLM->>User: Question
     User-->>LLM: Answer
     
 
-    Agent->>Tools: Do what LLM said
-    Tools-->>Agent: More context
+    Agent->>Tools:  Run scripts, call MCP tools etc.
+    Tools-->>Agent: New context
 
-    Agent->>LLM: Prompt + instructions + all useful context
+    Agent->>LLM: Prompt + instructions + more context
     LLM-->>Agent: Done
 
-    Agent-->>User: Plan or Plan -> code
+    Agent-->>User: Plan or Code
 ```
 >Good LLM knows to ask, good Agent knows to pass.
 
@@ -92,22 +92,23 @@ Agent and LLM are working together like
 flowchart TD
     U[User Prompt] --> AGENT[Agent]
 
-    AGENT --> LLM[LLM]
-
-    AGENT --> MCP[Dev Context MCP Server]
-
+    subgraph Loop[" "]
+        AGENT --> |context| LLM[LLM]
+        AGENT --> |request| MCP[Dev Context MCP Server]
+    end
+    
     DB[(SQLite / FTS Index)]
 
-    subgraph Internal
+    subgraph Internal[" "]
         MD[Company Docs]
-        PKG[Internal NuGet Packages]
+        PKG[NuGet Packages <br> qa, prod, public]
     end
 
     MCP --> DB
     DB --> MD
     DB --> PKG
 
-    LLM --> AGENT
-    MCP --> AGENT
+    LLM --> |actions|AGENT
+    MCP --> |context| AGENT
     LLM --> RESULT[Plan or Code]
 ```
