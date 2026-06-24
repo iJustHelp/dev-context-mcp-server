@@ -1,6 +1,19 @@
 ## Agenda
 
-1. How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.
+1. [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
+
+2. How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
+[Development Workflow.](#development-workflow)
+
+3. Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
+Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)  
+[How Contex7 works?](https://chatgpt.com/c/6a3c56bc-66a8-83ea-8ca7-74dca74610a2)
+
+4. [Dev Context MCP Server Solution](#dev-context-mcp-server-solution)  
+
+5. [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
+
+ 
 
 ### Development Workflow
 
@@ -21,6 +34,35 @@ flowchart TD
     DevReview --> Refactoring([Developer makes refactoring])
     Refactoring --> BRD
 ```    
+
+---
+
+### Dev Context MCP Server Solution
+
+```mermaid
+flowchart TD
+    U[User Prompt] --> AGENT[Agent]
+
+    subgraph Loop[" "]
+        AGENT --> |context| LLM[LLM]
+        AGENT --> |request| MCP[Dev Context MCP Server]
+    end
+    
+    DB[(SQLite / FTS Index)]
+
+    subgraph Internal[" "]
+        MD[Company Docs]
+        PKG[NuGet Packages <br> qa, prod, public]
+    end
+
+    MCP --> DB
+    DB --> MD
+    DB --> PKG
+
+    LLM --> |actions|AGENT
+    MCP --> |context| AGENT
+    LLM --> RESULT[Plan or Code]
+```
 
 
     
