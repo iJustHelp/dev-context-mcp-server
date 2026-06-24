@@ -1,9 +1,9 @@
 ## Agenda
 
-1. [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
-
-2. How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
+1. How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
 [Development Workflow.](#development-workflow)
+
+2. [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
 
 3. Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
 Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)  
