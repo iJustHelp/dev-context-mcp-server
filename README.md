@@ -72,7 +72,7 @@ independent of feeds and credentials because it never refreshes data itself.
 
 ## Demo
 
-Repository contains Demo Indexer data for [Demo Project](https://github.com/sbuyevich/demo-dev-context-mcp-server). The demo project design and implementation were AI-generated using DevContext MCP server. The [demo folder](./demo/) contains:
+Repository contains Demo Indexer data for [Demo Project](https://github.com/iJustHelp/dev-context-mcp-server-demo). The demo project design and implementation were AI-generated using DevContext MCP server. The [demo folder](./demo/) contains:
 
 **Demo Applications** — .NET applications that generate demo NuGet packages:
 - [Demo.Cities](./demo/nuget-apps/Demo.Cities/) — generates `prod` and `qa` versions of a sample NuGet package.
