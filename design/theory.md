@@ -1,5 +1,5 @@
 
-### AI Engineering
+### Agent Loop
 
 ```mermaid
 sequenceDiagram
@@ -27,6 +27,16 @@ sequenceDiagram
 
     Agent-->>User: Plan or code
 ```
+>Good LLM knows to ask, good Agent knows to pass.
+
+Agent and LLM are working together like 
+- GitHub Copilot + Sonnet 4.6
+- Codex + GPT 5.5
+- Claude + Opus 4.8  
+
+
+
+
 ---
 
 ### Dev Context MCP Server Solution
