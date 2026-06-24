@@ -11,19 +11,19 @@ sequenceDiagram
     Agent->>LLM: Prompt + instructions + initial context
     LLM-->>Agent: What to do next
 
-    Agent->>Tools: Read files / search docs / inspect NuGets
+    Agent->>Tools: Run scripts, call MCP tools etc.
     Tools-->>Agent: New context
 
-    Agent->>LLM: Prompt + instructions + collected context
+    Agent->>LLM: Prompt + instructions + richer context
     LLM-->>Agent: What to do next
 
-    Agent->>Tools: Edit code / run build / run tests
+    Agent->>Tools: more actions
     Tools-->>Agent: More context
 
     Agent->>LLM: Prompt + instructions + all useful context
-    LLM-->>Agent: Final answer / final code
+    LLM-->>Agent: Done
 
-    Agent-->>User: Result: plan, code, explanation, or diff
+    Agent-->>User: Plan or code
 ```
 ---
 
