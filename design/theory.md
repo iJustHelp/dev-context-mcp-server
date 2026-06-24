@@ -1,6 +1,49 @@
 
 ### Agent Loop
 
+#### Flowchart
+
+```mermaid
+flowchart TD
+    Start([Start]) --> UserPrompt[User provides prompt]
+
+    UserPrompt --> Agent[Agent receives prompt]
+
+    Agent --> LoadContext[Load  instructions and initial context]
+
+    LoadContext --> SendToLLM[Send to LLM:<br/>prompt + instructions + more context]
+
+subgraph Loop["Agent Loop"]
+    SendToLLM --> LLMThink[LLM reasons:<br/>what to do next]
+
+    LLMThink --> NeedQuestion{Need more info<br/>from user?}
+
+    NeedQuestion -- Yes --> AskUser[Agent asks user question]
+    AskUser --> UserAnswer[User answers]
+    UserAnswer --> SendToLLM
+
+    NeedQuestion -- No --> NeedTools{Need tools or scripts?}
+
+    NeedTools -- Yes --> RunTools[Agent runs tools:<br/>bash scripts, read files, MCP tools, build/tests]
+    RunTools --> ToolOutput[Tools return new context:<br/>file content, docs, errors, test output]
+
+    ToolOutput --> UpdateContext[Agent adds new context]
+    UpdateContext --> SendToLLM
+
+    NeedTools -- No --> DoneCheck{Task complete?}
+
+    DoneCheck -- No --> LLMThink
+
+end
+
+    DoneCheck -- Yes --> FinalResult[Agent returns result:<br/>plan, code, explanation, or diff]
+
+    FinalResult --> End([End])
+```
+
+
+#### Sequence
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -19,13 +62,17 @@ sequenceDiagram
     Agent->>LLM: Prompt + instructions + richer context
     LLM-->>Agent: What to do next
 
+    LLM->>User: Question
+    User-->>LLM: Answer
+    
+
     Agent->>Tools: Do what LLM said
     Tools-->>Agent: More context
 
     Agent->>LLM: Prompt + instructions + all useful context
     LLM-->>Agent: Done
 
-    Agent-->>User: Plan or code
+    Agent-->>User: Plan or Plan -> code
 ```
 >Good LLM knows to ask, good Agent knows to pass.
 
