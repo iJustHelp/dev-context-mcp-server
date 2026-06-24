@@ -13,11 +13,15 @@ Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)
 
 5. [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
 
+6. [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
+
+7. Run Indexer, show analytic app, show logs.
  
 
 ### Development Workflow
 
->Goal: make the code human readable and maintainable.
+>Do NOT code blindly!   
+>Make the code human readable and maintainable.
 
 ```mermaid
 flowchart TD
@@ -26,8 +30,8 @@ flowchart TD
     ReviewPlan --> IsBigPlan{Is the plan large?}
     IsBigPlan -- Yes --> SplitStages[Agent splits plan into stages<br>with plan.md]
     SplitStages --> IsStageBig{Is the plan large?}
-    IsStageBig -- Yes --> SplitTasks[Agent splits plan into tasks<br>with plan.md]
-    SplitTasks -->  ImplementPlan[Agent implements plan.md]
+    IsStageBig -- Yes --> SplitTasks[Agent splits plan into tasks]
+    SplitTasks -->  ImplementPlan[Agent implements plan / tasks]
     IsBigPlan -- No --> ImplementPlan
     IsStageBig -- No --> ImplementPlan
     ImplementPlan --> DevReview([Developer reviews and tests code])
