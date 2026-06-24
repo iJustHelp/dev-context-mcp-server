@@ -1,4 +1,6 @@
 
+### AI Engineering
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -17,7 +19,7 @@ sequenceDiagram
     Agent->>LLM: Prompt + instructions + richer context
     LLM-->>Agent: What to do next
 
-    Agent->>Tools: more actions
+    Agent->>Tools: Do what LLM said
     Tools-->>Agent: More context
 
     Agent->>LLM: Prompt + instructions + all useful context
@@ -27,33 +29,28 @@ sequenceDiagram
 ```
 ---
 
+### Dev Context MCP Server Solution
+
 ```mermaid
 flowchart TD
-    U[User Prompt] --> AGENT[AI Agent]
+    U[User Prompt] --> AGENT[Agent]
 
     AGENT --> LLM[LLM]
 
     AGENT --> MCP[Dev Context MCP Server]
 
-    subgraph Internal Knowledge
-        DB[(SQLite / FTS Index)]
-        XML[XML Documentation]
-        MD[Markdown Docs]
+    DB[(SQLite / FTS Index)]
+
+    subgraph Internal
+        MD[Company Docs]
         PKG[Internal NuGet Packages]
-        EX[Code Examples]
     end
 
     MCP --> DB
-    MCP --> XML
-    MCP --> MD
-    MCP --> PKG
-    MCP --> EX
+    DB --> MD
+    DB --> PKG
 
     LLM --> AGENT
     MCP --> AGENT
-
-    AGENT --> CODE[Code Changes]
-    CODE --> BUILD[Build / Tests]
-    BUILD --> AGENT
-    AGENT --> RESULT[Result]
+    LLM --> RESULT[Plan or Code]
 ```
