@@ -1,3 +1,23 @@
+## AI-assisted Coding
+
+```text
+LLM(Context) = Plan
+LLM(Context + Plan) = Code
+
+where 
+Context =
+  Requirements +
+  Existing code +
+  Project structure +
+  Framework/library versions +
+  Documentation +
+  Coding standards +
+  Error messages +
+  Test results +
+  Previous conversation
+```
+
+How we can enrich Context?
 
 ### Agent Loop
 
@@ -5,7 +25,6 @@
 
 ```mermaid
 flowchart TD
-    Start([Start]) --> UserPrompt[User provides prompt]
 
     UserPrompt --> Agent[Agent receives prompt]
 
@@ -14,7 +33,7 @@ flowchart TD
     LoadContext --> SendToLLM([Agent sends to LLM:<br/>prompt + instructions + <b>MORE</b> context])
 
 subgraph Loop["Agent Loop"]
-    SendToLLM --> LLMThink([LLM reasoning:<br/>what to do next])
+    SendToLLM --> LLMThink([LLM reasoning])
 
     LLMThink --> NeedQuestion{Need more info<br/>from user?}
 
@@ -29,16 +48,9 @@ subgraph Loop["Agent Loop"]
 
     ToolOutput --> UpdateContext[Agent adds new context]
     UpdateContext --> SendToLLM
-
-    NeedTools -- No --> DoneCheck{Task complete?}
-
-    DoneCheck -- No --> LLMThink
-
 end
+    NeedTools -- No --> FinalResult[Plan or Code]
 
-    DoneCheck -- Yes --> FinalResult[Plan or Code]
-
-    FinalResult --> End([End])
 ```
 
 
