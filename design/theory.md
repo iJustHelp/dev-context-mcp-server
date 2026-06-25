@@ -1,4 +1,4 @@
-## AI-assisted Coding
+## AI Coding
 
 ```text
 LLM(Context) = Plan
