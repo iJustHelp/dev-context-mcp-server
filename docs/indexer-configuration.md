@@ -79,16 +79,12 @@ Each indexed NuGet source should have a JSON configuration file.
   "Environment": "public",
   "PackageId": "Formula.SimpleRepo",
   "MaxVersionsPerPackage": 10,
-  "IncludePrerelease": false,
-  "IncludeUnlisted": false
 }
 ```
 
 where:
 
-- `Delete`: Boolean, default: false. If true, the indexer deletes the specified `PackageId` from the database.
+- `Delete`: Boolean, default: false. If true, then indexer deletes the specified `PackageId` from the database.
 - `Environment`: is one of the values defined in `NugetPackages` in `appsettings.json` (for example: `public`, `prod`, `qa`).
 - `PackageId`: full NuGet package name.
 - `MaxVersionsPerPackage`: maximum number of versions for indexing of the package.
-- `IncludePrerelease`: Boolean, default: false. If true, then include prerelease versions of this package.
-- `IncludeUnlisted`: Boolean, default: false. If true, then include unlisted package versions.

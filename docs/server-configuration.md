@@ -8,9 +8,8 @@
     "McpUrl": "http://127.0.0.1:2222/mcp",
     "Retrieval": {
       "EnvironmentOrder": [
-        "public"
-      ],
-      "SourceOrder": [
+        "qa",
+        "prod",
         "public"
       ],
       "DefaultMaxResults": 8,
@@ -34,7 +33,6 @@ where:
 
 - `Retrieval`: behavior configuration for documentation and symbol queries
   - `EnvironmentOrder`: ordered list of environment names for fallback lookup when no environment is specified. First environment in the list is the default.
-  - `SourceOrder`: ordered list of NuGet source names for fallback lookup when no source is specified.
   - `DefaultMaxResults`: default number of results returned by `query_docs` (default: 8).
   - `MaxResults`: maximum number of results allowed in any query response (default: 25).
   - `MaxResponseBytes`: maximum total response size in bytes before truncation (default: 102400).
