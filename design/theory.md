@@ -116,8 +116,9 @@ Requirement -> Design -> AI Coding -> Manual Testing -> Developer Code Review ->
 | Coding Type | Code Control | Coding Speed | Ready for Prod |
 |---|---|---|---|
 | Traditional| Full | Slow | Yes |
-| Vibe| No | Fastest | No|
-| Blind| Partial| Fast | Yes?|
 | AI-assisted| Full | Fast| Yes |
+| Blind| Partial| Faster | Yes?|
+| Vibe| No | Fastest | No|
+
 
 
