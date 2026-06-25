@@ -15,9 +15,9 @@ Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)
 
 - [Dev NuGet Apps](https://github.com/iJustHelp/dev-context-mcp-server/tree/main/demo/nuget-apps)  
 
-- [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
-
 - Run Indexer, show analytic app, show logs.
+
+- [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
 
 - [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
  
