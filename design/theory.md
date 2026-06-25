@@ -17,7 +17,7 @@ Context =
   Previous conversation
 ```
 
-How we can enrich Context?
+>How we can enrich Context to help AI to make Plan?
 
 ### Agent Loop
 
