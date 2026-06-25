@@ -25,9 +25,8 @@ How we can enrich Context?
 
 ```mermaid
 flowchart TD
-
-    UserPrompt --> Agent[Agent receives prompt]
-
+    Agent[Agent receives prompt]
+    
     Agent --> LoadContext[Agent loads  instructions and initial context]
 
     LoadContext --> SendToLLM([Agent sends to LLM:<br/>prompt + instructions + <b>MORE</b> context])

@@ -2,7 +2,7 @@
 
 - [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
 
-- How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
+- How I used it in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
 [Development Workflow.](#development-workflow)
 
 - Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
@@ -57,6 +57,9 @@ flowchart TD
     end
     
     DB[(SQLite / FTS Index)]
+    I[Indexer]
+
+    DB --> I
 
     subgraph Internal[" "]
         MD[Company Docs]
@@ -64,8 +67,8 @@ flowchart TD
     end
 
     MCP --> DB
-    DB --> MD
-    DB --> PKG
+    I --> MD
+    I --> PKG
 
     LLM --> |actions|AGENT
     MCP --> |context| AGENT
