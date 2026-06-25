@@ -1,12 +1,13 @@
 ## AI Coding
 
 ```text
-LLM(Context) = Plan
-LLM(Context + Plan) = Code
+LLM(Context) -> Plan
+LLM(Context + Plan) -> Code
 
 where 
 Context =
   Requirements +
+  System instructions +
   Existing code +
   Project structure +
   Framework/library versions +
@@ -14,7 +15,8 @@ Context =
   Coding standards +
   Error messages +
   Test results +
-  Previous conversation
+  Previous conversation +
+  ...
 ```
 
 >How we can enrich Context to help AI to make Plan?
@@ -52,7 +54,6 @@ end
 
 ```
 
-
 #### Sequence
 
 ```mermaid
@@ -85,13 +86,12 @@ sequenceDiagram
 
     Agent-->>User: Plan or Code
 ```
->Good LLM knows to ask, good Agent knows to pass.
+>Good LLM knows what to ask, good Agent knows what to pass.
 
 Agent and LLM are working together like 
 - GitHub Copilot + Sonnet 4.6
 - Codex + GPT 5.5
 - Claude + Opus 4.8  
-
 
 ---
 
@@ -105,9 +105,9 @@ Requirement -> Design -> Manual Coding -> Auto and Manual Testing -> Developer C
 
 Requirement -> AI Coding -> Manual Testing
 
-#### Blind Coding
+#### AI Coding
 
-Requirement -> Design -> AI Coding -> AI Code Review -> Auto Testing -> Prod
+Requirement -> Design -> AI Coding -> AI Code Review -> AI Auto Testing -> Prod
 
 #### AI-assisted Coding
 
@@ -117,7 +117,7 @@ Requirement -> Design -> AI Coding -> Manual Testing -> Developer Code Review ->
 |---|---|---|---|
 | Traditional| Full | Slow | Yes |
 | AI-assisted| Full | Fast| Yes |
-| Blind| Partial| Faster | Yes?|
+| AI| Partial| Faster | Yes?|
 | Vibe| No | Fastest | No|
 
 
