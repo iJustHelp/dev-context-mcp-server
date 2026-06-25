@@ -53,11 +53,11 @@ flowchart TD
 
     subgraph Loop[" "]
         AGENT --> |context| LLM[LLM]
-        AGENT --> |request| MCP[Dev Context MCP Server]
+        AGENT --> |request| MCP([Dev Context MCP Server])
     end
     
     DB[(SQLite / FTS Index)]
-    I[Indexer]
+    I([Indexer])
 
     DB --> I
 
