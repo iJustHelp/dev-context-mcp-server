@@ -1,6 +1,6 @@
 ## Agenda
 
-- [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
+- [Theory](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
 
 - How I used it in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
 [Development Workflow.](#development-workflow)
@@ -24,9 +24,8 @@ Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)
 - [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
  
 
-### Development Workflow
+### AI-assisted Coding
 
->Do NOT code blindly!   
 >Make the code human readable and maintainable.
 
 ```mermaid

@@ -99,7 +99,7 @@ Agent and LLM are working together like
 
 #### Traditional Coding
 
-Design -> Manual Coding -> Auto and Manual Testing -> Developer Code Review -> QA -> Prod
+Requirement -> Design -> Manual Coding -> Auto and Manual Testing -> Developer Code Review -> QA -> Prod
 
 #### Vibe Coding
 
@@ -107,11 +107,11 @@ Requirement -> AI Coding -> Manual Testing
 
 #### Blind Coding
 
-Requirement -> AI Coding -> AI Code Review -> Auto Testing -> Prod
+Requirement -> Design -> AI Coding -> AI Code Review -> Auto Testing -> Prod
 
 #### AI-assisted Coding
 
-Requirement -> AI Coding -> Manual Testing -> Developer Code Review -> QA -> Prod
+Requirement -> Design -> AI Coding -> Manual Testing -> Developer Code Review -> QA -> Prod
 
 | Coding Type | Code Control | Coding Speed | Ready for Prod |
 |---|---|---|---|
