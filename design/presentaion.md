@@ -1,21 +1,25 @@
 ## Agenda
 
-1. How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
+- How I Use Agentic Engineering in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
 [Development Workflow.](#development-workflow)
 
-2. [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
+- [How Agent works](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
 
-3. Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
+- Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
 Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)  
 [How Contex7 works?](https://chatgpt.com/c/6a3c56bc-66a8-83ea-8ca7-74dca74610a2)
 
-4. [Dev Context MCP Server Solution](#dev-context-mcp-server-solution)  
+- [Dev Context MCP Server Solution](#dev-context-mcp-server-solution)  
 
-5. [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
+- [Dev Context MCP Server Configurations](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/docs/indexer-configuration.md)  
 
-6. [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
+- [Dev NuGet Apps](https://github.com/iJustHelp/dev-context-mcp-server/tree/main/demo/nuget-apps)  
 
-7. Run Indexer, show analytic app, show logs.
+- [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
+
+- Run Indexer, show analytic app, show logs.
+
+- [How dev-context-mcp-server works.](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/README.md)
  
 
 ### Development Workflow
