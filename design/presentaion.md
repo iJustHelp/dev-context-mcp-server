@@ -11,11 +11,11 @@ Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)
 
 - [Dev Context MCP Server Solution](#dev-context-mcp-server-solution)  
 
-- [Dev Context MCP Server Configurations](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/docs/indexer-configuration.md)  
+    - [Dev Context MCP Server Configurations](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/docs/indexer-configuration.md)  
 
-- [Dev NuGet Apps](https://github.com/iJustHelp/dev-context-mcp-server/tree/main/demo/nuget-apps)  
+    - [Dev NuGet Apps](https://github.com/iJustHelp/dev-context-mcp-server/tree/main/demo/nuget-apps)  
 
-- Run Indexer, show analytic app, show logs.
+    - Run Indexer, show analytic app, show logs.
 
 - [Demo project](https://github.com/iJustHelp/dev-context-mcp-server-demo)
 
