@@ -93,33 +93,31 @@ Agent and LLM are working together like
 - Claude + Opus 4.8  
 
 
-
-
 ---
 
-### Dev Context MCP Server Solution
+### Coding Types
 
-```mermaid
-flowchart TD
-    U[User Prompt] --> AGENT[Agent]
+#### Traditional Coding
 
-    subgraph Loop[" "]
-        AGENT --> |context| LLM[LLM]
-        AGENT --> |request| MCP[Dev Context MCP Server]
-    end
-    
-    DB[(SQLite / FTS Index)]
+Design -> Manual Coding -> Auto and Manual Testing -> Developer Code Review -> QA -> Prod
 
-    subgraph Internal[" "]
-        MD[Company Docs]
-        PKG[NuGet Packages <br> qa, prod, public]
-    end
+#### Vibe Coding
 
-    MCP --> DB
-    DB --> MD
-    DB --> PKG
+Requirement -> AI Coding -> Manual Testing
 
-    LLM --> |actions|AGENT
-    MCP --> |context| AGENT
-    LLM --> RESULT[Plan or Code]
-```
+#### Blind Coding
+
+Requirement -> AI Coding -> AI Code Review -> Auto Testing -> Prod
+
+#### AI-assisted Coding
+
+Requirement -> AI Coding -> Manual Testing -> Developer Code Review -> QA -> Prod
+
+| Coding Type | Code Control | Coding Speed | Ready for Prod |
+|---|---|---|---|
+| Traditional| Full | Slow | Yes |
+| Vibe| No | Fastest | No|
+| Blind| Partial| Fast | Yes?|
+| AI-assisted| Full | Fast| Yes |
+
+

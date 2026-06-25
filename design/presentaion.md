@@ -9,6 +9,8 @@
 Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)  
 [How Contex7 works?](https://chatgpt.com/c/6a3c56bc-66a8-83ea-8ca7-74dca74610a2)
 
+- [How AI can know about company internal NuGets?](https://chatgpt.com/c/6a3d0807-d86c-83ea-8b1c-3fe9e5611d44)
+
 - [Dev Context MCP Server Solution](#dev-context-mcp-server-solution)  
 
     - [Dev Context MCP Server Configurations](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/docs/indexer-configuration.md)  

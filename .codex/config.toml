@@ -1,3 +1,9 @@
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+enabled = true
+required = false
+
 [mcp_servers.devcontext]
 url = "http://127.0.0.1:2222/mcp"
 enabled = true
