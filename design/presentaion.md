@@ -3,7 +3,7 @@
 - [Theory](https://github.com/iJustHelp/dev-context-mcp-server/blob/main/design/theory.md)
 
 - How I used it in [have-fun](https://github.com/iJustHelp/have-fun/tree/main/design) project.  
-[Development Workflow.](#development-workflow)
+[Development Workflow.](#ai-assisted-coding)
 
 - Where does the Agent learn about recent MudBlazor features for coding which are not in LLM?  
 Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)  
@@ -26,7 +26,7 @@ Answer: use [Context7 MCP  server](https://context7.com/?q=mublazor)
 
 ### AI-assisted Coding
 
->Make the code human readable and maintainable.
+>Goal: make the code human readable and maintainable.
 
 ```mermaid
 flowchart TD
