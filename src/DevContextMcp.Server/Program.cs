@@ -55,6 +55,7 @@ static async Task RunHttpAsync(string[] args)
         4. Use `get_symbol` only for a specific public type or member.
         5. Preserve citation URIs and mention important warnings, missing documentation, or insufficient evidence.
 
+        Resolve or query `docs:company-docs`. Use `query_docs` with a focused question for architecture, testing, naming, implementation, and other company standards.
         For company documentation, resolve or query `docs:company-docs`. Do not call `list_versions` or `get_symbol` for company documentation.
 
         Do not invent APIs when results are `not_found`, `insufficient_evidence`, or `not_ready`. Clearly state uncertainty and recommend inspecting the local repository for additional evidence.
