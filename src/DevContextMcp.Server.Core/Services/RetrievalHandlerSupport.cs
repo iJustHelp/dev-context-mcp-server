@@ -44,4 +44,17 @@ internal static class RetrievalHandlerSupport
 
         return tokens.Length == 0 ? [question] : tokens;
     }
+
+    public static EvidenceItem ToEvidenceMetadata(
+        string kind,
+        string title,
+        double score,
+        string citationUri) =>
+        new()
+        {
+            Kind = kind,
+            Title = title,
+            Score = score,
+            CitationUri = citationUri
+        };
 }

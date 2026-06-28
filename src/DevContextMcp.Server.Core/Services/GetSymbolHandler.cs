@@ -186,16 +186,11 @@ internal sealed class GetSymbolHandler(
                 ResolvedContext = Context(selection, version),
                 Evidence =
                 [
-                    new EvidenceItem
-                    {
-                        Kind = "symbol",
-                        Title = details.FullyQualifiedName,
-                        Text = details.Documentation is null
-                            ? details.Signature
-                            : $"{details.Signature}{Environment.NewLine}{details.Documentation}",
-                        Score = 1,
-                        CitationUri = details.CitationUri
-                    }
+                    RetrievalHandlerSupport.ToEvidenceMetadata(
+                        kind: "symbol",
+                        title: details.FullyQualifiedName,
+                        score: 1,
+                        citationUri: details.CitationUri!)
                 ],
                 Citations =
                 [

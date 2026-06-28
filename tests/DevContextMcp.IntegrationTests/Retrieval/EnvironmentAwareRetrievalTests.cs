@@ -116,8 +116,9 @@ public sealed class EnvironmentAwareRetrievalTests
                 CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, qaDocs.Status);
             Assert.Equal("qaNuget", qaDocs.ResolvedContext!.SourceId);
-            Assert.Contains(qaDocs.Evidence, item =>
+            Assert.Contains(qaDocs.Data!.Fragments, item =>
                 item.Text.Contains("QA version", StringComparison.Ordinal));
+            Assert.All(qaDocs.Evidence, item => Assert.Null(item.Text));
             Assert.All(qaDocs.Citations, citation =>
                 Assert.StartsWith("nuget://qaNuget/", citation.Uri, StringComparison.Ordinal));
 

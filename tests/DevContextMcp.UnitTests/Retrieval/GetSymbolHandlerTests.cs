@@ -269,9 +269,10 @@ public sealed class GetSymbolHandlerTests
         Assert.Contains(actual.Warnings, warning =>
             warning.Code == "deprecated_version");
         Assert.Equal("T:Company.Widget", Assert.Single(actual.Citations).Location);
+        Assert.Null(Assert.Single(actual.Evidence).Text);
         Assert.Contains(
             "Widget documentation.",
-            Assert.Single(actual.Evidence).Text,
+            actual.Data!.Symbol!.Documentation!,
             StringComparison.Ordinal);
         VerifySettingsAndResolution(request, SourceName);
         _store.Verify(

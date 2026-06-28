@@ -49,6 +49,9 @@ public sealed record SymbolReference
     [JsonPropertyName("signature")]
     public string? Signature { get; init; }
 
+    [JsonPropertyName("documentation")]
+    public string? Documentation { get; init; }
+
     [JsonPropertyName("citationUri")]
     public string? CitationUri { get; init; }
 }

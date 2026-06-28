@@ -105,8 +105,9 @@ public sealed class DocumentationRetrievalPipelineTests
             Assert.Null(query.ResolvedContext!.Version);
             Assert.Contains(query.Warnings, warning =>
                 warning.Code == "parameter_not_applicable");
-            Assert.Contains(query.Evidence, evidence =>
-                evidence.Text.Contains("deterministic fixtures", StringComparison.Ordinal));
+            Assert.Contains(query.Data!.Fragments, fragment =>
+                fragment.Text.Contains("deterministic fixtures", StringComparison.Ordinal));
+            Assert.All(query.Evidence, evidence => Assert.Null(evidence.Text));
             Assert.All(query.Citations, citation =>
                 Assert.StartsWith("docs://company-docs/", citation.Uri, StringComparison.Ordinal));
 

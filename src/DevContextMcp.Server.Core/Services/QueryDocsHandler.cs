@@ -237,19 +237,19 @@ internal sealed class QueryDocsHandler(
                         {
                             Name = item.Symbol!.FullyQualifiedName,
                             Signature = item.Symbol.Signature,
+                            Documentation = item.Symbol.Documentation,
                             CitationUri = item.Uri
                         })
                         .ToArray()
                 },
                 ResolvedContext = context,
-                Evidence = selected.Select(item => new EvidenceItem
-                {
-                    Kind = item.Kind,
-                    Title = item.Title,
-                    Text = item.Text,
-                    Score = item.Score,
-                    CitationUri = item.Uri
-                }).ToArray(),
+                Evidence = selected
+                    .Select(item => RetrievalHandlerSupport.ToEvidenceMetadata(
+                        kind: item.Kind,
+                        title: item.Title,
+                        score: item.Score,
+                        citationUri: item.Uri))
+                    .ToArray(),
                 Citations = citations,
                 Warnings = warnings
             };
@@ -381,14 +381,13 @@ internal sealed class QueryDocsHandler(
                 }).ToArray()
             },
             ResolvedContext = context,
-            Evidence = selected.Select(item => new EvidenceItem
-            {
-                Kind = item.Kind,
-                Title = item.Title,
-                Text = item.Text,
-                Score = item.Score,
-                CitationUri = item.Uri
-            }).ToArray(),
+            Evidence = selected
+                .Select(item => RetrievalHandlerSupport.ToEvidenceMetadata(
+                    kind: item.Kind,
+                    title: item.Title,
+                    score: item.Score,
+                    citationUri: item.Uri))
+                .ToArray(),
             Citations = citations,
             Warnings = warnings
         };
