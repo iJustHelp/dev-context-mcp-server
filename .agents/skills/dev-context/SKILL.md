@@ -27,6 +27,8 @@ evidence.
 4. Pass `projectVersion` from the calling project when known so retrieval stays
    on the referenced package version.
 5. Use `get_symbol` only for a specific public type or member.
-6. Preserve citation URIs and mention important warnings, missing
-   documentation, or insufficient evidence. Code samples appear in
-   `data.fragments` and `data.symbols`, not `data.examples`.
+6. Preserve `citationUri` from `data.fragments`, `data.symbols`, and
+   `data.symbol`, and mention important warnings, missing documentation, or
+   insufficient evidence. Results are ordered best-first; prefer the first 1–2
+   fragments for narrow questions. Code samples appear in `data.fragments` and
+   `data.symbols`, not `data.examples`.

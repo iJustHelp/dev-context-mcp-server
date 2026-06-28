@@ -185,7 +185,9 @@ Library IDs must use the `nuget:` prefix. Legacy `docs:` IDs are not supported.
 
 ### Resources and citations
 
-Tool evidence points to read-only MCP resources:
+Successful `query_docs` and `get_symbol` responses return ordered `data`
+fragments and symbols, each with a `citationUri`. Those URIs point to read-only
+MCP resources:
 
 ```text
 nuget://{source}/{packageId}/{version}/artifact/{path}

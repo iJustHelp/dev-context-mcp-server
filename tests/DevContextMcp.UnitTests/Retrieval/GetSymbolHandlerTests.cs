@@ -206,7 +206,7 @@ public sealed class GetSymbolHandlerTests
         VerifyNoOtherCalls();
     }
 
-    // Purpose: returns complete symbol details, related members, evidence, citations, and warnings
+    // Purpose: returns complete symbol details, related members, citationUri, and warnings
     [Fact]
     public async Task HandleAsync_ExactSymbolMatch_ReturnsCompleteSymbolDetails()
     {
@@ -267,8 +267,9 @@ public sealed class GetSymbolHandlerTests
             warning.Code == "recommended_version_not_indexed");
         Assert.Contains(actual.Warnings, warning =>
             warning.Code == "deprecated_version");
-        Assert.Equal("T:Company.Widget", Assert.Single(actual.Citations).Location);
-        Assert.Null(Assert.Single(actual.Evidence).Text);
+        Assert.StartsWith("nuget://", actual.Data!.Symbol!.CitationUri, StringComparison.Ordinal);
+        Assert.Null(actual.Evidence);
+        Assert.Null(actual.Citations);
         Assert.Contains(
             "Widget documentation.",
             actual.Data!.Symbol!.Documentation!,

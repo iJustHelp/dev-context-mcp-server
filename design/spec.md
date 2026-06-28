@@ -67,7 +67,10 @@ The public tool surface contains exactly:
 - `list_versions`
 
 All tools return a structured status, data payload, resolved context where
-applicable, evidence, citations, warnings, and errors.
+applicable, warnings, and errors. Successful retrieval responses omit optional
+`evidence` and `citations` envelope fields; agents read ordered `data` items and
+their `citationUri` values instead. `resolve_library` matches include
+`confidence` scores.
 
 Supported result statuses include:
 
