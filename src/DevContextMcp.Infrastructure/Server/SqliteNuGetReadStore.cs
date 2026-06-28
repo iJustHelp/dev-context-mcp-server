@@ -314,21 +314,34 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         command.Parameters.AddWithValue("$libraryVersionId", libraryVersionId);
         command.Parameters.AddWithValue("$limit", limit);
 
-        var hits = new List<DocumentHitRecord>();
+        var rawRows = new List<(string Path, string Kind, string? MemberName, string Content, string ContentHash, double Bm25)>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        var position = 0;
         while (await reader.ReadAsync(cancellationToken))
         {
-            hits.Add(new DocumentHitRecord(
+            rawRows.Add((
                 Path: reader.GetString(0),
                 Kind: reader.GetString(1),
                 MemberName: GetNullableString(reader, 2),
                 Content: reader.GetString(3),
                 ContentHash: reader.GetString(4),
-                Rank: Math.Max(0.2, 0.7 - (position++ * 0.02))));
+                Bm25: reader.GetDouble(5)));
         }
 
-        return hits;
+        var maxAbs = rawRows.Count > 0 ? rawRows.Max(row => Math.Abs(row.Bm25)) : 1.0;
+        if (maxAbs < double.Epsilon)
+        {
+            maxAbs = 1.0;
+        }
+
+        return rawRows
+            .Select(row => new DocumentHitRecord(
+                Path: row.Path,
+                Kind: row.Kind,
+                MemberName: row.MemberName,
+                Content: row.Content,
+                ContentHash: row.ContentHash,
+                Rank: Math.Max(0.05, Math.Min(0.9, Math.Abs(row.Bm25) / maxAbs * 0.9))))
+            .ToList();
     }
 
     public async Task<IReadOnlyList<SymbolHitRecord>> SearchSymbolsAsync(

@@ -94,6 +94,7 @@ public sealed class ArchiveSafetyValidatorTests
         1_000_000,
         1_000,
         4_000,
+        0,
         TimeSpan.FromSeconds(10));
 }
 

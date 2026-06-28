@@ -15,23 +15,26 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
         string path,
         string kind,
         string content,
-        int maxCharacters)
+        int maxCharacters,
+        int minCharacters)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCharacters);
 
         return kind.Equals("xml_documentation", StringComparison.Ordinal)
-            ? ChunkXml(path, content, maxCharacters)
+            ? ChunkXml(path, content, maxCharacters, minCharacters)
             : ChunkText(
                 path: path,
                 kind: kind,
                 content: content,
-                maxCharacters: maxCharacters);
+                maxCharacters: maxCharacters,
+                minCharacters: minCharacters);
     }
 
     private IReadOnlyList<DocumentChunkRecord> ChunkXml(
         string path,
         string content,
-        int maxCharacters)
+        int maxCharacters,
+        int minCharacters)
     {
         try
         {
@@ -49,7 +52,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                     path: path,
                     kind: "xml_documentation",
                     content: content,
-                    maxCharacters: maxCharacters);
+                    maxCharacters: maxCharacters,
+                    minCharacters: minCharacters);
             }
 
             var chunks = new List<DocumentChunkRecord>();
@@ -67,7 +71,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                     kind: "xml_documentation",
                     memberName: memberName,
                     content: text,
-                    maxCharacters: maxCharacters);
+                    maxCharacters: maxCharacters,
+                    minCharacters: minCharacters);
             }
 
             return chunks;
@@ -80,7 +85,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                 path: path,
                 kind: "xml_documentation",
                 content: content,
-                maxCharacters: maxCharacters);
+                maxCharacters: maxCharacters,
+                minCharacters: minCharacters);
         }
     }
 
@@ -88,7 +94,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
         string path,
         string kind,
         string content,
-        int maxCharacters)
+        int maxCharacters,
+        int minCharacters)
     {
         var chunks = new List<DocumentChunkRecord>();
         var sections = SplitSections(content);
@@ -101,7 +108,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
                 kind: kind,
                 memberName: null,
                 content: section,
-                maxCharacters: maxCharacters);
+                maxCharacters: maxCharacters,
+                minCharacters: minCharacters);
         }
 
         return chunks;
@@ -113,7 +121,8 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
         string kind,
         string? memberName,
         string content,
-        int maxCharacters)
+        int maxCharacters,
+        int minCharacters)
     {
         var remaining = content.Trim();
         while (remaining.Length > 0)
@@ -135,7 +144,7 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 
             var chunk = remaining[..length].Trim();
             remaining = remaining[length..].TrimStart();
-            if (chunk.Length == 0)
+            if (chunk.Length < minCharacters)
             {
                 continue;
             }

@@ -23,7 +23,8 @@ public sealed class DocumentChunkerTests
             path: "lib/net10.0/Fixture.xml",
             kind: "xml_documentation",
             content: xml,
-            maxCharacters: 4000);
+            maxCharacters: 4000,
+            minCharacters: 0);
 
         Assert.Equal(2, chunks.Count);
         Assert.Contains(chunks, chunk => chunk.MemberName == "T:Fixture.Widget");
@@ -37,7 +38,8 @@ public sealed class DocumentChunkerTests
             path: "README.md",
             kind: "readme",
             content: string.Join(' ', Enumerable.Repeat("documentation", 100)),
-            maxCharacters: 100);
+            maxCharacters: 100,
+            minCharacters: 0);
 
         Assert.True(chunks.Count > 1);
         Assert.All(chunks, chunk => Assert.True(chunk.Content.Length <= 100));

@@ -29,6 +29,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 MaxExtractedBytes: limits.MaxExtractedBytes,
                 MaxCompressionRatio: limits.MaxCompressionRatio,
                 MaxDocumentChars: limits.MaxDocumentChars,
+                MinDocumentChars: limits.MinDocumentChars,
                 PackageDownloadTimeout: limits.PackageDownloadTimeout),
             Sources: value.NugetPackages
                 .Select(source => new

@@ -251,6 +251,7 @@ public sealed class IndexCoordinatorTests
             1,
             1,
             1,
+            0,
             TimeSpan.FromSeconds(1));
 
     private static IndexPublishResult EmptyPublishResult() =>

@@ -61,7 +61,8 @@ internal sealed class NuGetPackageProcessor(
                     path: path,
                     kind: kind,
                     content: content,
-                    maxCharacters: limits.MaxDocumentChars));
+                    maxCharacters: limits.MaxDocumentChars,
+                    minCharacters: limits.MinDocumentChars));
             }
         }
 
