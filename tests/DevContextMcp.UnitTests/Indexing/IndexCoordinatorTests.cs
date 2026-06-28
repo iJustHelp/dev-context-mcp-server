@@ -12,7 +12,6 @@ public sealed class IndexCoordinatorTests
     private readonly Mock<IIndexingConfigurationProvider> _configurationProvider = new();
     private readonly Mock<IPackageSourceClient> _sourceClient = new();
     private readonly Mock<IPackageProcessor> _packageProcessor = new();
-    private readonly Mock<IDocumentationSourceReader> _documentationReader = new();
     private readonly Mock<IIndexStore> _indexStore = new();
     private readonly IndexCoordinator _target;
 
@@ -22,7 +21,6 @@ public sealed class IndexCoordinatorTests
             configurationProvider: _configurationProvider.Object,
             sourceClient: _sourceClient.Object,
             packageProcessor: _packageProcessor.Object,
-            documentationReader: _documentationReader.Object,
             indexStore: _indexStore.Object);
     }
 
@@ -104,7 +102,6 @@ public sealed class IndexCoordinatorTests
                 limits: It.IsAny<PackageProcessingLimits>(),
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
-        VerifyDocumentationNotCalled();
         VerifyNoOtherCalls();
     }
 
@@ -203,57 +200,7 @@ public sealed class IndexCoordinatorTests
                 limits: It.IsAny<PackageProcessingLimits>(),
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Never);
-        VerifyDocumentationNotCalled();
         VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task IndexAllAsync_DocumentationSucceeds_ReturnsIndexedDocumentPaths()
-    {
-        var documentationSource = new DocumentationSourceDefinition(
-            "docs",
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".md" });
-        SetupCommon(new(
-            DatabasePath,
-            CreateLimits(),
-            [],
-            documentationSource));
-        var documentation = new DocumentationIndexData(
-            "hash",
-            [
-                new ArtifactRecord(
-                    Path: "api.md",
-                    Kind: "company_document",
-                    ContentHash: "a",
-                    Size: 1),
-                new ArtifactRecord(
-                    Path: "nested/design.md",
-                    Kind: "company_document",
-                    ContentHash: "b",
-                    Size: 1)
-            ],
-            []);
-        _documentationReader
-            .Setup(reader => reader.ReadAsync(
-                documentationSource,
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(documentation);
-        _indexStore
-            .Setup(store => store.PublishDocumentationAsync(
-                databasePath: DatabasePath,
-                source: documentationSource,
-                startedAt: It.IsAny<DateTimeOffset>(),
-                documentation: documentation,
-                cancellationToken: It.IsAny<CancellationToken>()))
-            .ReturnsAsync(EmptyPublishResult());
-
-        var actual = await _target.IndexAllAsync(CancellationToken.None);
-
-        Assert.Equal(["api.md", "nested/design.md"], actual.IndexedDocuments);
-        var summary = Assert.Single(actual.Summaries);
-        Assert.Equal("company-docs", summary.SourceName);
-        Assert.Equal(2, summary.Indexed);
     }
 
     private void SetupCommon(IndexingSettings settings)
@@ -273,30 +220,11 @@ public sealed class IndexCoordinatorTests
             .ReturnsAsync([]);
     }
 
-    private void VerifyDocumentationNotCalled()
-    {
-        _documentationReader.Verify(
-            reader => reader.ReadAsync(
-                It.IsAny<DocumentationSourceDefinition>(),
-                It.IsAny<PackageProcessingLimits>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
-        _indexStore.Verify(
-            store => store.PublishDocumentationAsync(
-                databasePath: It.IsAny<string>(),
-                source: It.IsAny<DocumentationSourceDefinition>(),
-                startedAt: It.IsAny<DateTimeOffset>(),
-                documentation: It.IsAny<DocumentationIndexData>(),
-                cancellationToken: It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
     private void VerifyNoOtherCalls()
     {
         _configurationProvider.VerifyNoOtherCalls();
         _sourceClient.VerifyNoOtherCalls();
         _packageProcessor.VerifyNoOtherCalls();
-        _documentationReader.VerifyNoOtherCalls();
         _indexStore.VerifyNoOtherCalls();
     }
 
@@ -323,6 +251,7 @@ public sealed class IndexCoordinatorTests
             1,
             1,
             1,
+            0,
             TimeSpan.FromSeconds(1));
 
     private static IndexPublishResult EmptyPublishResult() =>

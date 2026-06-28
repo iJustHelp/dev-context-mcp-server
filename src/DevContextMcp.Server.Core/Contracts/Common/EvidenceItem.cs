@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace DevContextMcp.Server.Core.Contracts.Common;
 
 /// <summary>
-/// A ranked fragment of indexed evidence.
+/// A ranked evidence reference. Text content is returned in the tool-specific data payload.
 /// </summary>
 public sealed record EvidenceItem
 {
@@ -20,10 +20,10 @@ public sealed record EvidenceItem
     public required string Title { get; init; }
 
     /// <summary>
-    /// Evidence text or summary.
+    /// Optional evidence text when not returned in the tool-specific data payload.
     /// </summary>
     [JsonPropertyName("text")]
-    public required string Text { get; init; }
+    public string? Text { get; init; }
 
     /// <summary>
     /// Relevance score assigned by the retrieval layer.

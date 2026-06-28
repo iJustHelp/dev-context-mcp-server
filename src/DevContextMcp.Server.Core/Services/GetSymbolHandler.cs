@@ -28,13 +28,7 @@ internal sealed class GetSymbolHandler(
         {
             return NotFound(
                 "invalid_library_id",
-                "The library ID must use the 'nuget:' or 'docs:' prefix.");
-        }
-        if (libraryId.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
-        {
-            return NotFound(
-                "symbol_lookup_not_supported",
-                "Symbol lookup is not supported for company documentation.");
+                "The library ID must use the 'nuget:' prefix.");
         }
         if (RetrievalHandlerSupport.IsInvalidVersion(request.Version)
             || RetrievalHandlerSupport.IsInvalidVersion(request.ProjectVersion))
@@ -55,7 +49,6 @@ internal sealed class GetSymbolHandler(
                 sourceOrder: settings.SourceOrder,
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
-                includePrerelease: request.IncludePrerelease,
                 cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {
@@ -186,16 +179,11 @@ internal sealed class GetSymbolHandler(
                 ResolvedContext = Context(selection, version),
                 Evidence =
                 [
-                    new EvidenceItem
-                    {
-                        Kind = "symbol",
-                        Title = details.FullyQualifiedName,
-                        Text = details.Documentation is null
-                            ? details.Signature
-                            : $"{details.Signature}{Environment.NewLine}{details.Documentation}",
-                        Score = 1,
-                        CitationUri = details.CitationUri
-                    }
+                    RetrievalHandlerSupport.ToEvidenceMetadata(
+                        kind: "symbol",
+                        title: details.FullyQualifiedName,
+                        score: 1,
+                        citationUri: details.CitationUri!)
                 ],
                 Citations =
                 [

@@ -20,18 +20,11 @@ public sealed class SqliteNuGetReadStoreContextTests : IDisposable
         var actual = await _target.GetIndexedContextAsync(_databasePath, CancellationToken.None);
 
         // assert
-        Assert.Equal(2, actual.Totals.SourceCount);
+        Assert.Equal(1, actual.Totals.SourceCount);
         Assert.Equal(1, actual.Totals.EnvironmentCount);
-        Assert.Equal(2, actual.Totals.LibraryCount);
+        Assert.Equal(1, actual.Totals.LibraryCount);
         Assert.Equal(1, actual.Totals.NuGetLibraryCount);
         Assert.Equal(2, actual.Totals.NuGetVersionCount);
-        Assert.Equal(1, actual.Totals.DocumentCount);
-
-        var document = Assert.Single(actual.Documents);
-        Assert.Equal("handbook.md", document.Name);
-        Assert.Equal(128, document.Length);
-        Assert.Equal(2, document.ChunkCount);
-        Assert.Equal(new DateTimeOffset(2026, 6, 19, 12, 0, 0, TimeSpan.Zero), document.LastIndexedAt);
 
         var nuget = Assert.Single(actual.Nugets);
         Assert.Equal("Demo.Cities", nuget.PackageId);
@@ -127,31 +120,25 @@ public sealed class SqliteNuGetReadStoreContextTests : IDisposable
             );
             INSERT INTO sources (id, name, environment, service_index, kind, last_indexed_at)
             VALUES
-                ('nuget-source', 'Demo Feed', 'qa', 'file://demo', 'nuget', '2026-06-19T11:00:00.0000000+00:00'),
-                ('docs-source', 'company-docs', '', 'docs', 'docs', '2026-06-19T12:00:00.0000000+00:00');
+                ('nuget-source', 'Demo Feed', 'qa', 'file://demo', 'nuget', '2026-06-19T11:00:00.0000000+00:00');
             INSERT INTO libraries (id, source_id, package_id, normalized_package_id, kind, display_name)
             VALUES
-                ('nuget-library', 'nuget-source', 'Demo.Cities', 'demo.cities', 'nuget', NULL),
-                ('docs-library', 'docs-source', 'company-docs', 'company-docs', 'docs', 'Company Docs');
+                ('nuget-library', 'nuget-source', 'Demo.Cities', 'demo.cities', 'nuget', NULL);
             INSERT INTO library_versions (
                 id, library_id, version, content_hash, is_listed, is_prerelease,
                 is_deprecated, indexed_at)
             VALUES
                 ('nuget-version-100', 'nuget-library', '1.0.0', 'hash-100', 1, 0, 0, '2026-06-19T10:00:00.0000000+00:00'),
-                ('nuget-version-110', 'nuget-library', '1.1.0', 'hash-110', 1, 0, 0, '2026-06-19T11:00:00.0000000+00:00'),
-                ('docs-version', 'docs-library', '', 'hash-docs', 1, 0, 0, '2026-06-19T12:00:00.0000000+00:00');
+                ('nuget-version-110', 'nuget-library', '1.1.0', 'hash-110', 1, 0, 0, '2026-06-19T11:00:00.0000000+00:00');
             INSERT INTO artifacts (id, library_version_id, path, kind, content_hash, size, content)
             VALUES
                 ('artifact-100', 'nuget-version-100', 'readme.md', 'readme', 'a', 10, 'content'),
-                ('artifact-110', 'nuget-version-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'b', 20, 'content'),
-                ('docs-artifact', 'docs-version', 'handbook.md', 'text_documentation', 'c', 128, 'secret body');
+                ('artifact-110', 'nuget-version-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'b', 20, 'content');
             INSERT INTO document_chunks (id, library_version_id, artifact_id, path, kind, member_name, ordinal, content, content_hash)
             VALUES
                 ('doc-100', 'nuget-version-100', 'artifact-100', 'readme.md', 'readme', NULL, 0, 'body', 'd'),
                 ('doc-110-a', 'nuget-version-110', 'artifact-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'M:Demo.Cities.CityService.Get', 0, 'body', 'e'),
-                ('doc-110-b', 'nuget-version-110', 'artifact-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'M:Demo.Cities.CityService.Find', 1, 'body', 'f'),
-                ('docs-doc-a', 'docs-version', 'docs-artifact', 'handbook.md', 'text_documentation', NULL, 0, 'do not return', 'g'),
-                ('docs-doc-b', 'docs-version', 'docs-artifact', 'handbook.md', 'text_documentation', NULL, 1, 'do not return', 'h');
+                ('doc-110-b', 'nuget-version-110', 'artifact-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'M:Demo.Cities.CityService.Find', 1, 'body', 'f');
             INSERT INTO symbols (
                 id, library_version_id, namespace, fully_qualified_name, kind,
                 signature, assembly_path, target_framework)

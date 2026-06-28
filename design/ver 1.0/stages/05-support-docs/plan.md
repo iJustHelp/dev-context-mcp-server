@@ -1,5 +1,7 @@
 # Stage 5: Single Company Docs Library
 
+> **Superseded.** Company documentation indexing was removed from Dev Context MCP in ver 3.0. Company standards now live as project Cursor skills under `.cursor/skills/`. See [`design/ver 3.0/plan.md`](../../../ver%203.0/plan.md).
+
 ## Summary
 
 Index one configured local directory recursively as a single versionless library:

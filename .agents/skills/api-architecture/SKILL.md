@@ -1,3 +1,11 @@
+---
+name: api-architecture
+description: >-
+  Defines STI API project structure, dependency direction, and service/repository
+  patterns. Use when creating or refactoring API solutions, controllers, services,
+  repositories, or STI.{ApiName} projects.
+---
+
 # API Architecture
 
 ## Project Structure

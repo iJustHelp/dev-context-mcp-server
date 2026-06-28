@@ -29,9 +29,9 @@ public sealed class GetSymbolHandlerTests
             citationFactory: _citationFactory.Object);
     }
 
-    // Purpose: rejects symbol lookup for the versionless company documentation library
+    // Purpose: rejects library IDs that do not use the nuget prefix
     [Fact]
-    public async Task HandleAsync_DocumentationLibrary_ReturnsSymbolLookupNotSupported()
+    public async Task HandleAsync_InvalidLibraryId_ReturnsInvalidLibraryId()
     {
         // arrange
         var request = new GetSymbolRequest("docs:company-docs", "Company.Widget");
@@ -42,7 +42,7 @@ public sealed class GetSymbolHandlerTests
         // assert
         Assert.Equal(ToolResultStatus.NotFound, actual.Status);
         Assert.Contains(actual.Errors, error =>
-            error.Code == "symbol_lookup_not_supported");
+            error.Code == "invalid_library_id");
         VerifyNoDependencyCalls();
     }
 
@@ -62,7 +62,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LibraryResolutionResult(
                 LibraryResolutionStatus.EnvironmentNotFound));
@@ -269,9 +268,10 @@ public sealed class GetSymbolHandlerTests
         Assert.Contains(actual.Warnings, warning =>
             warning.Code == "deprecated_version");
         Assert.Equal("T:Company.Widget", Assert.Single(actual.Citations).Location);
+        Assert.Null(Assert.Single(actual.Evidence).Text);
         Assert.Contains(
             "Widget documentation.",
-            Assert.Single(actual.Evidence).Text,
+            actual.Data!.Symbol!.Documentation!,
             StringComparison.Ordinal);
         VerifySettingsAndResolution(request, SourceName);
         _store.Verify(
@@ -318,7 +318,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IndexUnavailableException("missing index"));
 
@@ -346,7 +345,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateResolution(deprecated, warningCodes ?? []));
     }
@@ -365,7 +363,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
-                includePrerelease: request.IncludePrerelease,
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
     }

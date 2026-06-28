@@ -17,5 +17,7 @@ public sealed class IndexingOptions
 
     public int MaxDocumentChars { get; set; } = 4_000;
 
+    public int MinDocumentChars { get; set; } = 20;
+
     public TimeSpan PackageDownloadTimeout { get; set; } = TimeSpan.FromMinutes(2);
 }

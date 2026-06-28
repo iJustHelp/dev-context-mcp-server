@@ -3,7 +3,7 @@ using DevContextMcp.Indexer.Core.Models;
 namespace DevContextMcp.Indexer.Core.Infrastructure;
 
 /// <summary>
-/// Persists indexed packages and documentation, and reports what is currently indexed.
+/// Persists indexed packages and reports what is currently indexed.
 /// </summary>
 public interface IIndexStore
 {
@@ -19,12 +19,5 @@ public interface IIndexStore
         DateTimeOffset startedAt,
         IReadOnlyList<PackageIndexData> packages,
         IReadOnlyList<IndexRunError> errors,
-        CancellationToken cancellationToken);
-
-    Task<IndexPublishResult> PublishDocumentationAsync(
-        string databasePath,
-        DocumentationSourceDefinition source,
-        DateTimeOffset startedAt,
-        DocumentationIndexData documentation,
         CancellationToken cancellationToken);
 }

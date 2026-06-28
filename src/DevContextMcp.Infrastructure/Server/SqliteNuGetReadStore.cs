@@ -84,7 +84,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                     Environment: NullIfEmpty(reader.GetString(4)),
                     PackageId: packageId,
                     Description: GetNullableString(reader, 6),
-                    LatestVersion: reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
+                    LatestVersion: GetNullableString(reader, 7),
                     LatestListed: reader.GetInt64(8) != 0,
                     LatestPrerelease: reader.GetInt64(9) != 0,
                     LatestDeprecated: reader.GetInt64(10) != 0,
@@ -149,7 +149,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
                     Environment: NullIfEmpty(reader.GetString(4)),
                     PackageId: packageId,
                     Description: GetNullableString(reader, 6),
-                    LatestVersion: reader.GetString(1) == "docs" ? null : GetNullableString(reader, 7),
+                    LatestVersion: GetNullableString(reader, 7),
                     LatestListed: reader.GetInt64(8) != 0,
                     LatestPrerelease: reader.GetInt64(9) != 0,
                     LatestDeprecated: reader.GetInt64(10) != 0,
@@ -314,21 +314,34 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
         command.Parameters.AddWithValue("$libraryVersionId", libraryVersionId);
         command.Parameters.AddWithValue("$limit", limit);
 
-        var hits = new List<DocumentHitRecord>();
+        var rawRows = new List<(string Path, string Kind, string? MemberName, string Content, string ContentHash, double Bm25)>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        var position = 0;
         while (await reader.ReadAsync(cancellationToken))
         {
-            hits.Add(new DocumentHitRecord(
+            rawRows.Add((
                 Path: reader.GetString(0),
                 Kind: reader.GetString(1),
                 MemberName: GetNullableString(reader, 2),
                 Content: reader.GetString(3),
                 ContentHash: reader.GetString(4),
-                Rank: Math.Max(0.2, 0.7 - (position++ * 0.02))));
+                Bm25: reader.GetDouble(5)));
         }
 
-        return hits;
+        var maxAbs = rawRows.Count > 0 ? rawRows.Max(row => Math.Abs(row.Bm25)) : 1.0;
+        if (maxAbs < double.Epsilon)
+        {
+            maxAbs = 1.0;
+        }
+
+        return rawRows
+            .Select(row => new DocumentHitRecord(
+                Path: row.Path,
+                Kind: row.Kind,
+                MemberName: row.MemberName,
+                Content: row.Content,
+                ContentHash: row.ContentHash,
+                Rank: Math.Max(0.05, Math.Min(0.9, Math.Abs(row.Bm25) / maxAbs * 0.9))))
+            .ToList();
     }
 
     public async Task<IReadOnlyList<SymbolHitRecord>> SearchSymbolsAsync(
@@ -508,93 +521,19 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             isSymbol: true,
             cancellationToken);
 
-    public async Task<ResourceDocumentRecord?> ReadDocumentationAsync(
-        string databasePath,
-        string path,
-        CancellationToken cancellationToken)
-    {
-        await using var connection = await OpenAsync(databasePath, cancellationToken);
-        await using var command = connection.CreateCommand();
-        command.CommandText =
-            """
-            SELECT a.content
-            FROM artifacts a
-            INNER JOIN library_versions lv ON lv.id = a.library_version_id
-            INNER JOIN libraries l ON l.id = lv.library_id
-            WHERE l.kind = 'docs'
-              AND l.normalized_package_id = 'company-docs'
-              AND a.path = $path
-              AND a.content IS NOT NULL
-            LIMIT 1;
-            """;
-        command.Parameters.AddWithValue("$path", path);
-        var content = await command.ExecuteScalarAsync(cancellationToken);
-        return content is null or DBNull
-            ? null
-            : new ResourceDocumentRecord(
-                Convert.ToString(content, CultureInfo.InvariantCulture)!,
-                MimeType(path));
-    }
-
     public async Task<IndexedContextResponse> GetIndexedContextAsync(
         string databasePath,
         CancellationToken cancellationToken)
     {
         await using var connection = await OpenAsync(databasePath, cancellationToken);
 
-        var documents = await ReadDocumentsAsync(connection, cancellationToken);
         var nugets = await ReadNuGetsAsync(connection, cancellationToken);
-        var totals = await ReadTotalsAsync(
-            connection,
-            nugets,
-            documents,
-            cancellationToken);
+        var totals = await ReadTotalsAsync(connection, nugets, cancellationToken);
 
         return new IndexedContextResponse(
             GeneratedAt: DateTimeOffset.UtcNow,
             Totals: totals,
-            Documents: documents,
             Nugets: nugets);
-    }
-
-    private static async Task<IReadOnlyList<IndexedDocumentInventoryItem>> ReadDocumentsAsync(
-        SqliteConnection connection,
-        CancellationToken cancellationToken)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText =
-            """
-            SELECT
-                a.path,
-                s.name,
-                s.environment,
-                a.size,
-                COUNT(dc.id),
-                COALESCE(s.last_indexed_at, lv.indexed_at)
-            FROM artifacts a
-            INNER JOIN library_versions lv ON lv.id = a.library_version_id
-            INNER JOIN libraries l ON l.id = lv.library_id
-            INNER JOIN sources s ON s.id = l.source_id
-            LEFT JOIN document_chunks dc ON dc.artifact_id = a.id
-            WHERE l.kind = 'docs'
-            GROUP BY a.id, a.path, s.name, s.environment, a.size, s.last_indexed_at, lv.indexed_at
-            ORDER BY a.path;
-            """;
-
-        var documents = new List<IndexedDocumentInventoryItem>();
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            documents.Add(new IndexedDocumentInventoryItem(
-                Name: reader.GetString(0),
-                SourceName: reader.GetString(1),
-                Environment: NullIfEmpty(reader.GetString(2)),
-                Length: reader.GetInt64(3),
-                ChunkCount: reader.GetInt64(4),
-                LastIndexedAt: ParseDate(GetNullableString(reader, 5))));
-        }
-
-        return documents;
     }
 
     private static async Task<IReadOnlyList<IndexedNuGetInventoryItem>> ReadNuGetsAsync(
@@ -675,7 +614,6 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
     private static async Task<IndexedContextTotals> ReadTotalsAsync(
         SqliteConnection connection,
         IReadOnlyList<IndexedNuGetInventoryItem> nugets,
-        IReadOnlyList<IndexedDocumentInventoryItem> documents,
         CancellationToken cancellationToken)
     {
         var sourceCount = await ReadLongAsync(
@@ -700,8 +638,7 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
             EnvironmentCount: environmentCount,
             LibraryCount: libraryCount,
             NuGetLibraryCount: nugets.Count,
-            NuGetVersionCount: nugets.Sum(item => item.VersionCount),
-            DocumentCount: documents.Count);
+            NuGetVersionCount: nugets.Sum(item => item.VersionCount));
     }
 
     private static async Task<long> ReadLongAsync(
@@ -841,12 +778,6 @@ internal sealed class SqliteNuGetReadStore : INuGetReadStore
 
     private static string? NullIfEmpty(string value) =>
         value.Length == 0 ? null : value;
-
-    private static string MimeType(string path) =>
-        Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase)
-        || Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase)
-            ? "text/markdown"
-            : "text/plain";
 
     private static NuGetVersion TryParseNuGetVersion(string version) =>
         NuGetVersion.TryParse(version, out var parsed)

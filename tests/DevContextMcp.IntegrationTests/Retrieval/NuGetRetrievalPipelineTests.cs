@@ -82,11 +82,12 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, docs.Status);
             Assert.Equal("2.0.0", docs.ResolvedContext!.Version);
-            Assert.Contains(docs.Evidence, item =>
+            Assert.Contains(docs.Data!.Fragments, item =>
                 item.Text.Contains("Version 2.0.0", StringComparison.Ordinal));
-            Assert.DoesNotContain(docs.Evidence, item =>
+            Assert.DoesNotContain(docs.Data.Fragments, item =>
                 item.Text.Contains("Version 1.2.3", StringComparison.Ordinal));
             Assert.All(docs.Evidence, item => Assert.StartsWith("nuget://", item.CitationUri));
+            Assert.All(docs.Evidence, item => Assert.Null(item.Text));
 
             var symbol = await provider.GetRequiredService<IGetSymbolHandler>()
                 .HandleAsync(
@@ -135,7 +136,6 @@ public sealed class NuGetRetrievalPipelineTests
                     ["query"] = JsonSerializer.Serialize(new
                     {
                         query = FixtureNuGetPackage.PackageId,
-                        includePrerelease = false,
                         limit = 10,
                         environment = "test"
                     })

@@ -30,7 +30,6 @@ public sealed class ToolDiscoveryTests
         var resolveLibrary = tools.Single(tool => tool.Name == "resolve_library");
         var inputSchema = resolveLibrary.JsonSchema.GetRawText();
         Assert.Contains("query", inputSchema, StringComparison.Ordinal);
-        Assert.Contains("includePrerelease", inputSchema, StringComparison.Ordinal);
         Assert.Contains("limit", inputSchema, StringComparison.Ordinal);
         Assert.Contains("environment", inputSchema, StringComparison.Ordinal);
 

@@ -23,7 +23,7 @@ public sealed class ToolInvocationLoggerTests
     {
         var logger = new CapturingLogger(LogLevel.Debug);
         var target = CreateTarget(logger);
-        var request = new ListVersionsRequest("nuget:qa/Demo.Cities", true);
+        var request = new ListVersionsRequest("nuget:qa/Demo.Cities");
         var response = Response();
 
         var actual = await target.InvokeAsync(
@@ -196,7 +196,6 @@ public sealed class ToolInvocationLoggerTests
         handler.Verify(value => value.HandleAsync(
             new ResolveLibraryRequest(
                 Query: "wrapped",
-                IncludePrerelease: true,
                 Limit: 3,
                 Environment: "qa"),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -218,7 +217,7 @@ public sealed class ToolInvocationLoggerTests
         var logger = new CapturingLogger(LogLevel.Debug);
         var tool = new QueryDocsTool(handler.Object, CreateTarget(logger));
 
-        await tool.QueryDocsAsync("docs:company-docs", "testing guidance");
+        await tool.QueryDocsAsync("nuget:qa/Demo.Cities", "testing guidance");
 
         AssertToolLogs(
             logger,
@@ -257,12 +256,12 @@ public sealed class ToolInvocationLoggerTests
         var logger = new CapturingLogger(LogLevel.Debug);
         var tool = new ListVersionsTool(handler.Object, CreateTarget(logger));
 
-        await tool.ListVersionsAsync("nuget:prod/Demo.Cities", true);
+        await tool.ListVersionsAsync("nuget:prod/Demo.Cities");
 
         AssertToolLogs(
             logger,
             "list_versions",
-            "\"includePrerelease\": true");
+            "\"libraryId\": \"nuget:prod/Demo.Cities\"");
     }
 
     private static ToolInvocationLogger CreateTarget(

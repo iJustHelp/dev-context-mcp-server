@@ -14,8 +14,6 @@ export type ToolUsage = Schemas["ToolUsage"];
 export type UserBreakdownItem = Schemas["UserBreakdownItem"];
 export type IndexedContextResponse = Schemas["IndexedContextResponse"];
 export type IndexedContextTotals = Schemas["IndexedContextTotals"];
-export type IndexedDocumentInventoryItem =
-  Schemas["IndexedDocumentInventoryItem"];
 export type IndexedNuGetInventoryItem = Schemas["IndexedNuGetInventoryItem"];
 
 // The server schema names the status counters StatusBreakdown; the dashboard refers to

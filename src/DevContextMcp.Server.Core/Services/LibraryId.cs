@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace DevContextMcp.Server.Core.Services;
 
 /// <summary>
-/// A parsed library identifier ('nuget:env/package' or 'docs:id') with parsing and formatting helpers.
+/// A parsed NuGet library identifier ('nuget:env/package') with parsing and formatting helpers.
 /// </summary>
 public readonly partial record struct LibraryId(
     string PackageId,
@@ -11,24 +11,9 @@ public readonly partial record struct LibraryId(
     string Kind = "nuget")
 {
     private const string NuGetPrefix = "nuget:";
-    private const string DocsPrefix = "docs:";
 
     public static bool TryParse(string value, out LibraryId libraryId)
     {
-        if (!string.IsNullOrWhiteSpace(value)
-            && value.StartsWith(DocsPrefix, StringComparison.OrdinalIgnoreCase)
-            && value.Length > DocsPrefix.Length)
-        {
-            var docsId = value[DocsPrefix.Length..].Trim();
-            if (docsId.Length > 0
-                && docsId.IndexOf('/') < 0
-                && IsValidEnvironment(docsId))
-            {
-                libraryId = new LibraryId(docsId, null, "docs");
-                return true;
-            }
-        }
-
         if (!string.IsNullOrWhiteSpace(value)
             && value.StartsWith(NuGetPrefix, StringComparison.OrdinalIgnoreCase)
             && value.Length > NuGetPrefix.Length)
@@ -70,11 +55,9 @@ public readonly partial record struct LibraryId(
         && EnvironmentPattern().IsMatch(value);
 
     public override string ToString() =>
-        Kind.Equals("docs", StringComparison.OrdinalIgnoreCase)
-            ? $"{DocsPrefix}{PackageId}"
-            : Environment is null
-                ? $"{NuGetPrefix}{PackageId}"
-                : $"{NuGetPrefix}{Environment}/{PackageId}";
+        Environment is null
+            ? $"{NuGetPrefix}{PackageId}"
+            : $"{NuGetPrefix}{Environment}/{PackageId}";
 
     [GeneratedRegex("^[A-Za-z0-9._-]+$", RegexOptions.CultureInvariant)]
     private static partial Regex EnvironmentPattern();

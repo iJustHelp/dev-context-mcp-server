@@ -10,4 +10,5 @@ public sealed record PackageProcessingLimits(
     long MaxExtractedBytes,
     double MaxCompressionRatio,
     int MaxDocumentChars,
+    int MinDocumentChars,
     TimeSpan PackageDownloadTimeout);

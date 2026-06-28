@@ -3,10 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/Card";
-import {
-  DocumentInventoryTable,
-  NuGetInventoryTable,
-} from "@/components/ContextInventoryTables";
+import { NuGetInventoryTable } from "@/components/ContextInventoryTables";
 import { apiClient } from "@/lib/client";
 import { formatCount, formatDateTime } from "@/lib/format";
 import type { IndexedContextResponse } from "@/lib/types";
@@ -81,17 +78,11 @@ export default function ContextPage() {
             <Kpi value={context.totals.nuGetLibraryCount} label="NuGets">
               <EnvironmentBreakdown nugets={context.nugets} />
             </Kpi>
-            <Kpi value={context.totals.documentCount} label="Documents" />
           </div>
 
-          <div className="dashboard-grid">           
-
+          <div className="dashboard-grid">
             <Card title="NuGet packages" span={12}>
               <NuGetInventoryTable nugets={context.nugets} />
-            </Card>
-
-             <Card title="Documents" span={12}>
-              <DocumentInventoryTable documents={context.documents} />
             </Card>
           </div>
         </>

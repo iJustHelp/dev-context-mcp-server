@@ -1,14 +1,17 @@
 # Dev Context MCP Server
 
 Dev Context MCP is a .NET 10 Model Context Protocol server that gives coding
-agents grounded, version-aware access to internal NuGet packages and company
-documentation.
+agents grounded, version-aware access to internal NuGet packages.
 
 It indexes package metadata, README files, XML documentation, packaged text
-files, public .NET symbols, dependencies, target frameworks, and an optional
-documentation directory. Agents can then discover libraries, select an indexed
-version, search documentation, inspect real API signatures, and open the exact
-source material behind each answer.
+files, public .NET symbols, dependencies, and target frameworks. Agents can then
+discover libraries, select an indexed version, search package documentation,
+inspect real API signatures, and open the exact source material behind each
+answer.
+
+Company coding standards (architecture, naming, unit test templates) are provided
+as project Cursor skills under [`.cursor/skills/`](.cursor/skills/), not through
+the MCP index.
 
 The system never loads or executes package assemblies. Retrieval is served
 entirely from a local SQLite/FTS5 index.
@@ -38,17 +41,17 @@ Index production and MCP retrieval are separate processes:
 ```mermaid
 flowchart LR
     Feeds[NuGet feeds or local package folders]
-    Docs[Company documentation folder]
     Indexer[DevContextMcp.Indexer]
     Database[(SQLite and FTS5)]
     Server[DevContextMcp.Server]
     Client[MCP client or coding agent]
+    Skills[Cursor skills]
 
     Feeds --> Indexer
-    Docs --> Indexer
     Indexer -->|only writer| Database
     Database -->|read only| Server
     Client -->|stdio or Streamable HTTP| Server
+    Skills --> Client
 ```
 
 1. The one-shot Indexer reads configured sources and package-policy files.
@@ -67,7 +70,7 @@ independent of feeds and credentials because it never refreshes data itself.
 > Solution was designed and implemented with Codex AI agent using specs and plans defined in [design folder](./design/).
 
 **Configuration:**
-- [Indexer Configuration](./docs/indexer-configuration.md) — how to set up indexing sources, package policies, and documentation paths.
+- [Indexer Configuration](./docs/indexer-configuration.md) — how to set up NuGet indexing sources and package policies.
 - [Server Configuration](./docs/server-configuration.md) — how to configure transport (stdio or HTTP) and logging.
 
 ## Demo
@@ -80,7 +83,7 @@ Repository contains Demo Indexer data for [Demo Project](https://github.com/iJus
 
 **Demo Data** — source material for indexing:
 - [NuGets Repo](./demo/data/nuget-repos/) — contains `.nupkg` files organized by `prod` and `qa` feeds (paths defined in Indexer Configuration).
-- [Indexer](./demo/data/indexer/) — documentation files and package policies for indexing.
+- [Indexer](./demo/data/indexer/) — package policies for indexing.
 
 ## Quick Start
 
@@ -105,7 +108,6 @@ The checked-in Indexer configuration uses:
 - NuGet.org for `Formula.SimpleRepo`.
 - Local `prod` and `qa` feeds under `demo/data/nuget-repos`.
 - Package policies under `demo/data/indexer/nugets`.
-- Company documents under `demo/data/indexer/company-docs`.
 
 Run the Indexer:
 
@@ -151,7 +153,6 @@ Try this workflow after connecting:
 2. Pass a returned ID such as `nuget:prod/Demo.Cities` to `list_versions`.
 3. Call `query_docs` or `get_symbol` with the selected version.
 4. Open a returned `nuget://` citation under Resources.
-5. Query `docs:company-docs` for the bundled company-document examples.
 
 ## MCP Surface
 
@@ -159,14 +160,13 @@ Try this workflow after connecting:
 
 | Tool | Purpose | Important inputs |
 | --- | --- | --- |
-| `resolve_library` | Finds indexed NuGet packages or company documentation by ID, name, or concept. | `query`, `environment`, `includePrerelease`, `limit` |
+| `resolve_library` | Finds indexed NuGet packages by ID, name, or concept. | `query`, `environment`, `includePrerelease`, `limit` |
 | `list_versions` | Lists indexed package versions and identifies the recommended version. | `libraryId`, `includePrerelease` |
-| `query_docs` | Searches version-scoped package evidence or company documents. | `libraryId`, `question`, `version`, `projectVersion`, `targetFramework`, `maxResults` |
+| `query_docs` | Searches version-scoped package evidence. | `libraryId`, `question`, `version`, `projectVersion`, `targetFramework`, `maxResults` |
 | `get_symbol` | Finds a public type or member and returns its indexed signature and XML documentation. | `libraryId`, `symbol`, `version`, `projectVersion`, `targetFramework` |
 
 `get_symbol` accepts fully qualified, simple, or partial names. If a lookup is
 ambiguous, it returns bounded candidates instead of silently choosing one.
-Symbol lookup is not supported for `docs:company-docs`.
 
 ### Library IDs
 
@@ -175,15 +175,13 @@ Discovery returns stable IDs:
 ```text
 nuget:prod/Demo.Cities
 nuget:qa/Demo.Cities
-docs:company-docs
 ```
 
 An environment-qualified NuGet ID never falls back to another environment.
 Legacy IDs such as `nuget:Demo.Cities` use the configured environment and
 source order.
 
-Company documentation is one versionless library. `query_docs` and resource
-reads apply to it; NuGet version and symbol operations do not.
+Library IDs must use the `nuget:` prefix. Legacy `docs:` IDs are not supported.
 
 ### Resources and citations
 
@@ -192,7 +190,6 @@ Tool evidence points to read-only MCP resources:
 ```text
 nuget://{source}/{packageId}/{version}/artifact/{path}
 nuget://{source}/{packageId}/{version}/symbol/{qualifiedName}
-docs://company-docs/{path}
 ```
 
 Opening a resource reads the exact indexed artifact or symbol. The Server does

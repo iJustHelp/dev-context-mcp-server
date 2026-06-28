@@ -11,6 +11,5 @@ public interface IVersionResolver
         IReadOnlyList<IndexedVersionRecord> versions,
         string? requestedVersion,
         string? projectVersion,
-        string? recommendedVersion,
-        bool includePrerelease);
+        string? recommendedVersion);
 }

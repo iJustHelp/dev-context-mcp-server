@@ -29,6 +29,7 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 MaxExtractedBytes: limits.MaxExtractedBytes,
                 MaxCompressionRatio: limits.MaxCompressionRatio,
                 MaxDocumentChars: limits.MaxDocumentChars,
+                MinDocumentChars: limits.MinDocumentChars,
                 PackageDownloadTimeout: limits.PackageDownloadTimeout),
             Sources: value.NugetPackages
                 .Select(source => new
@@ -64,22 +65,8 @@ internal sealed class OptionsIndexingConfigurationProvider(
                     Packages: item.Packages,
                     DeletedPackageIds: item.DeletedPackageIds,
                     MaxPackages: item.Source.MaxPackages))
-                .ToArray(),
-            Documentation: value.IndexerSource.Documents is null
-                ? null
-                : new DocumentationSourceDefinition(
-                    Path.GetFullPath(
-                        value.IndexerSource.Documents.RootPath,
-                        AppContext.BaseDirectory),
-                    value.IndexerSource.Documents.Extensions
-                        .Select(NormalizeExtension)
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase)));
+                .ToArray());
     }
-
-    private static string NormalizeExtension(string extension) =>
-        extension.Trim().StartsWith('.')
-            ? extension.Trim()
-            : $".{extension.Trim()}";
 
     private static IReadOnlyList<string> SplitVersions(string? versions) =>
         string.IsNullOrWhiteSpace(versions)

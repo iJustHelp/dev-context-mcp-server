@@ -11,5 +11,6 @@ public interface IDocumentChunker
         string path,
         string kind,
         string content,
-        int maxCharacters);
+        int maxCharacters,
+        int minCharacters);
 }

@@ -69,11 +69,6 @@ public interface INuGetReadStore
         string qualifiedName,
         CancellationToken cancellationToken);
 
-    Task<ResourceDocumentRecord?> ReadDocumentationAsync(
-        string databasePath,
-        string path,
-        CancellationToken cancellationToken);
-
     Task<IndexedContextResponse> GetIndexedContextAsync(
         string databasePath,
         CancellationToken cancellationToken);

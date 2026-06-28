@@ -1,19 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type {
-  IndexedDocumentInventoryItem,
-  IndexedNuGetInventoryItem,
-} from "@/lib/types";
+import type { IndexedNuGetInventoryItem } from "@/lib/types";
 import { formatCount, formatDateTime } from "@/lib/format";
 
 type Direction = "asc" | "desc";
-
-type DocumentSortKey =
-  | "name"
-  | "length"
-  | "chunkCount"
-  | "lastIndexedAt";
 
 type NuGetSortKey =
   | "displayName"
@@ -25,97 +16,6 @@ type NuGetSortKey =
 interface SortState<TKey extends string> {
   key: TKey;
   direction: Direction;
-}
-
-export function DocumentInventoryTable({
-  documents,
-}: {
-  documents: IndexedDocumentInventoryItem[];
-}) {
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortState<DocumentSortKey>>({
-    key: "name",
-    direction: "asc",
-  });
-
-  const rows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return documents
-      .filter((document) =>
-        query.length === 0
-          ? true
-          : [
-              document.name,
-              document.environment ?? "",
-              String(document.length),
-            ]
-              .join(" ")
-              .toLowerCase()
-              .includes(query),
-      )
-      .toSorted((left, right) =>
-        compareValues(documentSortValue(left, sort.key), documentSortValue(right, sort.key), sort.direction),
-      );
-  }, [documents, search, sort]);
-
-  return (
-    <div>
-      <TableSearch
-        label="Search documents"
-        value={search}
-        onChange={setSearch}
-      />
-      <div className="table-scroll">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <SortableHeader
-                label="Name"
-                sortKey="name"
-                sort={sort}
-                onSort={setDocumentSort}
-              />
-              <SortableHeader
-                label="Length"
-                sortKey="length"
-                sort={sort}
-                onSort={setDocumentSort}
-                align="right"
-              />
-              <SortableHeader
-                label="Chunks"
-                sortKey="chunkCount"
-                sort={sort}
-                onSort={setDocumentSort}
-                align="right"
-              />
-              <SortableHeader
-                label="Last indexed"
-                sortKey="lastIndexedAt"
-                sort={sort}
-                onSort={setDocumentSort}
-              />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((document) => (
-              <tr key={`${document.sourceName}:${document.name}`}>
-                <td>{document.name}</td>
-                <td className="num">{formatCount(document.length)}</td>
-                <td className="num">{formatCount(document.chunkCount)}</td>
-                <td>{formatOptionalDate(document.lastIndexedAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {rows.length === 0 && <p className="empty">No documents match.</p>}
-    </div>
-  );
-
-  function setDocumentSort(key: DocumentSortKey) {
-    setSort((current) => nextSort(current, key));
-  }
 }
 
 export function NuGetInventoryTable({
@@ -174,7 +74,7 @@ export function NuGetInventoryTable({
                 sortKey="versions"
                 sort={sort}
                 onSort={setNuGetSort}
-              />            
+              />
               <SortableHeader
                 label="Last indexed"
                 sortKey="lastIndexedAt"
@@ -264,17 +164,6 @@ function nextSort<TKey extends string>(
   }
 
   return { key, direction: current.direction === "asc" ? "desc" : "asc" };
-}
-
-function documentSortValue(
-  item: IndexedDocumentInventoryItem,
-  key: DocumentSortKey,
-): string | number {
-  if (key === "lastIndexedAt") {
-    return dateValue(item.lastIndexedAt);
-  }
-
-  return item[key] ?? "";
 }
 
 function nugetSortValue(

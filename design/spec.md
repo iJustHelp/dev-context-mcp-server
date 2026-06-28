@@ -234,11 +234,7 @@ Indexer CLI:
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
     "IndexerSource": {
-      "NugetsPath": "nugets",
-      "Documentations": {
-        "RootPath": "C:\\company\\docs",
-        "Extensions": [ ".md", ".txt" ]
-      }
+      "NugetsPath": "nugets"
     },
     "NugetPackages": [
       {

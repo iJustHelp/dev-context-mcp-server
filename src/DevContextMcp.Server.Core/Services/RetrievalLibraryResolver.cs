@@ -19,7 +19,6 @@ internal sealed class RetrievalLibraryResolver(
         IReadOnlyList<string> sourceOrder,
         string? requestedVersion,
         string? projectVersion,
-        bool includePrerelease,
         CancellationToken cancellationToken)
     {
         if (libraryId.Environment is not null
@@ -56,12 +55,6 @@ internal sealed class RetrievalLibraryResolver(
                 databasePath,
                 library.LibraryId,
                 cancellationToken);
-            if (library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
-            {
-                candidates.Add(new ResolvedLibrarySelection(library, versions, null));
-                continue;
-            }
-
             candidates.Add(new ResolvedLibrarySelection(
                 library,
                 versions,
@@ -69,8 +62,7 @@ internal sealed class RetrievalLibraryResolver(
                     versions: versions,
                     requestedVersion: requestedVersion,
                     projectVersion: projectVersion,
-                    recommendedVersion: null,
-                    includePrerelease: includePrerelease)));
+                    recommendedVersion: null)));
         }
 
         var selected = candidates
