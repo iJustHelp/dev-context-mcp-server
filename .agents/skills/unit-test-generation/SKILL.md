@@ -1,3 +1,11 @@
+---
+name: unit-test-generation
+description: >-
+  Defines the mandatory xUnit and Moq unit test structure, naming, templates, and
+  verification rules. Use when generating or extending C# unit tests, Moq setups,
+  or Formula.SimpleRepo repository mocks.
+---
+
 # Unit Test Generation Standard
 
 Use this standard when generating or extending unit tests. Every requirement
@@ -222,9 +230,9 @@ public async Task CreateAsync_InvalidRequest_DoesNotCallDependencies()
 
 ## Formula.SimpleRepo Mocking Workflow
 
-Do not copy or invent `Formula.SimpleRepo` interfaces or method signatures.
-Resolve the exact API from the indexed NuGet package before generating a mock
-setup or verification:
+Use Dev Context MCP NuGet tools to resolve the exact API before generating a mock
+setup or verification. Do not copy or invent `Formula.SimpleRepo` interfaces or
+method signatures:
 
 1. Call `resolve_library` with `Formula.SimpleRepo`.
 2. Call `list_versions` and select the version used by the target project. If
@@ -234,9 +242,9 @@ setup or verification:
    `InsertAsync`.
 4. Call `query_docs` when usage guidance or a complete example is required.
 5. Generate Moq setup and verification expressions only from the returned
-   signature and cite the DevContext evidence.
+   signature and cite the Dev Context MCP evidence.
 
-If DevContext returns `not_found` or `insufficient_evidence`, state that the
+If Dev Context MCP returns `not_found` or `insufficient_evidence`, state that the
 signature could not be verified. Do not generate a guessed repository API.
 
 ## Formula.SimpleRepo Example Shape

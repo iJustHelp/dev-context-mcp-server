@@ -266,60 +266,6 @@ public sealed class IndexerOptionsValidatorTests
         }
     }
 
-    [Fact]
-    public void DocumentationConfigurationRequiresExistingRootAndValidExtensions()
-    {
-        var missingPath = Path.Combine(
-            Path.GetTempPath(),
-            $"missing-docs-{Guid.NewGuid():N}");
-        var missing = Validate(new IndexerOptions
-        {
-            IndexerSource = new IndexerSourceOptions
-            {
-                                Documents = new DocumentationOptions
-                {
-                    RootPath = missingPath,
-                    Extensions = [".md"]
-                }
-            }
-        });
-        AssertFailure(missing, "does not exist");
-
-        using var folder = PackageFolder.Create();
-        var invalid = Validate(new IndexerOptions
-        {
-            IndexerSource = new IndexerSourceOptions
-            {
-                                Documents = new DocumentationOptions
-                {
-                    RootPath = folder.Path,
-                    Extensions = [".md", "MD", "*"]
-                }
-            }
-        });
-        AssertFailure(invalid, "configured more than once");
-        AssertFailure(invalid, "is invalid");
-    }
-
-    [Fact]
-    public void DocumentationOnlyConfigurationSucceeds()
-    {
-        using var folder = PackageFolder.Create();
-        var result = Validate(new IndexerOptions
-        {
-            IndexerSource = new IndexerSourceOptions
-            {
-                                Documents = new DocumentationOptions
-                {
-                    RootPath = folder.Path,
-                    Extensions = [".md", ".txt"]
-                }
-            }
-        });
-
-        Assert.Equal(ValidateOptionsResult.Success, result);
-    }
-
     private static ValidateOptionsResult Validate(IndexerOptions options) =>
         new IndexerOptionsValidator(new NuGetPackageOptionsLoader())
             .Validate(null, options);

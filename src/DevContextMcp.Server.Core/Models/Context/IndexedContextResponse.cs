@@ -3,7 +3,6 @@ namespace DevContextMcp.Server.Core.Models.Context;
 public sealed record IndexedContextResponse(
     DateTimeOffset GeneratedAt,
     IndexedContextTotals Totals,
-    IReadOnlyList<IndexedDocumentInventoryItem> Documents,
     IReadOnlyList<IndexedNuGetInventoryItem> Nugets);
 
 public sealed record IndexedContextTotals(
@@ -11,16 +10,7 @@ public sealed record IndexedContextTotals(
     long EnvironmentCount,
     long LibraryCount,
     long NuGetLibraryCount,
-    long NuGetVersionCount,
-    long DocumentCount);
-
-public sealed record IndexedDocumentInventoryItem(
-    string Name,
-    string SourceName,
-    string? Environment,
-    long Length,
-    long ChunkCount,
-    DateTimeOffset? LastIndexedAt);
+    long NuGetVersionCount);
 
 public sealed record IndexedNuGetInventoryItem(
     string LibraryId,

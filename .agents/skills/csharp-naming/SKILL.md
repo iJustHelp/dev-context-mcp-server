@@ -1,3 +1,11 @@
+---
+name: csharp-naming
+description: >-
+  Applies company C# naming conventions, member ordering, and constructor style.
+  Use when generating or refactoring C# code, classes, methods, properties,
+  fields, or async members.
+---
+
 # C# Naming Conventions
 
 Follow standard Microsoft C# naming conventions. The rules below are normative:

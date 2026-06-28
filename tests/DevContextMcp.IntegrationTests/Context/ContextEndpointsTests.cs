@@ -29,8 +29,6 @@ public sealed class ContextEndpointsTests
 
         Assert.NotNull(response);
         Assert.Equal(1, response.Totals.NuGetLibraryCount);
-        Assert.Equal(1, response.Totals.DocumentCount);
-        Assert.Equal("handbook.md", Assert.Single(response.Documents).Name);
         Assert.Equal("Demo.Cities", Assert.Single(response.Nugets).PackageId);
     }
 
@@ -141,26 +139,21 @@ public sealed class ContextEndpointsTests
             );
             INSERT INTO sources (id, name, environment, service_index, kind, last_indexed_at)
             VALUES
-                ('nuget-source', 'Demo Feed', 'qa', 'file://demo', 'nuget', '2026-06-19T11:00:00.0000000+00:00'),
-                ('docs-source', 'company-docs', '', 'docs', 'docs', '2026-06-19T12:00:00.0000000+00:00');
+                ('nuget-source', 'Demo Feed', 'qa', 'file://demo', 'nuget', '2026-06-19T11:00:00.0000000+00:00');
             INSERT INTO libraries (id, source_id, package_id, normalized_package_id, kind, display_name)
             VALUES
-                ('nuget-library', 'nuget-source', 'Demo.Cities', 'demo.cities', 'nuget', NULL),
-                ('docs-library', 'docs-source', 'company-docs', 'company-docs', 'docs', 'Company Docs');
+                ('nuget-library', 'nuget-source', 'Demo.Cities', 'demo.cities', 'nuget', NULL);
             INSERT INTO library_versions (
                 id, library_id, version, content_hash, is_listed, is_prerelease,
                 is_deprecated, indexed_at)
             VALUES
-                ('nuget-version', 'nuget-library', '1.1.0', 'hash-110', 1, 0, 0, '2026-06-19T11:00:00.0000000+00:00'),
-                ('docs-version', 'docs-library', '', 'hash-docs', 1, 0, 0, '2026-06-19T12:00:00.0000000+00:00');
+                ('nuget-version', 'nuget-library', '1.1.0', 'hash-110', 1, 0, 0, '2026-06-19T11:00:00.0000000+00:00');
             INSERT INTO artifacts (id, library_version_id, path, kind, content_hash, size, content)
             VALUES
-                ('artifact-110', 'nuget-version', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'b', 20, 'content'),
-                ('docs-artifact', 'docs-version', 'handbook.md', 'text_documentation', 'c', 128, 'secret body');
+                ('artifact-110', 'nuget-version', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'b', 20, 'content');
             INSERT INTO document_chunks (id, library_version_id, artifact_id, path, kind, member_name, ordinal, content, content_hash)
             VALUES
-                ('doc-110', 'nuget-version', 'artifact-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'M:Demo.Cities.CityService.Get', 0, 'body', 'e'),
-                ('docs-doc', 'docs-version', 'docs-artifact', 'handbook.md', 'text_documentation', NULL, 0, 'do not return', 'g');
+                ('doc-110', 'nuget-version', 'artifact-110', 'lib/net8.0/Demo.Cities.xml', 'xml_documentation', 'M:Demo.Cities.CityService.Get', 0, 'body', 'e');
             INSERT INTO symbols (
                 id, library_version_id, namespace, fully_qualified_name, kind,
                 signature, assembly_path, target_framework)

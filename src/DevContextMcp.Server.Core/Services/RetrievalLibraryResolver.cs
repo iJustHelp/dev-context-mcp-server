@@ -56,12 +56,6 @@ internal sealed class RetrievalLibraryResolver(
                 databasePath,
                 library.LibraryId,
                 cancellationToken);
-            if (library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
-            {
-                candidates.Add(new ResolvedLibrarySelection(library, versions, null));
-                continue;
-            }
-
             candidates.Add(new ResolvedLibrarySelection(
                 library,
                 versions,

@@ -18,7 +18,7 @@ internal sealed class ResolveLibraryTool(
         Name = "resolve_library",
         UseStructuredContent = true,
         OutputSchemaType = typeof(ResolveLibraryResponse))]
-    [Description("Finds indexed NuGet packages or company documentation by name or concept.")]
+    [Description("Finds indexed NuGet packages by name or concept.")]
     public Task<ResolveLibraryResponse> ResolveLibraryAsync(
         [Description("Package name, client name, or implementation concept to resolve.")] string query,
         [Description("Whether prerelease package versions may be considered.")] bool includePrerelease = false,

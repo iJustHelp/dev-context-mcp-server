@@ -171,37 +171,6 @@ public sealed class IndexerRunnerTests
     }
 
     [Fact]
-    public async Task IndexedDocumentsArePrintedInSortedOrder()
-    {
-        var logger = new CapturingLogger();
-        var runner = CreateRunner(
-            new StubCoordinator(
-                indexedDocuments:
-                [
-                    "Indexed documents (3)",
-                    "Indexed libraries",
-                    "API.md",
-                    "a/design.md",
-                    "z/reference.md"
-                ]),
-            logger);
-
-        var succeeded = await runner.RunAsync(CancellationToken.None);
-
-        Assert.True(succeeded);
-        var report = Assert.Single(
-            logger.Messages,
-            message => message.Contains(
-                "Indexed documents (3)",
-                StringComparison.Ordinal));
-        var apiIndex = report.IndexOf("API.md", StringComparison.Ordinal);
-        var designIndex = report.IndexOf("a/design.md", StringComparison.Ordinal);
-        var referenceIndex = report.IndexOf("z/reference.md", StringComparison.Ordinal);
-        Assert.True(designIndex < apiIndex);
-        Assert.True(apiIndex < referenceIndex);
-    }
-
-    [Fact]
     public async Task EmptyInventoryPrintsNone()
     {
         var logger = new CapturingLogger();
@@ -268,7 +237,6 @@ public sealed class IndexerRunnerTests
     private sealed class StubCoordinator(
         IReadOnlyList<IndexRunSummary>? summaries = null,
         IReadOnlyList<IndexedLibrary>? indexedLibraries = null,
-        IReadOnlyList<string>? indexedDocuments = null,
         Exception? exception = null) : IIndexCoordinator
     {
         public Task<IndexRunResult> IndexAllAsync(
@@ -281,8 +249,7 @@ public sealed class IndexerRunnerTests
 
             return Task.FromResult(new IndexRunResult(
                 summaries ?? [],
-                indexedLibraries ?? [],
-                indexedDocuments ?? []));
+                indexedLibraries ?? []));
         }
     }
 

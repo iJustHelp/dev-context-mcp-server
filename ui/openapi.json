@@ -1,4 +1,4 @@
-﻿{
+{
   "openapi": "3.1.1",
   "info": {
     "title": "DevContextMcp.Server | v1",
@@ -10,6 +10,36 @@
     }
   ],
   "paths": {
+    "/api/context": {
+      "get": {
+        "tags": [
+          "Context"
+        ],
+        "operationId": "GetIndexedContext",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexedContextResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analytics/summary": {
       "get": {
         "tags": [
@@ -307,36 +337,6 @@
           }
         }
       }
-    },
-    "/api/context": {
-      "get": {
-        "tags": [
-          "Context"
-        ],
-        "operationId": "GetIndexedContext",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IndexedContextResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -411,7 +411,6 @@
         "required": [
           "generatedAt",
           "totals",
-          "documents",
           "nugets"
         ],
         "type": "object",
@@ -422,12 +421,6 @@
           },
           "totals": {
             "$ref": "#/components/schemas/IndexedContextTotals"
-          },
-          "documents": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IndexedDocumentInventoryItem"
-            }
           },
           "nugets": {
             "type": "array",
@@ -443,8 +436,7 @@
           "environmentCount",
           "libraryCount",
           "nuGetLibraryCount",
-          "nuGetVersionCount",
-          "documentCount"
+          "nuGetVersionCount"
         ],
         "type": "object",
         "properties": {
@@ -467,50 +459,6 @@
           "nuGetVersionCount": {
             "type": "integer",
             "format": "int64"
-          },
-          "documentCount": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "IndexedDocumentInventoryItem": {
-        "required": [
-          "name",
-          "sourceName",
-          "environment",
-          "length",
-          "chunkCount",
-          "lastIndexedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "sourceName": {
-            "type": "string"
-          },
-          "environment": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "length": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "chunkCount": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "lastIndexedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           }
         }
       },
@@ -810,10 +758,10 @@
   },
   "tags": [
     {
-      "name": "Analytics"
+      "name": "Context"
     },
     {
-      "name": "Context"
+      "name": "Analytics"
     }
   ]
 }

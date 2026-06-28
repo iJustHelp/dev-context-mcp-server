@@ -6,11 +6,7 @@
  "DevContextMcp": {
     "DatabasePath": "../../../../../database/docs.db",
     "IndexerSource": {
-      "NugetsPath": "../../../../../demo/data/indexer/nugets",
-      "Documents": {
-        "RootPath": "../../../../../demo/data/indexer/company-docs",
-        "Extensions": [ ".md", ".txt" ]
-      }
+      "NugetsPath": "../../../../../demo/data/indexer/nugets"
     },
     "NugetPackages": [
       {
@@ -50,9 +46,6 @@ where:
 
 - `IndexerSource`: source configuration
   - `NugetsPath`: root folder containing NuGet JSON configuration files
-  - `Documents`: 
-    - `RootPath`: root directory containing documentation files to index.
-    - `Extensions`: array of allowed file extensions for documentation files. Only these extensions are indexed.
 
 - `NugetPackages`: list of configured NuGet sources by `Environment`
   - `Name`: unique identifier for the NuGet source.

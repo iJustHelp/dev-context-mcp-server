@@ -39,7 +39,6 @@ public sealed class IndexingRegistrationTests
         Assert.NotNull(provider.GetService<IPackageProcessor>());
         Assert.NotNull(provider.GetService<IContentHasher>());
         Assert.NotNull(provider.GetService<IDocumentChunker>());
-        Assert.NotNull(provider.GetService<IDocumentationSourceReader>());
         Assert.NotNull(provider.GetService<INuGetSourceAuthenticationProvider>());
     }
 

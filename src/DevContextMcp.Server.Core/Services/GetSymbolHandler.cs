@@ -28,13 +28,7 @@ internal sealed class GetSymbolHandler(
         {
             return NotFound(
                 "invalid_library_id",
-                "The library ID must use the 'nuget:' or 'docs:' prefix.");
-        }
-        if (libraryId.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
-        {
-            return NotFound(
-                "symbol_lookup_not_supported",
-                "Symbol lookup is not supported for company documentation.");
+                "The library ID must use the 'nuget:' prefix.");
         }
         if (RetrievalHandlerSupport.IsInvalidVersion(request.Version)
             || RetrievalHandlerSupport.IsInvalidVersion(request.ProjectVersion))

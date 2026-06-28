@@ -34,14 +34,8 @@ public sealed class LibraryIdTests
     }
 
     [Fact]
-    public void ParsesDocumentationLibraryId()
+    public void RejectsDocumentationLibraryId()
     {
-        Assert.True(LibraryId.TryParse(
-            "docs:company-docs",
-            out var libraryId));
-        Assert.Equal("docs", libraryId.Kind);
-        Assert.Equal("company-docs", libraryId.PackageId);
-        Assert.Null(libraryId.Environment);
-        Assert.Equal("docs:company-docs", libraryId.ToString());
+        Assert.False(LibraryId.TryParse("docs:company-docs", out _));
     }
 }

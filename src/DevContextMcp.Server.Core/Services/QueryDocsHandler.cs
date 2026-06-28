@@ -38,7 +38,7 @@ internal sealed class QueryDocsHandler(
         {
             return NotFound(
                 "invalid_library_id",
-                "The library ID must use the 'nuget:' or 'docs:' prefix.");
+                "The library ID must use the 'nuget:' prefix.");
         }
 
         if (libraryId.Kind == "nuget"
@@ -78,15 +78,6 @@ internal sealed class QueryDocsHandler(
             }
 
             var selection = resolution.Selection!;
-            if (selection.Library.Kind.Equals("docs", StringComparison.OrdinalIgnoreCase))
-            {
-                return await QueryDocumentationAsync(
-                    settings: settings,
-                    selection: selection,
-                    request: request,
-                    cancellationToken: timeout.Token);
-            }
-
             var version = selection.Version;
             if (version is null)
             {
@@ -277,120 +268,6 @@ internal sealed class QueryDocsHandler(
                 ]
             };
         }
-    }
-
-    private async Task<QueryDocsResponse> QueryDocumentationAsync(
-        RetrievalSettings settings,
-        ResolvedLibrarySelection selection,
-        QueryDocsRequest request,
-        CancellationToken cancellationToken)
-    {
-        var snapshot = selection.Versions.SingleOrDefault();
-        if (snapshot is null)
-        {
-            return NotFound(
-                "library_not_found",
-                "The company documentation library is not indexed.");
-        }
-
-        var maximumResults = Math.Min(request.MaxResults, settings.Limits.MaxResults);
-        var documents = await store.SearchDocumentsAsync(
-            databasePath: settings.DatabasePath,
-            libraryVersionId: snapshot.LibraryVersionId,
-            question: request.Question,
-            limit: Math.Max(maximumResults * 3, 20),
-            cancellationToken: cancellationToken);
-        var ranked = documents
-            .Select(document => new RankedEvidence(
-                Kind: document.Kind,
-                Title: document.MemberName ?? document.Path,
-                Text: document.Content,
-                Score: Math.Round(Math.Min(1, document.Rank + 0.10), 6),
-                Uri: citationFactory.DocumentationUri(document.Path),
-                Location: document.MemberName,
-                Symbol: null,
-                ContentHash: document.ContentHash))
-            .Where(item => item.Score >= settings.Limits.MinimumEvidenceScore)
-            .GroupBy(item => item.ContentHash ?? item.Uri, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .OrderByDescending(item => item.Score)
-            .ThenBy(item => item.Uri, StringComparer.Ordinal)
-            .ToArray();
-        var selected = responseBudget.Take(
-            values: ranked,
-            maximumCount: maximumResults,
-            maximumBytes: settings.Limits.MaxResponseBytes,
-            textSelector: item => item.Text,
-            truncated:            out  var truncated);
-        var warnings = new List<ToolWarning>();
-        if (request.Version is not null
-            || request.ProjectVersion is not null
-            || request.TargetFramework is not null
-            || request.IncludePrerelease)
-        {
-            warnings.Add(RetrievalHandlerSupport.Warning(
-                "parameter_not_applicable",
-                "Version, prerelease, and target-framework parameters do not apply to company documentation."));
-        }
-
-        if (truncated)
-        {
-            warnings.Add(RetrievalHandlerSupport.Warning(
-                "response_truncated",
-                "Some evidence was omitted to respect the configured response limit."));
-        }
-
-        var context = new ResolvedContext
-        {
-            LibraryId = "docs:company-docs",
-            SourceId = "company-docs"
-        };
-        if (selected.Count == 0)
-        {
-            return new QueryDocsResponse
-            {
-                Status = ToolResultStatus.InsufficientEvidence,
-                Data = new QueryDocsResult(),
-                ResolvedContext = context,
-                Warnings = warnings,
-                Errors =
-                [
-                    RetrievalHandlerSupport.Error(
-                        "insufficient_evidence",
-                        "The company documentation is indexed, but no sufficiently relevant evidence was found.")
-                ]
-            };
-        }
-
-        var citations = selected.Select(item => new Citation
-        {
-            Uri = item.Uri,
-            Label = item.Title,
-            Location = item.Location
-        }).ToArray();
-        return new QueryDocsResponse
-        {
-            Status = ToolResultStatus.Ok,
-            Data = new QueryDocsResult
-            {
-                Fragments = selected.Select(item => new DocumentFragment
-                {
-                    Title = item.Title,
-                    Text = item.Text,
-                    CitationUri = item.Uri
-                }).ToArray()
-            },
-            ResolvedContext = context,
-            Evidence = selected
-                .Select(item => RetrievalHandlerSupport.ToEvidenceMetadata(
-                    kind: item.Kind,
-                    title: item.Title,
-                    score: item.Score,
-                    citationUri: item.Uri))
-                .ToArray(),
-            Citations = citations,
-            Warnings = warnings
-        };
     }
 
     private async Task<IReadOnlyList<SymbolHitRecord>> SearchSymbolsAsync(

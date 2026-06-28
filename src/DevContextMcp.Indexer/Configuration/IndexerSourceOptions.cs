@@ -6,6 +6,4 @@ namespace DevContextMcp.Indexer.Configuration;
 public sealed class IndexerSourceOptions
 {
     public string NugetsPath { get; set; } = "nugets";
-
-    public DocumentationOptions? Documents { get; set; }
 }

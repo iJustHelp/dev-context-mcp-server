@@ -82,7 +82,6 @@ public static class DependencyInjection
             .WithTools<QueryDocsTool>()
             .WithTools<GetSymbolTool>()
             .WithTools<ListVersionsTool>()
-            .WithResources<NuGetResources>()
-            .WithResources<DocumentationResources>();
+            .WithResources<NuGetResources>();
     }
 }

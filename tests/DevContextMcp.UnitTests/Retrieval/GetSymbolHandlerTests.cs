@@ -29,9 +29,9 @@ public sealed class GetSymbolHandlerTests
             citationFactory: _citationFactory.Object);
     }
 
-    // Purpose: rejects symbol lookup for the versionless company documentation library
+    // Purpose: rejects library IDs that do not use the nuget prefix
     [Fact]
-    public async Task HandleAsync_DocumentationLibrary_ReturnsSymbolLookupNotSupported()
+    public async Task HandleAsync_InvalidLibraryId_ReturnsInvalidLibraryId()
     {
         // arrange
         var request = new GetSymbolRequest("docs:company-docs", "Company.Widget");
@@ -42,7 +42,7 @@ public sealed class GetSymbolHandlerTests
         // assert
         Assert.Equal(ToolResultStatus.NotFound, actual.Status);
         Assert.Contains(actual.Errors, error =>
-            error.Code == "symbol_lookup_not_supported");
+            error.Code == "invalid_library_id");
         VerifyNoDependencyCalls();
     }
 

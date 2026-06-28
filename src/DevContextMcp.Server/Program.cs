@@ -46,17 +46,14 @@ static async Task RunHttpAsync(string[] args)
           .AddMcpServer(options =>
           {
               options.ServerInstructions = """
-        DevContext provides indexed internal NuGet package documentation, public .NET symbols, implementation examples, and company documentation.
+        DevContext provides indexed internal NuGet package documentation, public .NET symbols, and implementation examples.
 
         Use this workflow:
         1. Call `resolve_library` first with the package name, client name, type name, or implementation concept.
-        2. For NuGet libraries, call `list_versions` and select a version compatible with the current project. Prefer the project's referenced version when known.
+        2. Call `list_versions` and select a version compatible with the current project. Prefer the project's referenced version when known.
         3. Use `query_docs` for implementation guidance, examples, warnings, and usage patterns.
         4. Use `get_symbol` only for a specific public type or member.
         5. Preserve citation URIs and mention important warnings, missing documentation, or insufficient evidence.
-
-        Resolve or query `docs:company-docs`. Use `query_docs` with a focused question for architecture, testing, naming, implementation, and other company standards.
-        For company documentation, resolve or query `docs:company-docs`. Do not call `list_versions` or `get_symbol` for company documentation.
 
         Do not invent APIs when results are `not_found`, `insufficient_evidence`, or `not_ready`. Clearly state uncertainty and recommend inspecting the local repository for additional evidence.
         """;
