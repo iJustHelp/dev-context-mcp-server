@@ -19,6 +19,10 @@ public sealed record QueryDocsResult
     [JsonPropertyName("symbols")]
     public IReadOnlyList<SymbolReference> Symbols { get; init; } = [];
 
+    /// <summary>
+    /// Reserved for dedicated code examples. Usage guidance is returned in
+    /// <see cref="Fragments"/> and <see cref="Symbols"/> today.
+    /// </summary>
     [JsonPropertyName("examples")]
     public IReadOnlyList<UsageExample> Examples { get; init; } = [];
 }

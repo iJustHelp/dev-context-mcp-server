@@ -32,6 +32,57 @@ public sealed class DocumentChunkerTests
     }
 
     [Fact]
+    public void MarkdownHeadingWithBlankLineStaysWithBody()
+    {
+        const string content =
+            """
+            ## Getting Started
+
+            Install the package via NuGet and call Initialize() to begin using the library.
+            """;
+
+        var chunks = _chunker.Chunk(
+            path: "README.md",
+            kind: "readme",
+            content: content,
+            maxCharacters: 4000,
+            minCharacters: 0);
+
+        Assert.Contains(
+            chunks,
+            chunk => chunk.Content.Contains("Getting Started", StringComparison.Ordinal)
+                && chunk.Content.Contains("Initialize", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            chunks,
+            chunk => chunk.Content.Equals("## Getting Started", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NestedMarkdownHeadingsStayWithFollowingBody()
+    {
+        const string content =
+            """
+            # Fixture Documentation
+
+            ## Getting Started
+
+            Install the package via NuGet and call Initialize().
+            """;
+
+        var chunks = _chunker.Chunk(
+            path: "README.md",
+            kind: "readme",
+            content: content,
+            maxCharacters: 4000,
+            minCharacters: 0);
+
+        Assert.Contains(
+            chunks,
+            chunk => chunk.Content.Contains("Getting Started", StringComparison.Ordinal)
+                && chunk.Content.Contains("Initialize", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TextChunksRespectMaximumLength()
     {
         var chunks = _chunker.Chunk(

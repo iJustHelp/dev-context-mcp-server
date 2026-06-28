@@ -22,7 +22,11 @@ evidence.
 2. Call `list_versions` and select a version compatible with the current
    project. Prefer the project's referenced version when known.
 3. Use `query_docs` for implementation guidance, examples, warnings, and usage
-   patterns.
-4. Use `get_symbol` only for a specific public type or member.
-5. Preserve citation URIs and mention important warnings, missing
-   documentation, or insufficient evidence.
+   patterns. Keep questions short and topical (about 1–3 words). Long natural-
+   language questions match fewer indexed fragments.
+4. Pass `projectVersion` from the calling project when known so retrieval stays
+   on the referenced package version.
+5. Use `get_symbol` only for a specific public type or member.
+6. Preserve citation URIs and mention important warnings, missing
+   documentation, or insufficient evidence. Code samples appear in
+   `data.fragments` and `data.symbols`, not `data.examples`.

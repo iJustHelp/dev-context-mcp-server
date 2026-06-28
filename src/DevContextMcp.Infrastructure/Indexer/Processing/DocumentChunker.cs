@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using DevContextMcp.Indexer.Core.Infrastructure;
 using DevContextMcp.Indexer.Core.Models;
@@ -9,7 +10,7 @@ namespace DevContextMcp.Infrastructure.Indexer.Processing;
 /// Splits documentation into searchable, size-bounded records while preserving
 /// XML member names and natural text boundaries when possible.
 /// </summary>
-internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
+internal sealed partial class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 {
     public IReadOnlyList<DocumentChunkRecord> Chunk(
         string path,
@@ -163,14 +164,51 @@ internal sealed class DocumentChunker(IContentHasher hasher) : IDocumentChunker
 
     private static IReadOnlyList<string> SplitSections(string content)
     {
-        var normalized = content.ReplaceLineEndings("\n");
-        // Blank lines and Markdown headings are useful retrieval boundaries.
-        var sections = normalized.Split(
-            ["\n\n", "\n#"],
+        var normalized = content.ReplaceLineEndings("\n").Trim();
+        if (normalized.Length == 0)
+        {
+            return [];
+        }
+
+        var rawSections = normalized.Split(
+            "\n\n",
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        return sections.Length == 0 ? [normalized] : sections;
+        if (rawSections.Length == 0)
+        {
+            return [normalized];
+        }
+
+        // Common README layout puts a blank line after headings. Keep the heading
+        // and its body in one searchable chunk instead of indexing headings alone.
+        var merged = new List<string>(rawSections.Length);
+        for (var index = 0; index < rawSections.Length; index++)
+        {
+            var section = rawSections[index];
+            while (IsMarkdownHeadingSection(section) && index + 1 < rawSections.Length)
+            {
+                index++;
+                section = $"{section}\n\n{rawSections[index]}";
+            }
+
+            merged.Add(section);
+        }
+
+        return merged;
     }
+
+    private static bool IsMarkdownHeadingSection(string section)
+    {
+        var lines = section.Split(
+            '\n',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        return lines.Length > 0
+            && lines.All(line => MarkdownHeadingLine().IsMatch(line));
+    }
+
+    [GeneratedRegex(@"^#{1,6}\s+\S", RegexOptions.CultureInvariant)]
+    private static partial Regex MarkdownHeadingLine();
 
     private static string NormalizeWhitespace(string value)
     {

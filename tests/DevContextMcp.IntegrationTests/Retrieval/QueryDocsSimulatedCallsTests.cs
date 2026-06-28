@@ -5,6 +5,7 @@ using DevContextMcp.IntegrationTests.Indexing;
 using DevContextMcp.IntegrationTests.Mcp;
 using DevContextMcp.Server;
 using DevContextMcp.Server.Core.Contracts.Common;
+using DevContextMcp.Server.Core.Contracts.ListVersions;
 using DevContextMcp.Server.Core.Contracts.QueryDocs;
 using DevContextMcp.Server.Core.Contracts.ResolveLibrary;
 using Microsoft.Extensions.Configuration;
@@ -26,31 +27,31 @@ public sealed class QueryDocsCallFixture : IAsyncLifetime
         var feed = Path.Combine(_root, "feed");
         var databasePath = Path.Combine(_root, "index", "docs.db");
 
-        // Single newline between heading and content keeps them in one FTS chunk.
+        // Standard Markdown blank lines after headings; chunker keeps each heading with its body.
         const string readmeV1 =
             "# Fixture Documentation\n\n" +
-            "## Getting Started\n" +
+            "## Getting Started\n\n" +
             "Install the package via NuGet and call Initialize() to begin using the library.\n" +
             "Configure the options before making any API calls.\n\n" +
-            "## Authentication\n" +
+            "## Authentication\n\n" +
             "Use AuthToken to authenticate each request. Set the BearerToken property on the client.\n" +
             "Authentication errors return status 401 and should be retried after refreshing the token.\n\n" +
-            "## Error Handling\n" +
+            "## Error Handling\n\n" +
             "All errors are wrapped in McpException with a Code property that identifies the error type.\n" +
             "Transient failures can be retried using the built-in retry policy.";
 
         const string readmeV2 =
             "# Fixture Documentation\n\n" +
-            "## Getting Started\n" +
+            "## Getting Started\n\n" +
             "Install the package via NuGet and call Initialize() to begin using the library.\n" +
             "Configure the options before making any API calls.\n\n" +
-            "## Authentication\n" +
+            "## Authentication\n\n" +
             "Use AuthToken to authenticate each request. Set the BearerToken property on the client.\n" +
             "Authentication errors return status 401 and should be retried after refreshing the token.\n\n" +
-            "## Error Handling\n" +
+            "## Error Handling\n\n" +
             "All errors are wrapped in McpException with a Code property that identifies the error type.\n" +
             "Transient failures can be retried using the built-in retry policy.\n\n" +
-            "## Version 2.0.0 Streaming API\n" +
+            "## Version 2.0.0 Streaming API\n\n" +
             "The streaming API is new in version 2.0.0. Call CreateStreamAsync() for real-time updates.\n" +
             "Connect a StreamHandler to receive events as they arrive from the server.";
 
@@ -122,6 +123,9 @@ public sealed class QueryDocsSimulatedCallsTests(QueryDocsCallFixture fixture)
         var response = result.StructuredContent!.Value.Deserialize<QueryDocsResponse>(JsonOptions);
         Assert.Equal(ToolResultStatus.Ok, response!.Status);
         Assert.NotEmpty(response.Data!.Fragments);
+        Assert.Contains(response.Data.Fragments, f =>
+            f.Text.Contains("Initialize", StringComparison.OrdinalIgnoreCase)
+            || f.Text.Contains("Install", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -185,6 +189,57 @@ public sealed class QueryDocsSimulatedCallsTests(QueryDocsCallFixture fixture)
         Assert.True(
             response.Status is ToolResultStatus.Ok or ToolResultStatus.InsufficientEvidence,
             $"Expected ok or insufficient_evidence but got {response.Status}");
+    }
+
+    [Fact]
+    public async Task SimulatedCall_FullAiWorkflow_ResolveListVersionsThenQueryDocs()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+        var resolveResult = await fixture.Server.Client.CallToolAsync(
+            "resolve_library",
+            new Dictionary<string, object?>
+            {
+                ["query"] = FixtureNuGetPackage.PackageId
+            },
+            cancellationToken: timeout.Token);
+
+        var resolveResponse = resolveResult.StructuredContent!.Value
+            .Deserialize<ResolveLibraryResponse>(JsonOptions);
+        Assert.Equal(ToolResultStatus.Ok, resolveResponse!.Status);
+        var libraryId = Assert.Single(resolveResponse.Data!.Matches).LibraryId;
+
+        var versionsResult = await fixture.Server.Client.CallToolAsync(
+            "list_versions",
+            new Dictionary<string, object?> { ["libraryId"] = libraryId },
+            cancellationToken: timeout.Token);
+
+        var versionsResponse = versionsResult.StructuredContent!.Value
+            .Deserialize<ListVersionsResponse>(JsonOptions);
+        Assert.Equal(ToolResultStatus.Ok, versionsResponse!.Status);
+        Assert.Contains(
+            versionsResponse.Data!.Versions,
+            version => version.Version == "1.2.3" && version.Indexed);
+
+        var docsResult = await fixture.Server.Client.CallToolAsync(
+            "query_docs",
+            new Dictionary<string, object?>
+            {
+                ["libraryId"] = libraryId,
+                ["question"] = "error handling retry",
+                ["projectVersion"] = "1.2.3"
+            },
+            cancellationToken: timeout.Token);
+
+        var docsResponse = docsResult.StructuredContent!.Value
+            .Deserialize<QueryDocsResponse>(JsonOptions);
+        Assert.Equal(ToolResultStatus.Ok, docsResponse!.Status);
+        Assert.Equal("1.2.3", docsResponse.ResolvedContext!.Version);
+        Assert.NotEmpty(docsResponse.Data!.Fragments);
+        Assert.Contains(docsResponse.Data.Fragments, f =>
+            f.Text.Contains("McpException", StringComparison.OrdinalIgnoreCase)
+            || f.Text.Contains("retry", StringComparison.OrdinalIgnoreCase)
+            || f.Text.Contains("error", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
