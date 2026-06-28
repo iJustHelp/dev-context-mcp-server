@@ -14,8 +14,7 @@ public sealed class VersionResolverTests
             versions: Versions(),
             requestedVersion: "1.0.0",
             projectVersion: "2.0.0",
-            recommendedVersion: "2.0.0",
-            includePrerelease: true);
+            recommendedVersion: "2.0.0");
 
         Assert.NotNull(result);
         Assert.Equal("1.0.0", result.Version.Version);
@@ -29,8 +28,7 @@ public sealed class VersionResolverTests
             versions: Versions(),
             requestedVersion: null,
             projectVersion: null,
-            recommendedVersion: "2.0.0",
-            includePrerelease: false);
+            recommendedVersion: "2.0.0");
 
         Assert.NotNull(result);
         Assert.Equal("2.0.0", result.Version.Version);
@@ -48,15 +46,14 @@ public sealed class VersionResolverTests
             versions: versions,
             requestedVersion: null,
             projectVersion: null,
-            recommendedVersion: null,
-            includePrerelease: false);
+            recommendedVersion: null);
 
         Assert.NotNull(result);
         Assert.Equal("10.0.0", result.Version.Version);
     }
 
     [Fact]
-    public void PrereleaseRequiresPermission()
+    public void PrereleaseVersionsAreExcluded()
     {
         var prerelease = new[]
         {
@@ -73,16 +70,7 @@ public sealed class VersionResolverTests
             versions: prerelease,
             requestedVersion: null,
             projectVersion: null,
-            recommendedVersion: null,
-            includePrerelease: false));
-        Assert.Equal(
-            "3.0.0-beta.1",
-            _resolver.Resolve(
-                versions: prerelease,
-                requestedVersion: null,
-                projectVersion: null,
-                recommendedVersion: null,
-                includePrerelease: true)!.Version.Version);
+            recommendedVersion: null));
     }
 
     private static IReadOnlyList<IndexedVersionRecord> Versions() =>

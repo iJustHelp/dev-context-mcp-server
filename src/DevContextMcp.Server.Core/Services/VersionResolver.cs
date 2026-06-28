@@ -12,8 +12,7 @@ internal sealed class VersionResolver : IVersionResolver
         IReadOnlyList<IndexedVersionRecord> versions,
         string? requestedVersion,
         string? projectVersion,
-        string? recommendedVersion,
-        bool includePrerelease)
+        string? recommendedVersion)
     {
         var parsed = versions
             .Select(version => (Record: version, Parsed: TryParse(version.Version)))
@@ -40,8 +39,7 @@ internal sealed class VersionResolver : IVersionResolver
         var recommended = SelectExact(parsed, recommendedVersion);
         if (recommendedVersion is not null)
         {
-            if (recommended is not null
-                && (includePrerelease || !recommended.Prerelease))
+            if (recommended is not null && !recommended.Prerelease)
             {
                 return new(recommended, "configured_recommendation", warnings);
             }
@@ -52,17 +50,9 @@ internal sealed class VersionResolver : IVersionResolver
         var stable = parsed
             .Select(item => item.Record)
             .FirstOrDefault(version => version.Listed && !version.Prerelease);
-        if (stable is not null)
-        {
-            return new(stable, "latest_stable", warnings);
-        }
-
-        var prerelease = includePrerelease
-            ? parsed.Select(item => item.Record).FirstOrDefault(version => version.Listed)
-            : null;
-        return prerelease is null
+        return stable is null
             ? null
-            : new(prerelease, "latest_prerelease", warnings);
+            : new(stable, "latest_stable", warnings);
     }
 
     private static IndexedVersionRecord? SelectExact(

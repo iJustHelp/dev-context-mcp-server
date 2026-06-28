@@ -61,7 +61,6 @@ internal sealed class QueryDocsHandler(
                 sourceOrder: settings.SourceOrder,
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
-                includePrerelease: request.IncludePrerelease,
                 cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {

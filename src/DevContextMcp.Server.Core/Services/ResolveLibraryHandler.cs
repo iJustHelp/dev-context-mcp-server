@@ -76,9 +76,7 @@ internal sealed class ResolveLibraryHandler(
                 var score = candidate.ExactId
                     ? 1.0
                     : candidate.PrefixId ? 0.9 : candidate.TextScore;
-                if (!request.IncludePrerelease
-                    && candidate.LatestPrerelease
-                    && !candidate.LatestListed)
+                if (candidate.LatestPrerelease && !candidate.LatestListed)
                 {
                     continue;
                 }
@@ -91,8 +89,7 @@ internal sealed class ResolveLibraryHandler(
                     versions: versions,
                     requestedVersion: null,
                     projectVersion: null,
-                    recommendedVersion: null,
-                    includePrerelease: request.IncludePrerelease);
+                    recommendedVersion: null);
                 if (resolution is null)
                 {
                     continue;

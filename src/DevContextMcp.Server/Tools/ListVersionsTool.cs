@@ -20,10 +20,9 @@ internal sealed class ListVersionsTool(
     [Description("Lists indexed versions and identifies the recommended version for a library.")]
     public Task<ListVersionsResponse> ListVersionsAsync(
         [Description("Stable library identifier returned by resolve_library.")] string libraryId,
-        [Description("Whether prerelease package versions should be included.")] bool includePrerelease = false,
         CancellationToken cancellationToken = default)
     {
-        var request = new ListVersionsRequest(libraryId, includePrerelease);
+        var request = new ListVersionsRequest(libraryId);
 
         return invocationLogger.InvokeAsync(
             toolName: "list_versions",

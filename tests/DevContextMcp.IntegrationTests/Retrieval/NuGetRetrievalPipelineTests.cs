@@ -136,7 +136,6 @@ public sealed class NuGetRetrievalPipelineTests
                     ["query"] = JsonSerializer.Serialize(new
                     {
                         query = FixtureNuGetPackage.PackageId,
-                        includePrerelease = false,
                         limit = 10,
                         environment = "test"
                     })

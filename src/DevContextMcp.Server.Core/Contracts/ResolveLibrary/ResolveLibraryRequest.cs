@@ -5,6 +5,5 @@ namespace DevContextMcp.Server.Core.Contracts.ResolveLibrary;
 /// </summary>
 public sealed record ResolveLibraryRequest(
     string Query,
-    bool IncludePrerelease = false,
     int Limit = 10,
     string? Environment = null);

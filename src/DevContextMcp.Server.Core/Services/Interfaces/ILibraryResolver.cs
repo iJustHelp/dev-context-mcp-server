@@ -14,6 +14,5 @@ public interface ILibraryResolver
         IReadOnlyList<string> sourceOrder,
         string? requestedVersion,
         string? projectVersion,
-        bool includePrerelease,
         CancellationToken cancellationToken);
 }

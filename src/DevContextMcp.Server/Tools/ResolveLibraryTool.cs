@@ -21,14 +21,12 @@ internal sealed class ResolveLibraryTool(
     [Description("Finds indexed NuGet packages by name or concept.")]
     public Task<ResolveLibraryResponse> ResolveLibraryAsync(
         [Description("Package name, client name, or implementation concept to resolve.")] string query,
-        [Description("Whether prerelease package versions may be considered.")] bool includePrerelease = false,
         [Description("Maximum number of library matches to return.")] int limit = 10,
         [Description("Optional indexed environment such as qa or production.")] string? environment = null,
         CancellationToken cancellationToken = default)
     {
         var request = CreateRequest(
             query: query,
-            includePrerelease: includePrerelease,
             limit: limit,
             environment: environment);
 
@@ -41,7 +39,6 @@ internal sealed class ResolveLibraryTool(
 
     private static ResolveLibraryRequest CreateRequest(
         string query,
-        bool includePrerelease,
         int limit,
         string? environment)
     {
@@ -55,18 +52,11 @@ internal sealed class ResolveLibraryTool(
             {
                 return new ResolveLibraryRequest(
                     Query: query,
-                    IncludePrerelease: includePrerelease,
                     Limit: limit,
                     Environment: environment);
             }
 
             query = nestedQuery.GetString()!;
-            if (root.TryGetProperty("includePrerelease", out var nestedPrerelease)
-                && nestedPrerelease.ValueKind is JsonValueKind.True or JsonValueKind.False)
-            {
-                includePrerelease = nestedPrerelease.GetBoolean();
-            }
-
             if (root.TryGetProperty("limit", out var nestedLimit)
                 && nestedLimit.TryGetInt32(out var parsedLimit))
             {
@@ -86,7 +76,6 @@ internal sealed class ResolveLibraryTool(
 
         return new ResolveLibraryRequest(
             Query: query,
-            IncludePrerelease: includePrerelease,
             Limit: limit,
             Environment: environment);
     }

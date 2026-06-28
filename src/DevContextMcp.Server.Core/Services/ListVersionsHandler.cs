@@ -37,7 +37,6 @@ internal sealed class ListVersionsHandler(
                 sourceOrder: settings.SourceOrder,
                 requestedVersion: null,
                 projectVersion: null,
-                includePrerelease: request.IncludePrerelease,
                 cancellationToken: timeout.Token);
             if (resolution.Status == LibraryResolutionStatus.EnvironmentNotFound)
             {
@@ -55,7 +54,7 @@ internal sealed class ListVersionsHandler(
 
             var selection = resolution.Selection!;
             var versions = selection.Versions
-                .Where(version => request.IncludePrerelease || !version.Prerelease)
+                .Where(version => !version.Prerelease)
                 .Select(version => (Record: version, Parsed: Parse(version.Version)))
                 .Where(item => item.Parsed is not null)
                 .OrderByDescending(item => item.Parsed!, VersionComparer.VersionRelease)
@@ -80,7 +79,7 @@ internal sealed class ListVersionsHandler(
             {
                 warnings.Add(RetrievalHandlerSupport.Warning(
                     "no_matching_versions",
-                    "The library is indexed, but no versions match the prerelease filter."));
+                    "The library is indexed, but no stable versions are indexed."));
             }
 
             return new ListVersionsResponse

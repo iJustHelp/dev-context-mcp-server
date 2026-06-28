@@ -62,7 +62,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LibraryResolutionResult(
                 LibraryResolutionStatus.EnvironmentNotFound));
@@ -319,7 +318,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IndexUnavailableException("missing index"));
 
@@ -347,7 +345,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
-                includePrerelease: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateResolution(deprecated, warningCodes ?? []));
     }
@@ -366,7 +363,6 @@ public sealed class GetSymbolHandlerTests
                 sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
-                includePrerelease: request.IncludePrerelease,
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
     }
