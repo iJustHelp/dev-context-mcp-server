@@ -118,9 +118,10 @@ public sealed class EnvironmentAwareRetrievalTests
             Assert.Equal("qaNuget", qaDocs.ResolvedContext!.SourceId);
             Assert.Contains(qaDocs.Data!.Fragments, item =>
                 item.Text.Contains("QA version", StringComparison.Ordinal));
-            Assert.All(qaDocs.Evidence, item => Assert.Null(item.Text));
-            Assert.All(qaDocs.Citations, citation =>
-                Assert.StartsWith("nuget://qaNuget/", citation.Uri, StringComparison.Ordinal));
+            Assert.All(qaDocs.Data!.Fragments, item =>
+                Assert.StartsWith("nuget://qaNuget/", item.CitationUri, StringComparison.Ordinal));
+            Assert.Null(qaDocs.Evidence);
+            Assert.Null(qaDocs.Citations);
 
             var isolated = await docsHandler.HandleAsync(
                 new QueryDocsRequest(

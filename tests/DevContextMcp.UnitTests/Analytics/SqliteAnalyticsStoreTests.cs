@@ -292,6 +292,101 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         Assert.Equal(1, actual.TotalCalls);
     }
 
+    // Purpose: marks ok rows as not clickable and non-ok rows as having detail
+    [Fact]
+    public async Task GetRecentAsync_WithSeededEvents_SetsHasDetail()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetRecentAsync(_databasePath, Window, 50, CancellationToken.None);
+
+        // assert
+        var okCall = Assert.Single(actual, call => call.Id == "p1");
+        Assert.False(okCall.HasDetail);
+        Assert.True(Assert.Single(actual, call => call.Id == "q2").HasDetail);
+        Assert.True(Assert.Single(actual, call => call.Id == "q5").HasDetail);
+    }
+
+    // Purpose: returns null when the requested call id is not found
+    [Fact]
+    public async Task GetRecentDetailAsync_MissingId_ReturnsNull()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetRecentDetailAsync(
+            _databasePath,
+            Window,
+            "missing",
+            CancellationToken.None);
+
+        // assert
+        Assert.Null(actual);
+    }
+
+    // Purpose: round-trips stored detail JSON for a not-ok call
+    [Fact]
+    public async Task GetRecentDetailAsync_WithStoredDetail_ReturnsParsedDetail()
+    {
+        // arrange
+        const string detailJson =
+            """{"errors":[{"code":"library_not_found","message":"Library was not found."}],"resolvedContext":{"libraryId":"nuget:qa/Demo.Cities","sourceId":null,"environment":"qa","version":"1.0.0","versionSelectionReason":"recommended"}}""";
+        await _target.AppendAsync(
+            _databasePath,
+            [
+                Record(
+                    "q2",
+                    "query_docs",
+                    "alice",
+                    Base,
+                    20,
+                    AnalyticsStatus.Success,
+                    "not_found",
+                    null,
+                    detailJson),
+            ],
+            CancellationToken.None);
+
+        // act
+        var actual = await _target.GetRecentDetailAsync(
+            _databasePath,
+            Window,
+            "q2",
+            CancellationToken.None);
+
+        // assert
+        Assert.NotNull(actual);
+        Assert.Equal("not_found", actual.ToolResultStatus);
+        Assert.NotNull(actual.Detail);
+        var error = Assert.Single(actual.Detail!.Errors);
+        Assert.Equal("library_not_found", error.Code);
+        Assert.Equal("Library was not found.", error.Message);
+        Assert.Equal("nuget:qa/Demo.Cities", actual.Detail.ResolvedContext!.LibraryId);
+    }
+
+    // Purpose: returns transport error type even when detail JSON is absent
+    [Fact]
+    public async Task GetRecentDetailAsync_WithErrorType_ReturnsErrorType()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetRecentDetailAsync(
+            _databasePath,
+            Window,
+            "q5",
+            CancellationToken.None);
+
+        // assert
+        Assert.NotNull(actual);
+        Assert.Equal(nameof(InvalidOperationException), actual!.ErrorType);
+        Assert.Equal("error", actual.ToolResultStatus);
+    }
+
     private Task SeedAsync() =>
         _target.AppendAsync(
             _databasePath,
@@ -313,8 +408,20 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         double durationMs,
         string status,
         string toolResultStatus,
-        string? errorType) =>
-        new(id, tool, user, startedAt, durationMs, status, toolResultStatus, errorType, null, null);
+        string? errorType,
+        string? resultDetailJson = null) =>
+        new(
+            id,
+            tool,
+            user,
+            startedAt,
+            durationMs,
+            status,
+            toolResultStatus,
+            errorType,
+            null,
+            null,
+            resultDetailJson);
 
     public void Dispose()
     {

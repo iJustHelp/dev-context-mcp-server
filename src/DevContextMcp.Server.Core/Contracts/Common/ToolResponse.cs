@@ -27,16 +27,22 @@ public abstract record ToolResponse<TData>
     public ResolvedContext? ResolvedContext { get; init; }
 
     /// <summary>
-    /// Ranked evidence fragments.
+    /// Optional ranked evidence metadata. Omitted on normal successful retrieval
+    /// responses; agents should use ordered <see cref="Data"/> items and their
+    /// <c>citationUri</c> values instead.
     /// </summary>
     [JsonPropertyName("evidence")]
-    public IReadOnlyList<EvidenceItem> Evidence { get; init; } = [];
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<EvidenceItem>? Evidence { get; init; }
 
     /// <summary>
-    /// Stable citations for evidence and source artifacts.
+    /// Optional deduplicated citations for envelope consumers. Omitted on normal
+    /// successful retrieval responses; agents should use <c>citationUri</c> on
+    /// <see cref="Data"/> items instead.
     /// </summary>
     [JsonPropertyName("citations")]
-    public IReadOnlyList<Citation> Citations { get; init; } = [];
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<Citation>? Citations { get; init; }
 
     /// <summary>
     /// Non-fatal warnings.

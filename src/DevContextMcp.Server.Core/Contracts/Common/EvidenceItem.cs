@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 namespace DevContextMcp.Server.Core.Contracts.Common;
 
 /// <summary>
-/// A ranked evidence reference. Text content is returned in the tool-specific data payload.
+/// Optional ranked evidence metadata for envelope consumers. Normal successful
+/// retrieval responses omit this and return citations on <c>data</c> items via
+/// <c>citationUri</c> instead.
 /// </summary>
 public sealed record EvidenceItem
 {
