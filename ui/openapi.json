@@ -738,6 +738,42 @@
                 "$ref": "#/components/schemas/ToolInvocationResolvedContextDetail"
               }
             ]
+          },
+          "request": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolInvocationPayloadDetail"
+              }
+            ]
+          },
+          "response": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolInvocationPayloadDetail"
+              }
+            ]
+          }
+        }
+      },
+      "ToolInvocationPayloadDetail": {
+        "required": [
+          "json",
+          "truncated",
+          "originalUtf8Bytes"
+        ],
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "originalUtf8Bytes": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

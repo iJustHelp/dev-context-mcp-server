@@ -1,11 +1,13 @@
 namespace DevContextMcp.Server.Core.Models.Analytics;
 
 /// <summary>
-/// Metadata-only detail persisted for not-ok tool invocations.
+/// Detail persisted for not-ok tool invocations, including bounded request/response payloads.
 /// </summary>
 public sealed record ToolInvocationResultDetail(
     IReadOnlyList<ToolInvocationErrorDetail> Errors,
-    ToolInvocationResolvedContextDetail? ResolvedContext);
+    ToolInvocationResolvedContextDetail? ResolvedContext,
+    ToolInvocationPayloadDetail? Request = null,
+    ToolInvocationPayloadDetail? Response = null);
 
 /// <summary>
 /// Stable error code and message captured from a tool response envelope.

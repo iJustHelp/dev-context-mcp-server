@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { RecentCallDetail } from "@/lib/types";
+import type { RecentCallDetail, ToolInvocationPayloadDetail } from "@/lib/types";
 import { statusColor } from "@/lib/colors";
 import { formatDateTime, formatMs } from "@/lib/format";
 
@@ -16,6 +16,12 @@ export function RecentCallDetailPanel({
   error?: string;
   onClose: () => void;
 }) {
+  const hasMetadata =
+    detail?.errorType ||
+    (detail?.detail?.errors?.length ?? 0) > 0 ||
+    detail?.detail?.resolvedContext;
+  const hasPayloads = detail?.detail?.request || detail?.detail?.response;
+
   return (
     <div className="detail-overlay" role="presentation" onClick={onClose}>
       <div
@@ -101,16 +107,63 @@ export function RecentCallDetailPanel({
               </section>
             )}
 
-            {!detail.errorType &&
-              !detail.detail?.errors?.length &&
-              !detail.detail?.resolvedContext && (
-                <p className="empty">No additional detail was captured for this call.</p>
-              )}
+            {detail.detail?.request && (
+              <PayloadSection label="Request" payload={detail.detail.request} />
+            )}
+
+            {detail.detail?.response && (
+              <PayloadSection label="Response" payload={detail.detail.response} />
+            )}
+
+            {!hasMetadata && !hasPayloads && (
+              <p className="empty">No additional detail was captured for this call.</p>
+            )}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function PayloadSection({
+  label,
+  payload,
+}: {
+  label: string;
+  payload: ToolInvocationPayloadDetail;
+}) {
+  return (
+    <section className="detail-section">
+      <div className="detail-payload-header">
+        <h3>{label}</h3>
+        {payload.truncated && (
+          <span className="detail-payload-badge">
+            Truncated ({formatBytes(payload.originalUtf8Bytes)})
+          </span>
+        )}
+        {!payload.truncated && (
+          <span className="detail-payload-badge">{formatBytes(payload.originalUtf8Bytes)}</span>
+        )}
+      </div>
+      <pre className="detail-payload">{formatPayloadJson(payload.json)}</pre>
+    </section>
+  );
+}
+
+function formatPayloadJson(json: string): string {
+  try {
+    return JSON.stringify(JSON.parse(json), null, 2);
+  } catch {
+    return json;
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 function DetailItem({

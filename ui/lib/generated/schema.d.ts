@@ -232,6 +232,14 @@ export interface components {
         ToolInvocationResultDetail: {
             errors?: components["schemas"]["ToolInvocationErrorDetail"][];
             resolvedContext?: components["schemas"]["ToolInvocationResolvedContextDetail"] | null;
+            request?: components["schemas"]["ToolInvocationPayloadDetail"] | null;
+            response?: components["schemas"]["ToolInvocationPayloadDetail"] | null;
+        };
+        ToolInvocationPayloadDetail: {
+            json: string;
+            truncated: boolean;
+            /** Format: int32 */
+            originalUtf8Bytes: number;
         };
         ToolInvocationErrorDetail: {
             code: string;

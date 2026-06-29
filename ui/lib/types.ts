@@ -9,6 +9,7 @@ export type AnalyticsTimeSeries = Schemas["AnalyticsTimeSeries"];
 export type LatencySummary = Schemas["LatencySummary"];
 export type RecentCall = Schemas["RecentCall"];
 export type RecentCallDetail = Schemas["RecentCallDetail"];
+export type ToolInvocationPayloadDetail = Schemas["ToolInvocationPayloadDetail"];
 export type TimeBucketPoint = Schemas["TimeBucketPoint"];
 export type ToolResultBreakdownItem = Schemas["ToolResultBreakdownItem"];
 export type ToolUsage = Schemas["ToolUsage"];
