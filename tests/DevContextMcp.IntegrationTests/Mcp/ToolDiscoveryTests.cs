@@ -37,6 +37,6 @@ public sealed class ToolDiscoveryTests
         Assert.Contains("status", outputSchema, StringComparison.Ordinal);
         Assert.Contains("errors", outputSchema, StringComparison.Ordinal);
         Assert.Contains("environment", outputSchema, StringComparison.Ordinal);
-        Assert.Contains("sourceId", outputSchema, StringComparison.Ordinal);
+        Assert.DoesNotContain("sourceId", outputSchema, StringComparison.Ordinal);
     }
 }

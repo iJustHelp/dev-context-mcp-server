@@ -166,8 +166,8 @@ sequenceDiagram
 ```
 
 Qualified `nuget:{environment}/{packageId}` identifiers never cross
-environments. Legacy identifiers select by `EnvironmentOrder` and
-`SourceOrder`. All evidence remains isolated to one selected package version.
+environments. Legacy identifiers select by `EnvironmentOrder`. All evidence
+remains isolated to one selected package version.
 
 ## Composition
 

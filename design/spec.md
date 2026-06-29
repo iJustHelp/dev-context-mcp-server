@@ -144,14 +144,13 @@ Library resolution ranks:
 1. Exact package ID.
 2. Package ID prefix or token match.
 3. Description, tag, and indexed documentation match.
-4. Environment order, source order, and configured-recommendation boosts.
+4. Environment order and configured-recommendation boosts.
 
 Qualified library IDs restrict retrieval to one environment. Legacy
-`nuget:{packageId}` IDs select by environment order and then source order.
+`nuget:{packageId}` IDs select by environment order.
 
 Documentation retrieval ranks exact symbol matches above prose, then applies
-source-quality and deprecation adjustments. Results must be deterministic for
-an unchanged index.
+deprecation adjustments. Results must be deterministic for an unchanged index.
 
 Symbol lookup supports fully qualified, simple, and partial names. Ambiguous
 matches return candidates instead of selecting silently.
@@ -220,8 +219,7 @@ Host:
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
     "Retrieval": {
-      "EnvironmentOrder": ["production", "qa"],
-      "SourceOrder": ["internal"]
+      "EnvironmentOrder": ["production", "qa"]
     }
   }
 }

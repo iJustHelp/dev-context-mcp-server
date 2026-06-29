@@ -35,7 +35,6 @@ public static class DependencyInjection
             return new RetrievalSettings(
                 DatabasePath: Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
                 EnvironmentOrder: retrieval.EnvironmentOrder.ToArray(),
-                SourceOrder: retrieval.SourceOrder.ToArray(),
                 Limits: new RetrievalLimits(
                     DefaultMaxResults: retrieval.DefaultMaxResults,
                     MaxResults: retrieval.MaxResults,

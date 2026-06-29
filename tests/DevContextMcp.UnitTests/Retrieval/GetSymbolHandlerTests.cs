@@ -59,7 +59,6 @@ public sealed class GetSymbolHandlerTests
                 databasePath: It.IsAny<string>(),
                 libraryId: It.IsAny<LibraryId>(),
                 environmentOrder: It.IsAny<IReadOnlyList<string>>(),
-                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
@@ -315,7 +314,6 @@ public sealed class GetSymbolHandlerTests
                 databasePath: It.IsAny<string>(),
                 libraryId: It.IsAny<LibraryId>(),
                 environmentOrder: It.IsAny<IReadOnlyList<string>>(),
-                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
@@ -342,7 +340,6 @@ public sealed class GetSymbolHandlerTests
                 databasePath: It.IsAny<string>(),
                 libraryId: It.IsAny<LibraryId>(),
                 environmentOrder: It.IsAny<IReadOnlyList<string>>(),
-                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: It.IsAny<string?>(),
                 projectVersion: It.IsAny<string?>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
@@ -360,7 +357,6 @@ public sealed class GetSymbolHandlerTests
                     libraryId.PackageId == PackageId
                     && libraryId.Environment == environment),
                 environmentOrder: It.IsAny<IReadOnlyList<string>>(),
-                sourceOrder: It.IsAny<IReadOnlyList<string>>(),
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
                 cancellationToken: It.IsAny<CancellationToken>()),
@@ -406,7 +402,6 @@ public sealed class GetSymbolHandlerTests
     private static RetrievalSettings CreateSettings() =>
         new(
             DatabasePath,
-            [SourceName],
             [SourceName],
             new RetrievalLimits(
                 DefaultMaxResults: 8,

@@ -62,13 +62,11 @@ public sealed class DevContextMcpOptionsValidatorTests
                 Retrieval = new RetrievalOptions
                 {
                     EnvironmentOrder = ["qa", "QA"],
-                    SourceOrder = ["nuget.org", "NuGet.org"],
                     DefaultMaxResults = 0
                 }
             });
 
         AssertFailure(result, "EnvironmentOrder");
-        AssertFailure(result, "SourceOrder");
         AssertFailure(result, "DefaultMaxResults");
     }
 

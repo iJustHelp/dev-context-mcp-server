@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace DevContextMcp.Server.Core.Contracts.Common;
 
 /// <summary>
-/// Package, source, and version context used to produce a response.
+/// Package and version context used to produce a response.
 /// </summary>
 public sealed record ResolvedContext
 {
@@ -14,13 +14,7 @@ public sealed record ResolvedContext
     public string? LibraryId { get; init; }
 
     /// <summary>
-    /// Source identifier from configuration.
-    /// </summary>
-    [JsonPropertyName("sourceId")]
-    public string? SourceId { get; init; }
-
-    /// <summary>
-    /// Deployment environment containing the selected source.
+    /// Deployment environment containing the selected library.
     /// </summary>
     [JsonPropertyName("environment")]
     public string? Environment { get; init; }

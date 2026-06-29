@@ -70,7 +70,6 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, versions.Status);
             Assert.Equal("test", versions.ResolvedContext!.Environment);
-            Assert.Equal("test", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
 
             var docs = await provider.GetRequiredService<IQueryDocsHandler>()

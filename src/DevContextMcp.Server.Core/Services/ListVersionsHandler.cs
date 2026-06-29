@@ -34,7 +34,6 @@ internal sealed class ListVersionsHandler(
                 databasePath: settings.DatabasePath,
                 libraryId: libraryId,
                 environmentOrder: settings.EnvironmentOrder,
-                sourceOrder: settings.SourceOrder,
                 requestedVersion: null,
                 projectVersion: null,
                 cancellationToken: timeout.Token);
@@ -96,7 +95,6 @@ internal sealed class ListVersionsHandler(
                     LibraryId = new LibraryId(
                         selection.Library.PackageId,
                         selection.Library.Environment).ToString(),
-                    SourceId = selection.Library.SourceName,
                     Environment = selection.Library.Environment
                 },
                 Warnings = warnings
