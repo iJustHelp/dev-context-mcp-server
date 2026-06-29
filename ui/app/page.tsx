@@ -230,11 +230,12 @@ export default function Page() {
         </Card>
 
         <Card title="Recent calls" span={12}>
-          {recent ? (
+          {recent && query ? (
             <RecentCallsTable
               calls={recent.calls}
               totalCalls={summary?.totalCalls ?? 0}
               limit={recentLimit}
+              query={query}
               onLimitChange={setRecentLimit}
             />
           ) : (

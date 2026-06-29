@@ -14,4 +14,5 @@ public sealed record ToolInvocationRecord(
     string ToolResultStatus,
     string? ErrorType,
     long? RequestBytes,
-    long? ResponseBytes);
+    long? ResponseBytes,
+    string? ResultDetailJson);

@@ -1,9 +1,9 @@
 namespace DevContextMcp.Server.Core.Models.Analytics;
 
 /// <summary>
-/// A recent invocation as shown in the recent-calls table.
+/// Full detail for one recent invocation, including parsed not-ok metadata.
 /// </summary>
-public sealed record RecentCall(
+public sealed record RecentCallDetail(
     string Id,
     string ToolName,
     string UserName,
@@ -11,4 +11,5 @@ public sealed record RecentCall(
     double DurationMs,
     string Status,
     string ToolResultStatus,
-    bool HasDetail);
+    string? ErrorType,
+    ToolInvocationResultDetail? Detail);

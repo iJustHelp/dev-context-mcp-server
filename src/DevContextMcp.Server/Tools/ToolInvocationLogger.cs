@@ -73,16 +73,22 @@ internal sealed class ToolInvocationLogger(
                 responseBytes = MeasureBytes(response);
             }
 
+            var toolResultStatus = ToWireStatus(GetToolResultStatus(response));
             RecordAnalytics(
                 toolName,
                 invocationId,
                 startedAtUtc,
                 elapsedMilliseconds,
                 AnalyticsStatus.Success,
-                ToWireStatus(GetToolResultStatus(response)),
+                toolResultStatus,
                 errorType: null,
                 requestBytes,
-                responseBytes);
+                responseBytes,
+                ToolInvocationDetailCapture.SerializeResultDetail(
+                    response,
+                    AnalyticsStatus.Success,
+                    toolResultStatus,
+                    errorType: null));
             return response;
         }
         catch (OperationCanceledException)
@@ -104,7 +110,8 @@ internal sealed class ToolInvocationLogger(
                 ToWireStatus(ToolResultStatus.Error),
                 errorType: null,
                 requestBytes,
-                responseBytes: null);
+                responseBytes: null,
+                resultDetailJson: null);
             throw;
         }
         catch (Exception exception)
@@ -126,7 +133,8 @@ internal sealed class ToolInvocationLogger(
                 ToWireStatus(ToolResultStatus.Error),
                 errorType: exception.GetType().Name,
                 requestBytes,
-                responseBytes: null);
+                responseBytes: null,
+                resultDetailJson: null);
             throw;
         }
     }
@@ -140,7 +148,8 @@ internal sealed class ToolInvocationLogger(
         string toolResultStatus,
         string? errorType,
         long? requestBytes,
-        long? responseBytes)
+        long? responseBytes,
+        string? resultDetailJson)
     {
         if (!analyticsRecorder.Enabled)
         {
@@ -159,7 +168,8 @@ internal sealed class ToolInvocationLogger(
                 ToolResultStatus: toolResultStatus,
                 ErrorType: errorType,
                 RequestBytes: requestBytes,
-                ResponseBytes: responseBytes));
+                ResponseBytes: responseBytes,
+                ResultDetailJson: resultDetailJson));
         }
         catch
         {

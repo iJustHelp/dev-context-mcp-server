@@ -337,6 +337,63 @@
           }
         }
       }
+    },
+    "/api/analytics/recent/{id}": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "operationId": "GetRecentDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentCallDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -569,6 +626,61 @@
           "startedAt",
           "durationMs",
           "status",
+          "toolResultStatus",
+          "hasDetail"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMs": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          },
+          "toolResultStatus": {
+            "type": "string"
+          },
+          "hasDetail": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RecentCallsResponse": {
+        "required": [
+          "calls"
+        ],
+        "type": "object",
+        "properties": {
+          "calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentCall"
+            }
+          }
+        }
+      },
+      "RecentCallDetail": {
+        "required": [
+          "id",
+          "toolName",
+          "userName",
+          "startedAt",
+          "durationMs",
+          "status",
           "toolResultStatus"
         ],
         "type": "object",
@@ -595,20 +707,77 @@
           },
           "toolResultStatus": {
             "type": "string"
+          },
+          "errorType": {
+            "type": "string",
+            "nullable": true
+          },
+          "detail": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolInvocationResultDetail"
+              }
+            ]
           }
         }
       },
-      "RecentCallsResponse": {
+      "ToolInvocationResultDetail": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolInvocationErrorDetail"
+            }
+          },
+          "resolvedContext": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolInvocationResolvedContextDetail"
+              }
+            ]
+          }
+        }
+      },
+      "ToolInvocationErrorDetail": {
         "required": [
-          "calls"
+          "code",
+          "message"
         ],
         "type": "object",
         "properties": {
-          "calls": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RecentCall"
-            }
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolInvocationResolvedContextDetail": {
+        "type": "object",
+        "properties": {
+          "libraryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "environment": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "versionSelectionReason": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

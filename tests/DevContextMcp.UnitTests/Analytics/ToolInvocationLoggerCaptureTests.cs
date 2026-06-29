@@ -81,7 +81,67 @@ public sealed class ToolInvocationLoggerCaptureTests
         Assert.NotNull(_captured);
         Assert.Equal(AnalyticsStatus.Success, _captured.Status);
         Assert.Equal("not_found", _captured.ToolResultStatus);
+        Assert.Null(_captured.ResultDetailJson);
         VerifyRecorded(AnalyticsStatus.Success);
+    }
+
+    // Purpose: persists bounded detail JSON when the tool response includes errors
+    [Fact]
+    public async Task InvokeAsync_NotOkToolResponseWithErrors_RecordsResultDetailJson()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
+        var response = new TestToolResponse
+        {
+            Status = ToolResultStatus.NotFound,
+            Errors =
+            [
+                new ToolError
+                {
+                    Code = "library_not_found",
+                    Message = "Library was not found.",
+                },
+            ],
+            ResolvedContext = new ResolvedContext
+            {
+                LibraryId = "nuget:qa/Demo.Cities",
+                Environment = "qa",
+                Version = "1.0.0",
+            },
+        };
+
+        // act
+        await _target.InvokeAsync(
+            "query_docs",
+            "request",
+            _ => Task.FromResult(response),
+            CancellationToken.None);
+
+        // assert
+        Assert.NotNull(_captured);
+        Assert.Equal("not_found", _captured!.ToolResultStatus);
+        Assert.NotNull(_captured.ResultDetailJson);
+        Assert.Contains("library_not_found", _captured.ResultDetailJson, StringComparison.Ordinal);
+        Assert.Contains("nuget:qa/Demo.Cities", _captured.ResultDetailJson, StringComparison.Ordinal);
+    }
+
+    // Purpose: does not persist detail JSON for ok tool responses
+    [Fact]
+    public async Task InvokeAsync_OkToolResponse_DoesNotRecordResultDetailJson()
+    {
+        // arrange
+        _recorder.Setup(recorder => recorder.Enabled).Returns(true);
+
+        // act
+        await _target.InvokeAsync(
+            "query_docs",
+            "request",
+            _ => Task.FromResult(new TestToolResponse { Status = ToolResultStatus.Ok }),
+            CancellationToken.None);
+
+        // assert
+        Assert.NotNull(_captured);
+        Assert.Null(_captured!.ResultDetailJson);
     }
 
     // Purpose: records an error event with the exception type when the call faults
