@@ -27,7 +27,6 @@ internal static class FixtureNuGetConfiguration
                 Path.Combine(environmentPath, fileName),
                 JsonSerializer.Serialize(new
                 {
-                    package.Delete,
                     package.Environment,
                     package.PackageId,
                     package.MaxVersionsPerPackage,
@@ -42,6 +41,5 @@ internal static class FixtureNuGetConfiguration
         string Environment,
         string PackageId,
         int MaxVersionsPerPackage = 10,
-        string? Versions = null,
-        bool Delete = false);
+        string? Versions = null);
 }

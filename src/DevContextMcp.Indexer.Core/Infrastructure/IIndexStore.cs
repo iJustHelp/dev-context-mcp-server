@@ -19,5 +19,6 @@ public interface IIndexStore
         DateTimeOffset startedAt,
         IReadOnlyList<PackageIndexData> packages,
         IReadOnlyList<IndexRunError> errors,
+        bool pruneRemovedPackages,
         CancellationToken cancellationToken);
 }

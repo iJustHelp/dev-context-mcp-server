@@ -209,24 +209,28 @@ internal sealed partial class SqliteIndexStore
         }
     }
 
-    private static async Task<IReadOnlyList<PackageIdentityKey>> DeleteConfiguredPackagesAsync(
+    private static async Task<IReadOnlyList<PackageIdentityKey>> DeleteRemovedPackagesAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
         string sourceId,
-        IReadOnlyList<string> packageIds,
+        IReadOnlyList<string> keepPackageIds,
         CancellationToken cancellationToken)
     {
+        var keep = keepPackageIds
+            .Select(packageId => packageId.Trim().ToLowerInvariant())
+            .ToHashSet(StringComparer.Ordinal);
+
         var deleted = new List<PackageIdentityKey>();
 
-        foreach (var packageId in packageIds)
+        var libraries = await GetSourceLibrariesAsync(
+            connection: connection,
+            transaction: transaction,
+            sourceId: sourceId,
+            cancellationToken: cancellationToken);
+
+        foreach (var library in libraries)
         {
-            var library = await GetLibraryAsync(
-                connection: connection,
-                transaction: transaction,
-                sourceId: sourceId,
-                packageId: packageId,
-                cancellationToken: cancellationToken);
-            if (library is null)
+            if (keep.Contains(library.NormalizedPackageId))
             {
                 continue;
             }
@@ -234,7 +238,7 @@ internal sealed partial class SqliteIndexStore
             var versions = await GetLibraryVersionsAsync(
                 connection: connection,
                 transaction: transaction,
-                libraryId: library.Value.LibraryId,
+                libraryId: library.LibraryId,
                 cancellationToken: cancellationToken);
             foreach (var version in versions)
             {
@@ -243,24 +247,51 @@ internal sealed partial class SqliteIndexStore
                     transaction: transaction,
                     versionId: version.VersionId,
                     cancellationToken: cancellationToken);
-                deleted.Add(new PackageIdentityKey(library.Value.PackageId, version.Version));
+                deleted.Add(new PackageIdentityKey(library.PackageId, version.Version));
             }
 
             await ExecuteAsync(
                 connection: connection,
                 transaction: transaction,
                 sql: "DELETE FROM libraries_fts WHERE library_id = $libraryId;",
-                parameters: [("$libraryId", library.Value.LibraryId)],
+                parameters: [("$libraryId", library.LibraryId)],
                 cancellationToken: cancellationToken);
             await ExecuteAsync(
                 connection: connection,
                 transaction: transaction,
                 sql: "DELETE FROM libraries WHERE id = $libraryId;",
-                parameters: [("$libraryId", library.Value.LibraryId)],
+                parameters: [("$libraryId", library.LibraryId)],
                 cancellationToken: cancellationToken);
         }
 
         return deleted;
+    }
+
+    private static async Task<IReadOnlyList<(string LibraryId, string PackageId, string NormalizedPackageId)>>
+        GetSourceLibrariesAsync(
+            SqliteConnection connection,
+            SqliteTransaction transaction,
+            string sourceId,
+            CancellationToken cancellationToken)
+    {
+        var libraries = new List<(string LibraryId, string PackageId, string NormalizedPackageId)>();
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            SELECT id, package_id, normalized_package_id
+            FROM libraries
+            WHERE source_id = $sourceId;
+            """;
+        command.Parameters.AddWithValue("$sourceId", sourceId);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            libraries.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2)));
+        }
+
+        return libraries;
     }
 
     private static async Task<IReadOnlyList<PackageIdentityKey>> PruneStoredPackageVersionsAsync(

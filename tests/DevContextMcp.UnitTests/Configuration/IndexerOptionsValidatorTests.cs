@@ -174,13 +174,12 @@ public sealed class IndexerOptionsValidatorTests
     }
 
     [Fact]
-    public void DeletePackageRequiresOnlyEnvironmentAndPackageId()
+    public void PackageWithNonPositiveMaxVersionsFails()
     {
         using var folder = PackageFolder.Create(
-            ("Delete.json",
+            ("Package.json",
                 """
                 {
-                  "Delete": true,
                   "Environment": "qa",
                   "PackageId": "Company.Package",
                   "MaxVersionsPerPackage": 0
@@ -192,21 +191,18 @@ public sealed class IndexerOptionsValidatorTests
             IndexerSource = Source(folder.Path),
             NugetPackages = [Feed("qa")]
         });
-        var package = Assert.Single(new NuGetPackageOptionsLoader().Load(folder.Path));
 
-        Assert.Equal(ValidateOptionsResult.Success, result);
-        Assert.True(package.Delete);
+        AssertFailure(result, "MaxVersionsPerPackage must be positive");
     }
 
     [Fact]
-    public void NormalPackageDefaultsDeleteToFalse()
+    public void NormalPackageDefaultsMaxVersionsToTwo()
     {
         using var folder = PackageFolder.Create(
             ("Package.json", Package("qa", "Company.Package")));
 
         var package = Assert.Single(new NuGetPackageOptionsLoader().Load(folder.Path));
 
-        Assert.False(package.Delete);
         Assert.Equal(2, package.MaxVersionsPerPackage);
     }
 

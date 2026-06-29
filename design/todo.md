@@ -1,3 +1,3 @@
-1. Change report to show name of library - done
-2. Log Indexer in file - done
-3. Index internal docs with company standards
+1. Remove nugets which are not in configuration
+2. Remove source from server payload
+3. 

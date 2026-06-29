@@ -32,8 +32,7 @@ public sealed class IndexCoordinatorTests
         var source = CreateSource(
             [new PackageSelectionDefinition(
                 PackageId: "Active.Package",
-                MaxVersions: 1)],
-            ["Deleted.Package"]);
+                MaxVersions: 1)]);
         SetupCommon(CreateSettings(source));
         _sourceClient
             .Setup(client => client.DiscoverAsync(
@@ -47,6 +46,7 @@ public sealed class IndexCoordinatorTests
                 startedAt: It.IsAny<DateTimeOffset>(),
                 packages: It.IsAny<IReadOnlyList<PackageIndexData>>(),
                 errors: It.IsAny<IReadOnlyList<IndexRunError>>(),
+                pruneRemovedPackages: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(EmptyPublishResult());
 
@@ -73,14 +73,14 @@ public sealed class IndexCoordinatorTests
             store => store.PublishSourceAsync(
                 databasePath: DatabasePath,
                 source: It.Is<IndexSourceDefinition>(published =>
-                    published.Name == source.Name
-                    && published.DeletedPackageIds.Count == 0),
+                    published.Name == source.Name),
                 startedAt: It.IsAny<DateTimeOffset>(),
                 packages: It.Is<IReadOnlyList<PackageIndexData>>(packages =>
                     packages.Count == 0),
                 errors: It.Is<IReadOnlyList<IndexRunError>>(errors =>
                     errors.Count == 1
                     && errors[0].Code == "source_discovery_failed"),
+                pruneRemovedPackages: false,
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _indexStore.Verify(
@@ -124,8 +124,7 @@ public sealed class IndexCoordinatorTests
                 new PackageSelectionDefinition(
                     PackageId: "Beta.Package",
                     MaxVersions: 1)
-            ],
-            []);
+            ]);
         SetupCommon(CreateSettings(source));
         _sourceClient
             .Setup(client => client.DiscoverAsync(
@@ -146,6 +145,7 @@ public sealed class IndexCoordinatorTests
                 startedAt: It.IsAny<DateTimeOffset>(),
                 packages: It.IsAny<IReadOnlyList<PackageIndexData>>(),
                 errors: It.IsAny<IReadOnlyList<IndexRunError>>(),
+                pruneRemovedPackages: It.IsAny<bool>(),
                 cancellationToken: It.IsAny<CancellationToken>()))
             .ReturnsAsync(EmptyPublishResult());
 
@@ -186,6 +186,7 @@ public sealed class IndexCoordinatorTests
                 errors: It.Is<IReadOnlyList<IndexRunError>>(errors =>
                     errors.Count == candidates.Count
                     && errors.All(error => error.Code == "package_index_failed")),
+                pruneRemovedPackages: true,
                 cancellationToken: It.IsAny<CancellationToken>()),
             Times.Once);
         _indexStore.Verify(
@@ -233,14 +234,12 @@ public sealed class IndexCoordinatorTests
         new(DatabasePath, CreateLimits(), [source]);
 
     private static IndexSourceDefinition CreateSource(
-        IReadOnlyList<PackageSelectionDefinition> packages,
-        IReadOnlyList<string> deletedPackageIds) =>
+        IReadOnlyList<PackageSelectionDefinition> packages) =>
         new(
             "test",
             "test",
             "fixture",
             packages,
-            deletedPackageIds,
             10);
 
     private static PackageProcessingLimits CreateLimits() =>

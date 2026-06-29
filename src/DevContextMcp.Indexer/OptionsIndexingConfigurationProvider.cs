@@ -32,39 +32,21 @@ internal sealed class OptionsIndexingConfigurationProvider(
                 MinDocumentChars: limits.MinDocumentChars,
                 PackageDownloadTimeout: limits.PackageDownloadTimeout),
             Sources: value.NugetPackages
-                .Select(source => new
-                {
-                    Source = source,
-                    Packages = packages
+                .Select(source => new IndexSourceDefinition(
+                    Name: source.Name,
+                    Environment: source.Environment,
+                    ServiceIndex: ResolveSource(source.ServiceIndex),
+                    Packages: packages
                         .Where(package => string.Equals(
                             package.Environment,
                             source.Environment,
                             StringComparison.OrdinalIgnoreCase))
-                        .Where(package => !package.Delete)
                         .Select(package => new PackageSelectionDefinition(
                             PackageId: package.PackageId,
                             MaxVersions: package.MaxVersionsPerPackage,
                             Versions: SplitVersions(package.Versions)))
                         .ToArray(),
-                    DeletedPackageIds = packages
-                        .Where(package => string.Equals(
-                            package.Environment,
-                            source.Environment,
-                            StringComparison.OrdinalIgnoreCase))
-                        .Where(package => package.Delete)
-                        .Select(package => package.PackageId)
-                        .ToArray()
-                })
-                .Where(item =>
-                    item.Packages.Length > 0
-                    || item.DeletedPackageIds.Length > 0)
-                .Select(item => new IndexSourceDefinition(
-                    Name: item.Source.Name,
-                    Environment: item.Source.Environment,
-                    ServiceIndex: ResolveSource(item.Source.ServiceIndex),
-                    Packages: item.Packages,
-                    DeletedPackageIds: item.DeletedPackageIds,
-                    MaxPackages: item.Source.MaxPackages))
+                    MaxPackages: source.MaxPackages))
                 .ToArray());
     }
 

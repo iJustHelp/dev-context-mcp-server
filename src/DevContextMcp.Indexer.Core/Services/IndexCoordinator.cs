@@ -57,10 +57,11 @@ internal sealed class IndexCoordinator(
             var completedAt = DateTimeOffset.UtcNow;
             await indexStore.PublishSourceAsync(
                 databasePath: settings.DatabasePath,
-                source: source with { DeletedPackageIds = [] },
+                source: source,
                 startedAt: startedAt,
                 packages: [],
                 errors: [discoveryError],
+                pruneRemovedPackages: false,
                 cancellationToken: cancellationToken);
 
             return new IndexRunSummary(
@@ -120,6 +121,7 @@ internal sealed class IndexCoordinator(
             startedAt: startedAt,
             packages: indexedPackages,
             errors: errors,
+            pruneRemovedPackages: true,
             cancellationToken: cancellationToken);
 
         var status = indexedPackages.Count == 0 && errors.Count > 0

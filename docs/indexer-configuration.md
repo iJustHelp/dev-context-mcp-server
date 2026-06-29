@@ -68,7 +68,6 @@ Each indexed NuGet source should have a JSON configuration file.
 
 ```json
 {
-  "Delete": false,
   "Environment": "public",
   "PackageId": "Formula.SimpleRepo",
   "MaxVersionsPerPackage": 10,
@@ -77,7 +76,13 @@ Each indexed NuGet source should have a JSON configuration file.
 
 where:
 
-- `Delete`: Boolean, default: false. If true, then indexer deletes the specified `PackageId` from the database.
 - `Environment`: is one of the values defined in `NugetPackages` in `appsettings.json` (for example: `public`, `prod`, `qa`).
 - `PackageId`: full NuGet package name.
 - `MaxVersionsPerPackage`: maximum number of versions for indexing of the package.
+
+Configuration is the source of truth: the package files present for an environment
+define exactly what is indexed. To remove a package, delete its JSON file. On the
+next successful run the indexer prunes any package stored for that source whose id
+is no longer in the configuration (including when an environment has no package
+files at all). Deletions are skipped for a run whose feed discovery fails, so an
+unreachable feed never wipes already-indexed data.

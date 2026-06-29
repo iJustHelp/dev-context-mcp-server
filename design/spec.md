@@ -264,11 +264,11 @@ Package file `nugets/production/Company.Customer.Client.json`:
 }
 ```
 
-Setting `Delete` to `true` turns the file into a persistent tombstone that
-removes every indexed version of the package from the matching environment
-without contacting the feed. Tombstones require only `Environment` and
-`PackageId`. This tombstone is the only mechanism that removes indexed NuGet
-packages or versions.
+Removing a package's JSON file removes it from the configuration. On the next
+successful run the indexer prunes every indexed version of any package stored for
+that source whose id is no longer configured, including when an environment has no
+package files at all. Reconciliation is skipped for a run whose feed discovery
+fails, so an unreachable feed never deletes already-indexed data.
 
 ## 14. Performance Targets
 
