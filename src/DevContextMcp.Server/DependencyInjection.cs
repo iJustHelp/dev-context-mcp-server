@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddApplication();
         services.AddRetrievalInfrastructure();
+        services.AddIndexSnapshotInfrastructure();
         services.AddSingleton(provider =>
         {
             var value = provider.GetRequiredService<IOptions<DevContextMcpOptions>>().Value;

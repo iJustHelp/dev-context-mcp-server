@@ -28,10 +28,25 @@ public static class DependencyInjection
     public static IServiceCollection AddAnalyticsInfrastructure(
         this IServiceCollection services)
     {
-        services.AddSingleton<SqliteAnalyticsStore>();
+        services.TryAddSingleton<SqliteAnalyticsStore>();
         services.AddSingleton<IToolInvocationWriteStore>(
             provider => provider.GetRequiredService<SqliteAnalyticsStore>());
         services.AddSingleton<IToolInvocationReadStore>(
+            provider => provider.GetRequiredService<SqliteAnalyticsStore>());
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the last-run indexing snapshot store. Shared by the indexer (writes) and the
+    /// host (reads); independent of whether tool-invocation analytics capture is enabled.
+    /// </summary>
+    public static IServiceCollection AddIndexSnapshotInfrastructure(
+        this IServiceCollection services)
+    {
+        services.TryAddSingleton<SqliteAnalyticsStore>();
+        services.TryAddSingleton<IIndexSnapshotWriteStore>(
+            provider => provider.GetRequiredService<SqliteAnalyticsStore>());
+        services.TryAddSingleton<IIndexSnapshotReadStore>(
             provider => provider.GetRequiredService<SqliteAnalyticsStore>());
         return services;
     }

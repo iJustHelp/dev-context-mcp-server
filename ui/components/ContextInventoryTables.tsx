@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { IndexedNuGetInventoryItem } from "@/lib/types";
+import type {
+  IndexedNuGetInventoryItem,
+  IndexSnapshotPackage,
+} from "@/lib/types";
 import { formatCount, formatDateTime } from "@/lib/format";
 
 type Direction = "asc" | "desc";
@@ -102,6 +105,136 @@ export function NuGetInventoryTable({
   function setNuGetSort(key: NuGetSortKey) {
     setSort((current) => nextSort(current, key));
   }
+}
+
+type LastRunSortKey =
+  | "packageId"
+  | "environment"
+  | "availableVersions"
+  | "status";
+
+export function LastRunTable({
+  packages,
+}: {
+  packages: IndexSnapshotPackage[];
+}) {
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortState<LastRunSortKey>>({
+    key: "packageId",
+    direction: "asc",
+  });
+
+  const rows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return packages
+      .filter((item) =>
+        query.length === 0
+          ? true
+          : [
+              item.packageId,
+              item.environment,
+              item.status,
+              item.indexedVersions.join(" "),
+              item.error ?? "",
+            ]
+              .join(" ")
+              .toLowerCase()
+              .includes(query),
+      )
+      .toSorted((left, right) =>
+        compareValues(
+          lastRunSortValue(left, sort.key),
+          lastRunSortValue(right, sort.key),
+          sort.direction,
+        ),
+      );
+  }, [packages, search, sort]);
+
+  return (
+    <div>
+      <TableSearch label="Search packages" value={search} onChange={setSearch} />
+      <div className="table-scroll">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <SortableHeader
+                label="Package"
+                sortKey="packageId"
+                sort={sort}
+                onSort={setLastRunSort}
+              />
+              <SortableHeader
+                label="Environment"
+                sortKey="environment"
+                sort={sort}
+                onSort={setLastRunSort}
+              />
+              <SortableHeader
+                label="Available"
+                sortKey="availableVersions"
+                sort={sort}
+                onSort={setLastRunSort}
+                align="right"
+              />
+              <SortableHeader
+                label="Status"
+                sortKey="status"
+                sort={sort}
+                onSort={setLastRunSort}
+              />
+              <th>Indexed versions</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((item) => (
+              <tr
+                key={`${item.environment}/${item.packageId}`}
+                className={isProblem(item) ? "row-error" : undefined}
+              >
+                <td>{item.packageId}</td>
+                <td>{item.environment || "-"}</td>
+                <td className="num">{formatCount(item.availableVersions)}</td>
+                <td>
+                  <span className={`status-badge status-${item.status}`}>
+                    {item.status}
+                  </span>
+                </td>
+                <td className="version-list">
+                  {formatVersions(item.indexedVersions)}
+                </td>
+                <td className="error-cell">{item.error ?? "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.length === 0 && <p className="empty">No packages in the last run.</p>}
+    </div>
+  );
+
+  function setLastRunSort(key: LastRunSortKey) {
+    setSort((current) => nextSort(current, key));
+  }
+}
+
+function isProblem(item: IndexSnapshotPackage): boolean {
+  return item.status === "failed" || item.status === "not_found" || item.error !== null;
+}
+
+function lastRunSortValue(
+  item: IndexSnapshotPackage,
+  key: LastRunSortKey,
+): string | number {
+  if (key === "availableVersions") {
+    return item.availableVersions;
+  }
+
+  if (key === "environment") {
+    return environmentSortValue(item.environment);
+  }
+
+  return item[key] ?? "";
 }
 
 function TableSearch({

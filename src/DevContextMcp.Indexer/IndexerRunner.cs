@@ -1,6 +1,8 @@
 using DevContextMcp.Indexer.Configuration;
 using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
+using DevContextMcp.Server.Core.Infrastructure;
+using DevContextMcp.Server.Core.Models.Context;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +14,7 @@ namespace DevContextMcp.Indexer;
 internal sealed class IndexerRunner(
     IOptions<IndexerOptions> options,
     IIndexCoordinator indexCoordinator,
+    IIndexSnapshotWriteStore snapshotStore,
     ILogger<IndexerRunner> logger)
 {
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
@@ -25,6 +28,7 @@ internal sealed class IndexerRunner(
         try
         {
             var result = await indexCoordinator.IndexAllAsync(cancellationToken);
+            await WriteSnapshotAsync(result, cancellationToken);
             var changedSummaries = result.Summaries.Where(summary =>
                 !summary.Status.Equals("succeeded", StringComparison.Ordinal)
                 ||
@@ -50,6 +54,48 @@ internal sealed class IndexerRunner(
         {
             logger.LogError(exception, "NuGet indexing failed.");
             return false;
+        }
+    }
+
+    private async Task WriteSnapshotAsync(
+        IndexRunResult result,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var statuses = result.Summaries.Select(summary => summary.Status).ToArray();
+            var overall = statuses.All(status => status == "succeeded")
+                ? "succeeded"
+                : statuses.All(status => status == "failed")
+                    ? "failed"
+                    : "partial_success";
+
+            var snapshot = new IndexSnapshot(
+                GeneratedAt: DateTimeOffset.UtcNow,
+                Status: overall,
+                Packages: result.Summaries
+                    .SelectMany(summary => summary.Packages ?? [])
+                    .Select(package => new IndexSnapshotPackage(
+                        PackageId: package.PackageId,
+                        Environment: package.Environment,
+                        AvailableVersions: package.AvailableVersions,
+                        IndexedVersions: package.IndexedVersions,
+                        Status: package.Status,
+                        Error: package.Error))
+                    .ToArray());
+
+            var databasePath = Path.GetFullPath(
+                options.Value.Analytics.DatabasePath,
+                AppContext.BaseDirectory);
+            await snapshotStore.ReplaceAsync(databasePath, snapshot, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to write the indexing snapshot.");
         }
     }
 

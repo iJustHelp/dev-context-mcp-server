@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:2222/"
+      "url": "http://127.0.0.1:5099/"
     }
   ],
   "paths": {
@@ -33,6 +33,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/context/last-run": {
+      "get": {
+        "tags": [
+          "Context"
+        ],
+        "operationId": "GetLastIndexingRun",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexSnapshot"
                 }
               }
             }
@@ -531,6 +551,67 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "IndexSnapshot": {
+        "required": [
+          "generatedAt",
+          "status",
+          "packages"
+        ],
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexSnapshotPackage"
+            }
+          }
+        }
+      },
+      "IndexSnapshotPackage": {
+        "required": [
+          "packageId",
+          "environment",
+          "availableVersions",
+          "indexedVersions",
+          "status",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "packageId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "availableVersions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "indexedVersions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

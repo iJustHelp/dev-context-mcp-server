@@ -2,6 +2,8 @@ using DevContextMcp.Indexer;
 using DevContextMcp.Indexer.Configuration;
 using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
+using DevContextMcp.Server.Core.Infrastructure;
+using DevContextMcp.Server.Core.Models.Context;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -17,6 +19,7 @@ public sealed class IndexerRunnerTests
         var executor = new IndexerRunner(
             Options.Create(new IndexerOptions()),
             coordinator,
+            new NullSnapshotStore(),
             NullLogger<IndexerRunner>.Instance);
 
         var succeeded = await executor.RunAsync(CancellationToken.None);
@@ -202,7 +205,16 @@ public sealed class IndexerRunnerTests
                 ]
             }),
             coordinator,
+            new NullSnapshotStore(),
             logger ?? NullLogger<IndexerRunner>.Instance);
+
+    private sealed class NullSnapshotStore : IIndexSnapshotWriteStore
+    {
+        public Task ReplaceAsync(
+            string databasePath,
+            IndexSnapshot snapshot,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+    }
 
     private static IndexRunSummary Summary(string status) =>
         new(

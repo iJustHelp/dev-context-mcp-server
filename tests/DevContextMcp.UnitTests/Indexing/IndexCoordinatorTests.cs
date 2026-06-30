@@ -55,6 +55,12 @@ public sealed class IndexCoordinatorTests
         // assert
         var summary = Assert.Single(actual.Summaries);
         Assert.Equal("failed", summary.Status);
+        var package = Assert.Single(summary.Packages!);
+        Assert.Equal("Active.Package", package.PackageId);
+        Assert.Equal("failed", package.Status);
+        Assert.Equal("discovery failed", package.Error);
+        Assert.Equal(0, package.AvailableVersions);
+        Assert.Empty(package.IndexedVersions);
         _configurationProvider.Verify(
             provider => provider.GetSettings(),
             Times.Once);
@@ -127,7 +133,7 @@ public sealed class IndexCoordinatorTests
             .Setup(client => client.DiscoverAsync(
                 It.IsAny<IndexSourceDefinition>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(candidates);
+            .ReturnsAsync(new PackageDiscovery(candidates, []));
         _sourceClient
             .Setup(client => client.DownloadAsync(
                 source: It.IsAny<IndexSourceDefinition>(),

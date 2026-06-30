@@ -14,4 +14,6 @@ public sealed class IndexerOptions
     public List<NuGetPackageSourceOptions> NugetPackages { get; set; } = [];
 
     public IndexingOptions Indexing { get; set; } = new IndexingOptions();
+
+    public IndexerAnalyticsOptions Analytics { get; set; } = new IndexerAnalyticsOptions();
 }

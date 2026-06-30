@@ -3,13 +3,17 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/Card";
-import { NuGetInventoryTable } from "@/components/ContextInventoryTables";
+import {
+  LastRunTable,
+  NuGetInventoryTable,
+} from "@/components/ContextInventoryTables";
 import { apiClient } from "@/lib/client";
 import { formatCount, formatDateTime } from "@/lib/format";
-import type { IndexedContextResponse } from "@/lib/types";
+import type { IndexedContextResponse, IndexSnapshot } from "@/lib/types";
 
 export default function ContextPage() {
   const [context, setContext] = useState<IndexedContextResponse>();
+  const [lastRun, setLastRun] = useState<IndexSnapshot>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +33,11 @@ export default function ContextPage() {
           );
         }
 
+        const lastRunResult = await apiClient.GET("/api/context/last-run");
+
         if (active) {
           setContext(result.data);
+          setLastRun(lastRunResult.data);
         }
       } catch (caught) {
         if (active) {
@@ -81,6 +88,11 @@ export default function ContextPage() {
           </div>
 
           <div className="dashboard-grid">
+            {lastRun && lastRun.packages.length > 0 && (
+              <Card title="Last indexing run" span={12}>
+                <LastRunTable packages={lastRun.packages} />
+              </Card>
+            )}
             <Card title="NuGet packages" span={12}>
               <NuGetInventoryTable nugets={context.nugets} />
             </Card>

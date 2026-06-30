@@ -36,6 +36,13 @@ public sealed class NuGetIndexingPipelineTests
                 first.Added);
             Assert.Empty(first.Updated);
             Assert.Empty(first.Deleted);
+            var firstPackage = Assert.Single(first.Packages!);
+            Assert.Equal(FixtureNuGetPackage.PackageId, firstPackage.PackageId);
+            Assert.Equal("test", firstPackage.Environment);
+            Assert.Equal(1, firstPackage.AvailableVersions);
+            Assert.Equal([FixtureNuGetPackage.Version], firstPackage.IndexedVersions);
+            Assert.Equal("added", firstPackage.Status);
+            Assert.Null(firstPackage.Error);
             var firstLibrary = Assert.Single(firstResult.IndexedLibraries);
             Assert.Equal(FixtureNuGetPackage.PackageId, firstLibrary.PackageId);
             var firstEnvironment = Assert.Single(firstLibrary.Environments);
@@ -64,6 +71,7 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Empty(second.Added);
             Assert.Empty(second.Updated);
             Assert.Empty(second.Deleted);
+            Assert.Equal("unchanged", Assert.Single(second.Packages!).Status);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
             Assert.Equal(2L, await ScalarAsync(connection, "SELECT COUNT(*) FROM index_runs;"));
 
@@ -76,6 +84,7 @@ public sealed class NuGetIndexingPipelineTests
                 [new PackageIdentityKey(FixtureNuGetPackage.PackageId, FixtureNuGetPackage.Version)],
                 updated.Updated);
             Assert.Empty(updated.Deleted);
+            Assert.Equal("updated", Assert.Single(updated.Packages!).Status);
 
             FixtureNuGetPackage.ReplaceWithUnsafeArchive(feed);
             var failedResult = await coordinator.IndexAllAsync(CancellationToken.None);
@@ -86,6 +95,10 @@ public sealed class NuGetIndexingPipelineTests
             Assert.Empty(failed.Added);
             Assert.Empty(failed.Updated);
             Assert.Empty(failed.Deleted);
+            var failedPackage = Assert.Single(failed.Packages!);
+            Assert.Equal("failed", failedPackage.Status);
+            Assert.Empty(failedPackage.IndexedVersions);
+            Assert.NotNull(failedPackage.Error);
             Assert.Single(failedResult.IndexedLibraries);
             Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM library_versions;"));
             Assert.True(await ScalarAsync(

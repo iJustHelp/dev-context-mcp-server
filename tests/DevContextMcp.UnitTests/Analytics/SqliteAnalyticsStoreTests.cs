@@ -1,5 +1,6 @@
 using DevContextMcp.Infrastructure.Analytics;
 using DevContextMcp.Server.Core.Models.Analytics;
+using DevContextMcp.Server.Core.Models.Context;
 
 namespace DevContextMcp.UnitTests.Analytics;
 
@@ -290,6 +291,85 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
 
         // assert
         Assert.Equal(1, actual.TotalCalls);
+    }
+
+    // Purpose: returns null when the analytics database does not exist
+    [Fact]
+    public async Task GetIndexSnapshotAsync_DatabaseMissing_ReturnsNull()
+    {
+        // act
+        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
+
+        // assert
+        Assert.False(File.Exists(_databasePath));
+        Assert.Null(actual);
+    }
+
+    // Purpose: round-trips the last-run snapshot, preserving per-package fields
+    [Fact]
+    public async Task ReplaceAsync_ThenGet_RoundTripsSnapshot()
+    {
+        // arrange
+        var snapshot = new IndexSnapshot(
+            GeneratedAt: Base,
+            Status: "partial_success",
+            Packages:
+            [
+                new IndexSnapshotPackage("Demo.Cities", "qa", 5, ["2.8.1", "1.8.8"], "added", null),
+                new IndexSnapshotPackage("Demo.Broken", "qa", 0, [], "failed", "discovery failed"),
+            ]);
+
+        // act
+        await _target.ReplaceAsync(_databasePath, snapshot, CancellationToken.None);
+        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
+
+        // assert
+        Assert.NotNull(actual);
+        Assert.Equal(Base, actual.GeneratedAt);
+        Assert.Equal("partial_success", actual.Status);
+        Assert.Collection(
+            actual.Packages,
+            broken =>
+            {
+                Assert.Equal("Demo.Broken", broken.PackageId);
+                Assert.Equal(0, broken.AvailableVersions);
+                Assert.Empty(broken.IndexedVersions);
+                Assert.Equal("failed", broken.Status);
+                Assert.Equal("discovery failed", broken.Error);
+            },
+            cities =>
+            {
+                Assert.Equal("Demo.Cities", cities.PackageId);
+                Assert.Equal(5, cities.AvailableVersions);
+                Assert.Equal(["2.8.1", "1.8.8"], cities.IndexedVersions);
+                Assert.Equal("added", cities.Status);
+                Assert.Null(cities.Error);
+            });
+    }
+
+    // Purpose: a new run fully replaces the previous snapshot, keeping only one run
+    [Fact]
+    public async Task ReplaceAsync_Twice_KeepsOnlyLatestRun()
+    {
+        // arrange
+        await _target.ReplaceAsync(
+            _databasePath,
+            new IndexSnapshot(Base, "succeeded",
+                [new IndexSnapshotPackage("Old.Package", "qa", 1, ["1.0.0"], "added", null)]),
+            CancellationToken.None);
+
+        // act
+        await _target.ReplaceAsync(
+            _databasePath,
+            new IndexSnapshot(Base.AddHours(1), "succeeded",
+                [new IndexSnapshotPackage("New.Package", "prod", 2, ["2.0.0"], "added", null)]),
+            CancellationToken.None);
+        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
+
+        // assert
+        Assert.NotNull(actual);
+        Assert.Equal(Base.AddHours(1), actual.GeneratedAt);
+        Assert.Equal("New.Package", Assert.Single(actual.Packages).PackageId);
     }
 
     private Task SeedAsync() =>

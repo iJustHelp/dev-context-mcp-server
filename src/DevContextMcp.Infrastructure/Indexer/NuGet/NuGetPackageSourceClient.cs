@@ -32,7 +32,7 @@ internal sealed class NuGetPackageSourceClient(
                 StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Version));
     }
 
-    public async Task<IReadOnlyList<PackageVersionCandidate>> DiscoverAsync(
+    public async Task<PackageDiscovery> DiscoverAsync(
         IndexSourceDefinition source,
         CancellationToken cancellationToken)
     {
@@ -41,6 +41,7 @@ internal sealed class NuGetPackageSourceClient(
         var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>(
             cancellationToken);
         var candidates = new List<PackageVersionCandidate>();
+        var availability = new List<PackageAvailability>();
 
         foreach (var package in source.Packages
                      .OrderBy(item => item.PackageId, StringComparer.OrdinalIgnoreCase))
@@ -54,18 +55,25 @@ internal sealed class NuGetPackageSourceClient(
                 token: cancellationToken);
 
             var metadataArray = metadata.ToArray();
+            availability.Add(new PackageAvailability(
+                package.PackageId,
+                metadataArray.Count(item =>
+                    item.IsListed && !item.Identity.Version.IsPrerelease)));
+
             foreach (var item in SelectVersions(package, metadataArray))
             {
                 candidates.Add(await ToCandidateAsync(item));
             }
         }
 
-        return candidates
-            .GroupBy(
-                candidate => (candidate.PackageId, candidate.Version),
-                PackageVersionComparer.Instance)
-            .Select(group => group.First())
-            .ToArray();
+        return new PackageDiscovery(
+            candidates
+                .GroupBy(
+                    candidate => (candidate.PackageId, candidate.Version),
+                    PackageVersionComparer.Instance)
+                .Select(group => group.First())
+                .ToArray(),
+            availability);
     }
 
     public async Task<DownloadedPackage> DownloadAsync(
