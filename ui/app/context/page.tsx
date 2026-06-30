@@ -88,14 +88,14 @@ export default function ContextPage() {
           </div>
 
           <div className="dashboard-grid">
+            <Card title="NuGet packages" span={12}>
+              <NuGetInventoryTable nugets={context.nugets} />
+            </Card>            
             {lastRun && lastRun.packages.length > 0 && (
               <Card title="Last indexing run" span={12}>
                 <LastRunTable packages={lastRun.packages} />
               </Card>
             )}
-            <Card title="NuGet packages" span={12}>
-              <NuGetInventoryTable nugets={context.nugets} />
-            </Card>
           </div>
         </>
       )}

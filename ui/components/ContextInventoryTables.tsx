@@ -55,7 +55,7 @@ export function NuGetInventoryTable({
 
   return (
     <div>
-      <TableSearch label="Search NuGets" value={search} onChange={setSearch} />
+      <TableSearch label="Filter" value={search} onChange={setSearch} />
       <div className="table-scroll">
         <table className="data-table">
           <thead>
@@ -152,7 +152,7 @@ export function LastRunTable({
 
   return (
     <div>
-      <TableSearch label="Search packages" value={search} onChange={setSearch} />
+      <TableSearch label="Filter" value={search} onChange={setSearch} />
       <div className="table-scroll">
         <table className="data-table">
           <thead>
@@ -169,16 +169,15 @@ export function LastRunTable({
                 sort={sort}
                 onSort={setLastRunSort}
               />
-              <SortableHeader
-                label="Available"
-                sortKey="availableVersions"
-                sort={sort}
-                onSort={setLastRunSort}
-                align="right"
-              />
-              <SortableHeader
+               <SortableHeader
                 label="Status"
                 sortKey="status"
+                sort={sort}
+                onSort={setLastRunSort}
+              />
+              <SortableHeader
+                label="Available versions"
+                sortKey="availableVersions"
                 sort={sort}
                 onSort={setLastRunSort}
               />
@@ -194,12 +193,12 @@ export function LastRunTable({
               >
                 <td>{item.packageId}</td>
                 <td>{item.environment || "-"}</td>
-                <td className="num">{formatCount(item.availableVersions)}</td>
-                <td>
+                  <td>
                   <span className={`status-badge status-${item.status}`}>
                     {item.status}
                   </span>
                 </td>
+                <td>{formatCount(item.availableVersions)}</td>
                 <td className="version-list">
                   {formatVersions(item.indexedVersions)}
                 </td>
