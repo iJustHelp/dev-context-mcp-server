@@ -1,3 +1,4 @@
+using DevContextMcp.Indexer.Core.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NuGet.Versioning;
@@ -216,12 +217,6 @@ public sealed class IndexerOptionsValidator :
                 failures.Add("Every NuGet package configuration must have a non-empty PackageId.");
             }
 
-            if (package.MaxVersionsPerPackage <= 0)
-            {
-                failures.Add(
-                    $"NuGet package '{package.PackageId}' MaxVersionsPerPackage must be positive.");
-            }
-
             ValidateExplicitVersions(package, failures);
         }
 
@@ -291,14 +286,23 @@ public sealed class IndexerOptionsValidator :
                 continue;
             }
 
-            if (!NuGetVersion.TryParse(version, out var parsed))
+            string normalized;
+            if (MinorVersionWildcard.TryParse(version, out var major, out var minor))
+            {
+                normalized = $"{major}.{minor}.*";
+            }
+            else if (NuGetVersion.TryParse(version, out var parsed))
+            {
+                normalized = parsed.ToNormalizedString();
+            }
+            else
             {
                 failures.Add(
                     $"NuGet package '{package.PackageId}' Versions contains invalid version '{version}'.");
                 continue;
             }
 
-            if (!seen.Add(parsed.ToNormalizedString()))
+            if (!seen.Add(normalized))
             {
                 failures.Add(
                     $"NuGet package '{package.PackageId}' Versions contains duplicate version '{version}'.");

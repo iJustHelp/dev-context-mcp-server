@@ -54,18 +54,7 @@ internal sealed class NuGetPackageSourceClient(
                 token: cancellationToken);
 
             var metadataArray = metadata.ToArray();
-            if (package.Versions is { Count: > 0 })
-            {
-                candidates.AddRange(await SelectExplicitCandidatesAsync(
-                    repository,
-                    cache,
-                    package,
-                    metadataArray,
-                    cancellationToken));
-                continue;
-            }
-
-            foreach (var item in SelectDefaultMetadata(package, metadataArray))
+            foreach (var item in SelectVersions(package, metadataArray))
             {
                 candidates.Add(await ToCandidateAsync(item));
             }
@@ -143,50 +132,62 @@ internal sealed class NuGetPackageSourceClient(
         }
     }
 
-    private static async Task<IReadOnlyList<PackageVersionCandidate>> SelectExplicitCandidatesAsync(
-        SourceRepository repository,
-        SourceCacheContext cache,
+    /// <summary>
+    /// Determines which package versions to index. When the package configures explicit
+    /// <see cref="PackageSelectionDefinition.Versions"/> entries (full versions or
+    /// "MAJOR.MINOR.*" wildcards), those entries restrict the eligible set; otherwise every
+    /// stable, listed version is eligible. The default version window is then applied to the
+    /// eligible set.
+    /// </summary>
+    private static IReadOnlyList<IPackageSearchMetadata> SelectVersions(
         PackageSelectionDefinition package,
-        IReadOnlyList<IPackageSearchMetadata> metadata,
-        CancellationToken cancellationToken)
+        IReadOnlyList<IPackageSearchMetadata> metadata)
     {
-        var selected = new List<PackageVersionCandidate>();
+        var stableListed = metadata
+            .Where(item => item.IsListed)
+            .Where(item => !item.Identity.Version.IsPrerelease)
+            .ToArray();
+
+        var eligible = package.Versions is { Count: > 0 }
+            ? FilterToConfiguredVersions(package, stableListed)
+            : stableListed;
+
+        var selectedVersions = SelectDefaultVersions(
+                eligible.Select(item => item.Identity.Version))
+            .ToHashSet(VersionComparer.VersionRelease);
+
+        return eligible
+            .Where(item => selectedVersions.Contains(item.Identity.Version))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<IPackageSearchMetadata> FilterToConfiguredVersions(
+        PackageSelectionDefinition package,
+        IReadOnlyList<IPackageSearchMetadata> stableListed)
+    {
+        var eligible = new List<IPackageSearchMetadata>();
         var missing = new List<string>();
-        FindPackageByIdResource? findPackageResource = null;
-        IReadOnlyList<NuGetVersion>? availableVersions = null;
-
-        foreach (var version in package.Versions ?? [])
+        foreach (var entry in package.Versions ?? [])
         {
-            var parsed = NuGetVersion.Parse(version);
-            var match = metadata.FirstOrDefault(item =>
-                VersionComparer.VersionRelease.Equals(item.Identity.Version, parsed));
-            if (match is not null)
+            var matches = MinorVersionWildcard.TryParse(entry, out var major, out var minor)
+                ? stableListed
+                    .Where(item => item.Identity.Version.Major == major
+                        && item.Identity.Version.Minor == minor)
+                    .ToArray()
+                : stableListed
+                    .Where(item => VersionComparer.VersionRelease.Equals(
+                        item.Identity.Version,
+                        NuGetVersion.Parse(entry)))
+                    .ToArray();
+
+            if (matches.Length == 0)
             {
-                selected.Add(await ToCandidateAsync(match));
-                continue;
+                missing.Add(entry);
             }
-
-            findPackageResource ??= await repository.GetResourceAsync<FindPackageByIdResource>(
-                cancellationToken);
-            availableVersions ??= (await findPackageResource.GetAllVersionsAsync(
-                package.PackageId,
-                cache,
-                NullLogger.Instance,
-                cancellationToken)).ToArray();
-
-            if (availableVersions.Any(candidate =>
-                    VersionComparer.VersionRelease.Equals(candidate, parsed)))
+            else
             {
-                selected.Add(new PackageVersionCandidate(
-                    PackageId: package.PackageId,
-                    Version: parsed.ToNormalizedString(),
-                    IsListed: true,
-                    IsDeprecated: false,
-                    PublishedAt: null));
-                continue;
+                eligible.AddRange(matches);
             }
-
-            missing.Add(version);
         }
 
         if (missing.Count > 0)
@@ -195,7 +196,9 @@ internal sealed class NuGetPackageSourceClient(
                 $"NuGet package '{package.PackageId}' explicit versions were not found: {string.Join(", ", missing)}.");
         }
 
-        return selected;
+        return eligible
+            .DistinctBy(item => item.Identity.Version, VersionComparer.VersionRelease)
+            .ToArray();
     }
 
     private static async Task<PackageVersionCandidate> ToCandidateAsync(IPackageSearchMetadata item)
@@ -209,38 +212,25 @@ internal sealed class NuGetPackageSourceClient(
             PublishedAt: item.Published);
     }
 
-    private static IReadOnlyList<IPackageSearchMetadata> SelectDefaultMetadata(
-        PackageSelectionDefinition package,
-        IReadOnlyList<IPackageSearchMetadata> metadata)
-    {
-        var stableListed = metadata
-            .Where(item => item.IsListed)
-            .Where(item => !item.Identity.Version.IsPrerelease)
-            .ToArray();
-        var selectedVersions = SelectDefaultVersions(
-            stableListed.Select(item => item.Identity.Version),
-            package.MaxVersions);
-
-        return selectedVersions
-            .Select(version => stableListed.First(item =>
-                VersionComparer.VersionRelease.Equals(item.Identity.Version, version)))
-            .ToArray();
-    }
-
+    /// <summary>
+    /// Selects the default version window: the two most recent major versions and, within each,
+    /// the two most recent minor versions (highest stable patch of each minor).
+    /// </summary>
     internal static IReadOnlyList<NuGetVersion> SelectDefaultVersions(
-        IEnumerable<NuGetVersion> versions,
-        int maxVersions)
+        IEnumerable<NuGetVersion> versions)
     {
         return versions
-            .OrderByDescending(version => version, VersionComparer.VersionRelease)
             .GroupBy(version => version.Major)
             .OrderByDescending(group => group.Key)
             .Take(2)
-            .Select(majorGroup => majorGroup
-                .OrderByDescending(version => version, VersionComparer.VersionRelease)
-                .First())
+            .SelectMany(majorGroup => majorGroup
+                .GroupBy(version => version.Minor)
+                .OrderByDescending(minorGroup => minorGroup.Key)
+                .Take(2)
+                .Select(minorGroup => minorGroup
+                    .OrderByDescending(version => version, VersionComparer.VersionRelease)
+                    .First()))
             .OrderByDescending(version => version, VersionComparer.VersionRelease)
-            .Take(maxVersions)
             .ToArray();
     }
 

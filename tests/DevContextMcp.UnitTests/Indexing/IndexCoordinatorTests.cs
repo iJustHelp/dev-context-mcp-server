@@ -31,8 +31,7 @@ public sealed class IndexCoordinatorTests
         // arrange
         var source = CreateSource(
             [new PackageSelectionDefinition(
-                PackageId: "Active.Package",
-                MaxVersions: 1)]);
+                PackageId: "Active.Package")]);
         SetupCommon(CreateSettings(source));
         _sourceClient
             .Setup(client => client.DiscoverAsync(
@@ -119,11 +118,9 @@ public sealed class IndexCoordinatorTests
         var source = CreateSource(
             [
                 new PackageSelectionDefinition(
-                    PackageId: "Alpha.Package",
-                    MaxVersions: 2),
+                    PackageId: "Alpha.Package"),
                 new PackageSelectionDefinition(
-                    PackageId: "Beta.Package",
-                    MaxVersions: 1)
+                    PackageId: "Beta.Package")
             ]);
         SetupCommon(CreateSettings(source));
         _sourceClient

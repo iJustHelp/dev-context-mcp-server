@@ -43,7 +43,6 @@ internal sealed class OptionsIndexingConfigurationProvider(
                             StringComparison.OrdinalIgnoreCase))
                         .Select(package => new PackageSelectionDefinition(
                             PackageId: package.PackageId,
-                            MaxVersions: package.MaxVersionsPerPackage,
                             Versions: SplitVersions(package.Versions)))
                         .ToArray(),
                     MaxPackages: source.MaxPackages))

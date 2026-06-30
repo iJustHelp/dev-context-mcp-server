@@ -1,5 +1,4 @@
 {
   "Environment": "public",
-  "PackageId": "Formula.SimpleRepo",
-  "MaxVersionsPerPackage": 2
+  "PackageId": "Formula.SimpleRepo"
 }

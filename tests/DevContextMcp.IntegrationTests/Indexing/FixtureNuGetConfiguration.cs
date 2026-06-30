@@ -29,7 +29,6 @@ internal static class FixtureNuGetConfiguration
                 {
                     package.Environment,
                     package.PackageId,
-                    package.MaxVersionsPerPackage,
                     package.Versions
                 }));
         }
@@ -40,6 +39,5 @@ internal static class FixtureNuGetConfiguration
     internal sealed record PackagePolicy(
         string Environment,
         string PackageId,
-        int MaxVersionsPerPackage = 10,
         string? Versions = null);
 }

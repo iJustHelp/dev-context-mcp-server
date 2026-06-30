@@ -256,9 +256,7 @@ Package file `nugets/production/Company.Customer.Client.json`:
 {
   "Environment": "production",
   "PackageId": "Company.Customer.Client",
-  "MaxVersionsPerPackage": 3,
-  "IncludePrerelease": false,
-  "IncludeUnlisted": false
+  "Versions": "3.2.*, 2.4.11"
 }
 ```
 

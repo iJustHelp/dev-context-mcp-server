@@ -180,12 +180,10 @@ public sealed class NuGetIndexingPipelineTests
             root,
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
-                FixtureNuGetPackage.PackageId,
-                MaxVersionsPerPackage: 1),
+                FixtureNuGetPackage.PackageId),
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
-                secondPackageId,
-                MaxVersionsPerPackage: 1));
+                secondPackageId));
 
         try
         {
@@ -388,8 +386,7 @@ public sealed class NuGetIndexingPipelineTests
                 FixtureNuGetPackage.PackageId),
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
-                retainedPackageId,
-                MaxVersionsPerPackage: 1));
+                retainedPackageId));
 
         try
         {
@@ -399,15 +396,14 @@ public sealed class NuGetIndexingPipelineTests
                     .GetRequiredService<IIndexCoordinator>()
                     .IndexAllAsync(CancellationToken.None)).Summaries);
                 Assert.Equal(2, summary.Discovered);
-                Assert.Equal(2, summary.Indexed);
+                Assert.Equal(3, summary.Indexed);
             }
 
             FixtureNuGetConfiguration.CreatePackageFolder(
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "test",
-                    retainedPackageId,
-                    MaxVersionsPerPackage: 1));
+                    retainedPackageId));
 
             using (var provider = CreateProvider(feed, databasePath, sourcesPath: sourcesPath))
             {
@@ -422,6 +418,9 @@ public sealed class NuGetIndexingPipelineTests
                 Assert.Equal(0, summary.Changed);
                 Assert.Equal(
                     [
+                        new PackageIdentityKey(
+                            FixtureNuGetPackage.PackageId,
+                            olderVersion),
                         new PackageIdentityKey(
                             FixtureNuGetPackage.PackageId,
                             FixtureNuGetPackage.Version)
@@ -484,12 +483,10 @@ public sealed class NuGetIndexingPipelineTests
             root,
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
-                FixtureNuGetPackage.PackageId,
-                MaxVersionsPerPackage: 1),
+                FixtureNuGetPackage.PackageId),
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
-                deletedPackageId,
-                MaxVersionsPerPackage: 1));
+                deletedPackageId));
 
         try
         {
@@ -503,8 +500,7 @@ public sealed class NuGetIndexingPipelineTests
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "test",
-                    FixtureNuGetPackage.PackageId,
-                    MaxVersionsPerPackage: 1));
+                    FixtureNuGetPackage.PackageId));
 
             using var updatedProvider = CreateProvider(
                 feed,
@@ -545,8 +541,7 @@ public sealed class NuGetIndexingPipelineTests
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "qa",
-                    FixtureNuGetPackage.PackageId,
-                    MaxVersionsPerPackage: 1));
+                    FixtureNuGetPackage.PackageId));
             using (var provider = CreateProvider(
                        qaFeed,
                        databasePath,
@@ -561,8 +556,7 @@ public sealed class NuGetIndexingPipelineTests
                 root,
                 new FixtureNuGetConfiguration.PackagePolicy(
                     "prod",
-                    FixtureNuGetPackage.PackageId,
-                    MaxVersionsPerPackage: 1));
+                    FixtureNuGetPackage.PackageId));
             using (var provider = CreateProvider(
                        prodFeed,
                        databasePath,
@@ -634,8 +628,7 @@ public sealed class NuGetIndexingPipelineTests
             root,
             new FixtureNuGetConfiguration.PackagePolicy(
                 environment,
-                FixtureNuGetPackage.PackageId,
-                MaxVersionsPerPackage: 1));
+                FixtureNuGetPackage.PackageId));
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {

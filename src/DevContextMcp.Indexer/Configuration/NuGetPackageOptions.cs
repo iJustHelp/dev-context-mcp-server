@@ -10,6 +10,4 @@ public sealed class NuGetPackageOptions
     public string PackageId { get; set; } = string.Empty;
 
     public string? Versions { get; set; }
-
-    public int MaxVersionsPerPackage { get; set; } = 2;
 }

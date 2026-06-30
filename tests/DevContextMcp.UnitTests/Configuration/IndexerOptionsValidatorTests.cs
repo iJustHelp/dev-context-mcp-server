@@ -65,8 +65,7 @@ public sealed class IndexerOptionsValidatorTests
                 """
                 {
                   "Environment": "bad environment",
-                  "PackageId": "Company.Package",
-                  "MaxVersionsPerPackage": 0
+                  "PackageId": "Company.Package"
                 }
                 """));
         var result = Validate(new IndexerOptions
@@ -92,7 +91,6 @@ public sealed class IndexerOptionsValidatorTests
         AssertFailure(result, "ServiceIndex URI");
         AssertFailure(result, "Name");
         AssertFailure(result, "MaxPackageBytes");
-        AssertFailure(result, "MaxVersionsPerPackage");
         AssertFailure(result, "MaxPackages");
     }
 
@@ -174,39 +172,6 @@ public sealed class IndexerOptionsValidatorTests
     }
 
     [Fact]
-    public void PackageWithNonPositiveMaxVersionsFails()
-    {
-        using var folder = PackageFolder.Create(
-            ("Package.json",
-                """
-                {
-                  "Environment": "qa",
-                  "PackageId": "Company.Package",
-                  "MaxVersionsPerPackage": 0
-                }
-                """));
-
-        var result = Validate(new IndexerOptions
-        {
-            IndexerSource = Source(folder.Path),
-            NugetPackages = [Feed("qa")]
-        });
-
-        AssertFailure(result, "MaxVersionsPerPackage must be positive");
-    }
-
-    [Fact]
-    public void NormalPackageDefaultsMaxVersionsToTwo()
-    {
-        using var folder = PackageFolder.Create(
-            ("Package.json", Package("qa", "Company.Package")));
-
-        var package = Assert.Single(new NuGetPackageOptionsLoader().Load(folder.Path));
-
-        Assert.Equal(2, package.MaxVersionsPerPackage);
-    }
-
-    [Fact]
     public void ExplicitVersionsMustBeValidAndUnique()
     {
         using var folder = PackageFolder.Create(
@@ -227,6 +192,28 @@ public sealed class IndexerOptionsValidatorTests
 
         AssertFailure(result, "invalid version 'nope'");
         AssertFailure(result, "duplicate version '1.0'");
+    }
+
+    [Fact]
+    public void ExplicitVersionsAcceptWildcardsAndFullVersions()
+    {
+        using var folder = PackageFolder.Create(
+            ("Package.json",
+                """
+                {
+                  "Environment": "qa",
+                  "PackageId": "Company.Package",
+                  "Versions": "2.4.*, 2.3.12"
+                }
+                """));
+
+        var result = Validate(new IndexerOptions
+        {
+            IndexerSource = Source(folder.Path),
+            NugetPackages = [Feed("qa")]
+        });
+
+        Assert.Equal(ValidateOptionsResult.Success, result);
     }
 
     [Fact]
@@ -285,13 +272,11 @@ public sealed class IndexerOptionsValidatorTests
 
     private static string Package(
         string environment,
-        string packageId,
-        int maxVersions = 2) =>
+        string packageId) =>
         JsonSerializer.Serialize(new
         {
             Environment = environment,
-            PackageId = packageId,
-            MaxVersionsPerPackage = maxVersions
+            PackageId = packageId
         });
 
     private static void AssertFailure(
