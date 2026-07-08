@@ -37,9 +37,6 @@ public sealed record LibraryMatch
     [JsonPropertyName("environment")]
     public string? Environment { get; init; }
 
-    [JsonPropertyName("sourceId")]
-    public required string SourceId { get; init; }
-
     [JsonPropertyName("description")]
     public string? Description { get; init; }
 

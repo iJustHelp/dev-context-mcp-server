@@ -16,4 +16,5 @@ public sealed record IndexRunSummary(
     IReadOnlyList<PackageIdentityKey> Added,
     IReadOnlyList<PackageIdentityKey> Updated,
     IReadOnlyList<PackageIdentityKey> Deleted,
-    IReadOnlyList<IndexRunError> Errors);
+    IReadOnlyList<IndexRunError> Errors,
+    IReadOnlyList<IndexRunPackageStatus>? Packages = null);

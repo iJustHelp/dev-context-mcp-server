@@ -1,5 +1,4 @@
 {
   "Environment": "prod",
-  "PackageId": "OpenMeteo.Api.Client",
-  "MaxVersionsPerPackage": 10
+  "PackageId": "OpenMeteo.Api.Client"
 }

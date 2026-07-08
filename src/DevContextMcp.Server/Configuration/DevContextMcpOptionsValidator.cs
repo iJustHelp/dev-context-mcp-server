@@ -49,12 +49,6 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
         ValidateOrder(
             options.EnvironmentOrder,
             "DevContextMcp:Retrieval:EnvironmentOrder",
-            validateEnvironment: true,
-            failures);
-        ValidateOrder(
-            options.SourceOrder,
-            "DevContextMcp:Retrieval:SourceOrder",
-            validateEnvironment: false,
             failures);
 
         if (options.DefaultMaxResults <= 0)
@@ -125,7 +119,6 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
     private static void ValidateOrder(
         IReadOnlyList<string> values,
         string path,
-        bool validateEnvironment,
         List<string> failures)
     {
         if (values.Any(string.IsNullOrWhiteSpace))
@@ -133,8 +126,7 @@ public sealed partial class DevContextMcpOptionsValidator : IValidateOptions<Dev
             failures.Add($"{path} contains an empty value.");
         }
 
-        if (validateEnvironment
-            && values.Any(value =>
+        if (values.Any(value =>
                 !string.IsNullOrWhiteSpace(value)
                 && !EnvironmentPattern().IsMatch(value)))
         {

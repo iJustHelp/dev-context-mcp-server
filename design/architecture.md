@@ -139,11 +139,11 @@ Feed definitions come from normal .NET configuration. Each feed has a unique
 source name and a separate environment slug. Exact package-selection policies
 come from an external folder and are joined to feeds with the matching
 environment. Each feed is discovered and published once with the complete
-active package set. Package deletion tombstones are applied in the same
-transaction without contacting the feed. Existing package and version rows are
-never pruned because configuration, feed contents, or version limits changed;
-only an explicit `Delete: true` tombstone removes indexed NuGet data. Feeds
-with no matching package files are omitted so existing rows remain unchanged.
+active package set. In the same transaction, any package stored for the source
+whose id is no longer in the configuration is removed; configuration is the source
+of truth. Feeds with no matching package files still run so their previously
+indexed rows are pruned. Reconciliation is skipped for a run whose feed discovery
+fails, so an unreachable feed never deletes already-indexed data.
 
 ## Retrieval Flow
 
@@ -166,8 +166,8 @@ sequenceDiagram
 ```
 
 Qualified `nuget:{environment}/{packageId}` identifiers never cross
-environments. Legacy identifiers select by `EnvironmentOrder` and
-`SourceOrder`. All evidence remains isolated to one selected package version.
+environments. Legacy identifiers select by `EnvironmentOrder`. All evidence
+remains isolated to one selected package version.
 
 ## Composition
 

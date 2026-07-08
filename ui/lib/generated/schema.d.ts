@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/context/last-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLastIndexingRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analytics/summary": {
         parameters: {
             query?: never;
@@ -191,6 +207,21 @@ export interface components {
             /** Format: date-time */
             lastIndexedAt: null | string;
         };
+        IndexSnapshot: {
+            /** Format: date-time */
+            generatedAt: string;
+            status: string;
+            packages: components["schemas"]["IndexSnapshotPackage"][];
+        };
+        IndexSnapshotPackage: {
+            packageId: string;
+            environment: string;
+            /** Format: int32 */
+            availableVersions: number;
+            indexedVersions: string[];
+            status: string;
+            error: null | string;
+        };
         LatencySummary: {
             /** Format: double */
             avg: number;
@@ -328,6 +359,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    GetLastIndexingRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexSnapshot"];
                 };
             };
         };

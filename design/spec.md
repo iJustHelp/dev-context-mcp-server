@@ -147,14 +147,13 @@ Library resolution ranks:
 1. Exact package ID.
 2. Package ID prefix or token match.
 3. Description, tag, and indexed documentation match.
-4. Environment order, source order, and configured-recommendation boosts.
+4. Environment order and configured-recommendation boosts.
 
 Qualified library IDs restrict retrieval to one environment. Legacy
-`nuget:{packageId}` IDs select by environment order and then source order.
+`nuget:{packageId}` IDs select by environment order.
 
 Documentation retrieval ranks exact symbol matches above prose, then applies
-source-quality and deprecation adjustments. Results must be deterministic for
-an unchanged index.
+deprecation adjustments. Results must be deterministic for an unchanged index.
 
 Symbol lookup supports fully qualified, simple, and partial names. Ambiguous
 matches return candidates instead of selecting silently.
@@ -223,8 +222,7 @@ Host:
   "DevContextMcp": {
     "DatabasePath": "data/docs.db",
     "Retrieval": {
-      "EnvironmentOrder": ["production", "qa"],
-      "SourceOrder": ["internal"]
+      "EnvironmentOrder": ["production", "qa"]
     }
   }
 }
@@ -261,17 +259,15 @@ Package file `nugets/production/Company.Customer.Client.json`:
 {
   "Environment": "production",
   "PackageId": "Company.Customer.Client",
-  "MaxVersionsPerPackage": 3,
-  "IncludePrerelease": false,
-  "IncludeUnlisted": false
+  "Versions": "3.2.*, 2.4.11"
 }
 ```
 
-Setting `Delete` to `true` turns the file into a persistent tombstone that
-removes every indexed version of the package from the matching environment
-without contacting the feed. Tombstones require only `Environment` and
-`PackageId`. This tombstone is the only mechanism that removes indexed NuGet
-packages or versions.
+Removing a package's JSON file removes it from the configuration. On the next
+successful run the indexer prunes every indexed version of any package stored for
+that source whose id is no longer configured, including when an environment has no
+package files at all. Reconciliation is skipped for a run whose feed discovery
+fails, so an unreachable feed never deletes already-indexed data.
 
 ## 14. Performance Targets
 

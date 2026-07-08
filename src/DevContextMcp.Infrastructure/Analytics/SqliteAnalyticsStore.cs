@@ -1,6 +1,7 @@
 using System.Globalization;
 using DevContextMcp.Server.Core.Infrastructure;
 using DevContextMcp.Server.Core.Models.Analytics;
+using DevContextMcp.Server.Core.Models.Context;
 using Microsoft.Data.Sqlite;
 
 namespace DevContextMcp.Infrastructure.Analytics;
@@ -8,9 +9,11 @@ namespace DevContextMcp.Infrastructure.Analytics;
 /// <summary>
 /// SQLite-backed analytics store. Writes are append-only and self-create the database,
 /// schema, and indexes with WAL journaling; reads compute aggregates in SQL and
-/// percentiles in-process. The database is independent of the documentation index.
+/// percentiles in-process. The database is independent of the documentation index. It also
+/// holds the last-run indexing snapshot, written by the indexer and read by the host.
 /// </summary>
-internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInvocationReadStore
+internal sealed class SqliteAnalyticsStore
+    : IToolInvocationWriteStore, IToolInvocationReadStore, IIndexSnapshotWriteStore, IIndexSnapshotReadStore
 {
     private const string TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffffff'Z'";
 
@@ -65,6 +68,116 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
         }
 
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task ReplaceAsync(
+        string databasePath,
+        IndexSnapshot snapshot,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenWriteAsync(databasePath, cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var clear = connection.CreateCommand())
+        {
+            clear.CommandText =
+                "DELETE FROM index_snapshot_meta; DELETE FROM index_snapshot_packages;";
+            await clear.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var meta = connection.CreateCommand())
+        {
+            meta.CommandText =
+                """
+                INSERT INTO index_snapshot_meta (id, generated_at, status)
+                VALUES (1, $generated, $status);
+                """;
+            meta.Parameters.AddWithValue("$generated", FormatTimestamp(snapshot.GeneratedAt));
+            meta.Parameters.AddWithValue("$status", snapshot.Status);
+            await meta.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        if (snapshot.Packages.Count > 0)
+        {
+            await using var insert = connection.CreateCommand();
+            insert.CommandText =
+                """
+                INSERT INTO index_snapshot_packages
+                    (package_id, environment, available_versions, indexed_versions, status, error)
+                VALUES ($package, $environment, $available, $indexed, $status, $error);
+                """;
+            var package = insert.Parameters.Add("$package", SqliteType.Text);
+            var environment = insert.Parameters.Add("$environment", SqliteType.Text);
+            var available = insert.Parameters.Add("$available", SqliteType.Integer);
+            var indexed = insert.Parameters.Add("$indexed", SqliteType.Text);
+            var status = insert.Parameters.Add("$status", SqliteType.Text);
+            var error = insert.Parameters.Add("$error", SqliteType.Text);
+            foreach (var item in snapshot.Packages)
+            {
+                package.Value = item.PackageId;
+                environment.Value = item.Environment;
+                available.Value = item.AvailableVersions;
+                indexed.Value = string.Join(',', item.IndexedVersions);
+                status.Value = item.Status;
+                error.Value = (object?)item.Error ?? DBNull.Value;
+                await insert.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<IndexSnapshot?> GetAsync(
+        string databasePath,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenReadAsync(databasePath, cancellationToken);
+        if (connection is null
+            || !await TableExistsAsync(connection, "index_snapshot_meta", cancellationToken))
+        {
+            return null;
+        }
+
+        DateTimeOffset generatedAt;
+        string status;
+        await using (var meta = connection.CreateCommand())
+        {
+            meta.CommandText =
+                "SELECT generated_at, status FROM index_snapshot_meta WHERE id = 1;";
+            await using var reader = await meta.ExecuteReaderAsync(cancellationToken);
+            if (!await reader.ReadAsync(cancellationToken))
+            {
+                return null;
+            }
+
+            generatedAt = ParseTimestamp(reader.GetString(0));
+            status = reader.GetString(1);
+        }
+
+        var packages = new List<IndexSnapshotPackage>();
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                """
+                SELECT package_id, environment, available_versions, indexed_versions, status, error
+                FROM index_snapshot_packages
+                ORDER BY environment, package_id;
+                """;
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var indexedRaw = reader.GetString(3);
+                packages.Add(new IndexSnapshotPackage(
+                    PackageId: reader.GetString(0),
+                    Environment: reader.GetString(1),
+                    AvailableVersions: (int)reader.GetInt64(2),
+                    IndexedVersions: indexedRaw.Length == 0 ? [] : indexedRaw.Split(','),
+                    Status: reader.GetString(4),
+                    Error: reader.IsDBNull(5) ? null : reader.GetString(5)));
+            }
+        }
+
+        return new IndexSnapshot(generatedAt, status, packages);
     }
 
     public async Task<AnalyticsSummary> GetSummaryAsync(
@@ -603,6 +716,18 @@ internal sealed class SqliteAnalyticsStore : IToolInvocationWriteStore, IToolInv
                 "ALTER TABLE tool_invocations ADD COLUMN result_detail_json TEXT NULL;",
                 cancellationToken);
         }
+    }
+
+    private static async Task<bool> TableExistsAsync(
+        SqliteConnection connection,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name;";
+        command.Parameters.AddWithValue("$name", tableName);
+        return await command.ExecuteScalarAsync(cancellationToken) is not null;
     }
 
     private static async Task<bool> HasColumnAsync(

@@ -68,16 +68,30 @@ Each indexed NuGet source should have a JSON configuration file.
 
 ```json
 {
-  "Delete": false,
   "Environment": "public",
   "PackageId": "Formula.SimpleRepo",
-  "MaxVersionsPerPackage": 10,
+  "Versions": "3.2.*, 2.4.11"
 }
 ```
 
 where:
 
-- `Delete`: Boolean, default: false. If true, then indexer deletes the specified `PackageId` from the database.
 - `Environment`: is one of the values defined in `NugetPackages` in `appsettings.json` (for example: `public`, `prod`, `qa`).
 - `PackageId`: full NuGet package name.
-- `MaxVersionsPerPackage`: maximum number of versions for indexing of the package.
+- `Versions` (optional): a comma-separated list that restricts which versions are
+  eligible for indexing. Each entry is either a full version (for example `2.3.12`)
+  or a minor wildcard `MAJOR.MINOR.*` (for example `2.4.*`). The default window below
+  is applied to the eligible set, so `2.4.*` indexes the highest stable patch of
+  `2.4`. When omitted, every stable, listed version is eligible.
+
+By default, the indexer retains the two most recent major versions and, within each,
+the two most recent minor versions — the highest stable patch of each minor. For
+example, given `3.3.x, 3.2.x, 3.1.x, 2.4.x, 2.3.x`, it indexes the latest patch of
+`3.3`, `3.2`, `2.4`, and `2.3`. Prerelease and unlisted versions are never selected.
+
+Configuration is the source of truth: the package files present for an environment
+define exactly what is indexed. To remove a package, delete its JSON file. On the
+next successful run the indexer prunes any package stored for that source whose id
+is no longer in the configuration (including when an environment has no package
+files at all). Deletions are skipped for a run whose feed discovery fails, so an
+unreachable feed never wipes already-indexed data.

@@ -29,10 +29,6 @@ public sealed class NuGetRetrievalPipelineTests
             feed,
             "2.0.0",
             "# Fixture Documentation\n\nVersion 2.0.0 contains a distinct retrieval marker.");
-        FixtureNuGetPackage.Create(
-            feed,
-            "3.0.0-beta.1",
-            "# Fixture Documentation\n\nPrerelease version content.");
 
         try
         {
@@ -43,10 +39,10 @@ public sealed class NuGetRetrievalPipelineTests
             Assert.True(
                 string.Equals(indexed.Status, "succeeded", StringComparison.Ordinal),
                 string.Join(Environment.NewLine, indexed.Errors.Select(error => $"{error.Code}: {error.Message}")));
-            Assert.Equal(3, indexed.Indexed);
+            Assert.Equal(2, indexed.Indexed);
             var indexedLibrary = Assert.Single(indexResult.IndexedLibraries);
             Assert.Equal(
-                ["3.0.0-beta.1", "2.0.0", "1.2.3"],
+                ["2.0.0", "1.2.3"],
                 Assert.Single(indexedLibrary.Environments).Versions);
 
             var exact = await provider.GetRequiredService<IResolveLibraryHandler>()
@@ -70,7 +66,6 @@ public sealed class NuGetRetrievalPipelineTests
                     CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, versions.Status);
             Assert.Equal("test", versions.ResolvedContext!.Environment);
-            Assert.Equal("test", versions.ResolvedContext.SourceId);
             Assert.Equal(["2.0.0", "1.2.3"], versions.Data!.Versions.Select(item => item.Version));
 
             var docs = await provider.GetRequiredService<IQueryDocsHandler>()
@@ -184,7 +179,7 @@ public sealed class NuGetRetrievalPipelineTests
             new FixtureNuGetConfiguration.PackagePolicy(
                 "test",
                 FixtureNuGetPackage.PackageId,
-                Versions: "3.0.0-beta.1,2.0.0,1.2.3"));
+                Versions: "2.0.0,1.2.3"));
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {

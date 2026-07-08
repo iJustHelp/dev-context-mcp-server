@@ -7,7 +7,7 @@ namespace DevContextMcp.Indexer.Core.Infrastructure;
 /// </summary>
 public interface IPackageSourceClient
 {
-    Task<IReadOnlyList<PackageVersionCandidate>> DiscoverAsync(
+    Task<PackageDiscovery> DiscoverAsync(
         IndexSourceDefinition source,
         CancellationToken cancellationToken);
 

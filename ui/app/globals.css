@@ -231,8 +231,9 @@ body {
 
 .table-search {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   max-width: 320px;
   margin-bottom: 12px;
   color: var(--muted);
@@ -240,6 +241,7 @@ body {
 }
 
 .table-search input {
+  flex: 1;
   padding: 7px 9px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -313,6 +315,49 @@ body {
   max-width: 280px;
   white-space: normal;
   line-height: 1.35;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.status-added,
+.status-badge.status-updated {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.status-unchanged {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.status-badge.status-deleted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-failed,
+.status-badge.status-not_found {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.data-table tr.row-error td {
+  background: rgba(254, 226, 226, 0.4);
+}
+
+.error-cell {
+  max-width: 320px;
+  white-space: normal;
+  color: #991b1b;
 }
 
 .status-pill {

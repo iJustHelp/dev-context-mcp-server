@@ -112,8 +112,7 @@ public sealed class IndexerProcessTests
             packageIds
                 .Select(packageId => new FixtureNuGetConfiguration.PackagePolicy(
                     "test",
-                    packageId,
-                    MaxVersionsPerPackage: 1))
+                    packageId))
                 .ToArray());
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         var startInfo = new ProcessStartInfo

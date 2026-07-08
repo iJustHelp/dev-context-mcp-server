@@ -1,5 +1,6 @@
 using DevContextMcp.Infrastructure.Analytics;
 using DevContextMcp.Server.Core.Models.Analytics;
+using DevContextMcp.Server.Core.Models.Context;
 
 namespace DevContextMcp.UnitTests.Analytics;
 

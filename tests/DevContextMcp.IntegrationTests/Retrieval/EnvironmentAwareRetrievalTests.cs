@@ -76,14 +76,13 @@ public sealed class EnvironmentAwareRetrievalTests
                     "qa",
                     StringComparison.OrdinalIgnoreCase));
             Assert.Equal($"nuget:qa/{FixtureNuGetPackage.PackageId}", qaMatch.LibraryId);
-            Assert.Equal("qaNuget", qaMatch.SourceId);
 
             var productionMatch = Assert.Single(all.Data.Matches, match =>
                 string.Equals(
                     match.Environment,
                     "production",
                     StringComparison.OrdinalIgnoreCase));
-            Assert.Equal("productionNuget", productionMatch.SourceId);
+            Assert.NotNull(productionMatch);
 
             var filtered = await resolver.HandleAsync(
                 new ResolveLibraryRequest(
@@ -98,13 +97,11 @@ public sealed class EnvironmentAwareRetrievalTests
                 new ListVersionsRequest($"nuget:{FixtureNuGetPackage.PackageId}"),
                 CancellationToken.None);
             Assert.Equal("production", legacy.ResolvedContext!.Environment);
-            Assert.Equal("productionNuget", legacy.ResolvedContext.SourceId);
 
             var qaVersions = await versionsHandler.HandleAsync(
                 new ListVersionsRequest($"nuget:qa/{FixtureNuGetPackage.PackageId}"),
                 CancellationToken.None);
             Assert.Equal("qa", qaVersions.ResolvedContext!.Environment);
-            Assert.Equal("qaNuget", qaVersions.ResolvedContext.SourceId);
             Assert.Equal("2.1.0", qaVersions.Data!.RecommendedVersion);
 
             var docsHandler = provider.GetRequiredService<IQueryDocsHandler>();
@@ -115,7 +112,6 @@ public sealed class EnvironmentAwareRetrievalTests
                     Version: "2.0.0"),
                 CancellationToken.None);
             Assert.Equal(ToolResultStatus.Ok, qaDocs.Status);
-            Assert.Equal("qaNuget", qaDocs.ResolvedContext!.SourceId);
             Assert.Contains(qaDocs.Data!.Fragments, item =>
                 item.Text.Contains("QA version", StringComparison.Ordinal));
             Assert.All(qaDocs.Data!.Fragments, item =>

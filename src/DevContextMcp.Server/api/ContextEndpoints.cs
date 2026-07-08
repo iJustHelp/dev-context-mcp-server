@@ -16,7 +16,26 @@ internal static class ContextEndpoints
             .WithTags("Context")
             .Produces<IndexedContextResponse>()
             .Produces<ApiError>(StatusCodes.Status503ServiceUnavailable);
+
+        app.MapGet("/api/context/last-run", GetLastRunAsync)
+            .WithName("GetLastIndexingRun")
+            .WithTags("Context")
+            .Produces<IndexSnapshot>();
     }
+
+    private static async Task<IResult> GetLastRunAsync(
+        IIndexSnapshotReadStore store,
+        IOptions<DevContextMcpOptions> options,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await store.GetAsync(
+            Path.GetFullPath(options.Value.Analytics.DatabasePath, AppContext.BaseDirectory),
+            cancellationToken);
+        return Results.Json(snapshot ?? EmptySnapshot());
+    }
+
+    private static IndexSnapshot EmptySnapshot() =>
+        new(DateTimeOffset.MinValue, "none", []);
 
     private static async Task<IResult> GetContextAsync(
         INuGetReadStore store,

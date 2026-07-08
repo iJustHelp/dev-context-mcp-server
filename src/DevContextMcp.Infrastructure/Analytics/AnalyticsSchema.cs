@@ -29,5 +29,20 @@ internal static class AnalyticsSchema
         CREATE INDEX IF NOT EXISTS ix_ti_started ON tool_invocations(started_at);
         CREATE INDEX IF NOT EXISTS ix_ti_tool    ON tool_invocations(tool_name, started_at);
         CREATE INDEX IF NOT EXISTS ix_ti_user    ON tool_invocations(user_name, started_at);
+
+        CREATE TABLE IF NOT EXISTS index_snapshot_meta (
+            id           INTEGER PRIMARY KEY CHECK (id = 1),
+            generated_at TEXT    NOT NULL,
+            status       TEXT    NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS index_snapshot_packages (
+            package_id         TEXT    NOT NULL,
+            environment        TEXT    NOT NULL,
+            available_versions INTEGER NOT NULL,
+            indexed_versions   TEXT    NOT NULL,
+            status             TEXT    NOT NULL,
+            error              TEXT    NULL
+        );
         """;
 }

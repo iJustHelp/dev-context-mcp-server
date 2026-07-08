@@ -46,7 +46,6 @@ internal sealed class GetSymbolHandler(
                 databasePath: settings.DatabasePath,
                 libraryId: libraryId,
                 environmentOrder: settings.EnvironmentOrder,
-                sourceOrder: settings.SourceOrder,
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
                 cancellationToken: timeout.Token);
@@ -241,7 +240,6 @@ internal sealed class GetSymbolHandler(
             LibraryId = new LibraryId(
                 selection.Library.PackageId,
                 selection.Library.Environment).ToString(),
-            SourceId = selection.Library.SourceName,
             Environment = selection.Library.Environment,
             Version = version.Version.Version,
             VersionSelectionReason = version.Reason

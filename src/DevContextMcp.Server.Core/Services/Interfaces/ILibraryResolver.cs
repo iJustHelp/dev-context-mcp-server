@@ -11,7 +11,6 @@ public interface ILibraryResolver
         string databasePath,
         LibraryId libraryId,
         IReadOnlyList<string> environmentOrder,
-        IReadOnlyList<string> sourceOrder,
         string? requestedVersion,
         string? projectVersion,
         CancellationToken cancellationToken);

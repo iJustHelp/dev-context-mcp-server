@@ -17,6 +17,8 @@ export type UserBreakdownItem = Schemas["UserBreakdownItem"];
 export type IndexedContextResponse = Schemas["IndexedContextResponse"];
 export type IndexedContextTotals = Schemas["IndexedContextTotals"];
 export type IndexedNuGetInventoryItem = Schemas["IndexedNuGetInventoryItem"];
+export type IndexSnapshot = Schemas["IndexSnapshot"];
+export type IndexSnapshotPackage = Schemas["IndexSnapshotPackage"];
 
 // The server schema names the status counters StatusBreakdown; the dashboard refers to
 // the same shape as StatusCounts.

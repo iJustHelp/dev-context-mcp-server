@@ -18,8 +18,7 @@ internal sealed class ResolveLibraryHandler(
         LibraryMatch Match,
         string PackageId,
         string? Environment,
-        int EnvironmentIndex,
-        int SourceIndex);
+        int EnvironmentIndex);
 
     public async Task<ResolveLibraryResponse> HandleAsync(
         ResolveLibraryRequest request,
@@ -70,9 +69,6 @@ internal sealed class ResolveLibraryHandler(
                 var environmentIndex = RetrievalLibraryResolver.OrderIndex(
                     settings.EnvironmentOrder,
                     candidate.Environment);
-                var sourceIndex = RetrievalLibraryResolver.OrderIndex(
-                    settings.SourceOrder,
-                    candidate.SourceName);
                 var score = candidate.ExactId
                     ? 1.0
                     : candidate.PrefixId ? 0.9 : candidate.TextScore;
@@ -96,11 +92,6 @@ internal sealed class ResolveLibraryHandler(
                 }
               
 
-                if (sourceIndex != int.MaxValue)
-                {
-                    score += Math.Max(0, 0.03 - (sourceIndex * 0.005));
-                }
-
                 if (resolution.Version.Deprecated)
                 {
                     score -= 0.10;
@@ -115,14 +106,12 @@ internal sealed class ResolveLibraryHandler(
                         Kind = "nuget",
                         DisplayName = candidate.DisplayName,
                         Environment = candidate.Environment,
-                        SourceId = candidate.SourceName,
                         Description = candidate.Description,
                         Confidence = Math.Clamp(score, 0, 1)
                     },
                     PackageId: candidate.PackageId,
                     Environment: candidate.Environment,
-                    EnvironmentIndex: environmentIndex,
-                    SourceIndex: sourceIndex));
+                    EnvironmentIndex: environmentIndex));
             }
 
             var selected = matches
@@ -130,8 +119,7 @@ internal sealed class ResolveLibraryHandler(
                     $"{match.PackageId.ToUpperInvariant()}\n{match.Environment?.ToUpperInvariant()}",
                     StringComparer.Ordinal)
                 .Select(group => group
-                    .OrderByDescending(item => item.SourceIndex)
-                    .ThenByDescending(item => item.Match.Confidence)
+                    .OrderByDescending(item => item.Match.Confidence)
                     .ThenBy(item => item.Match.DisplayName, StringComparer.Ordinal)
                     .First())
                 .OrderByDescending(item => item.Match.Confidence)

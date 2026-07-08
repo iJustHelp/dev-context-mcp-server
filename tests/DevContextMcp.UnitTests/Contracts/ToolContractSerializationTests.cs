@@ -62,7 +62,6 @@ public sealed class ToolContractSerializationTests
             {
                 LibraryId = "nuget:qa/Company.Customer.Client",
                 Environment = "qa",
-                SourceId = "qa-feed",
                 Version = "4.2.0",
                 VersionSelectionReason = "requested"
             }

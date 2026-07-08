@@ -38,13 +38,13 @@ internal sealed class IndexCoordinator(
         CancellationToken cancellationToken)
     {
         var startedAt = DateTimeOffset.UtcNow;
-        IReadOnlyList<PackageVersionCandidate> candidates = [];
+        var discovery = new PackageDiscovery([], []);
 
         try
         {
             if (source.Packages.Count > 0)
             {
-                candidates = await sourceClient.DiscoverAsync(source, cancellationToken);
+                discovery = await sourceClient.DiscoverAsync(source, cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -57,10 +57,11 @@ internal sealed class IndexCoordinator(
             var completedAt = DateTimeOffset.UtcNow;
             await indexStore.PublishSourceAsync(
                 databasePath: settings.DatabasePath,
-                source: source with { DeletedPackageIds = [] },
+                source: source,
                 startedAt: startedAt,
                 packages: [],
                 errors: [discoveryError],
+                pruneRemovedPackages: false,
                 cancellationToken: cancellationToken);
 
             return new IndexRunSummary(
@@ -76,9 +77,19 @@ internal sealed class IndexCoordinator(
                 Added: [],
                 Updated: [],
                 Deleted: [],
-                Errors: [discoveryError]);
+                Errors: [discoveryError],
+                Packages: source.Packages
+                    .Select(package => new IndexRunPackageStatus(
+                        PackageId: package.PackageId,
+                        Environment: source.Environment,
+                        AvailableVersions: 0,
+                        IndexedVersions: [],
+                        Status: IndexRunPackageStatusKind.Failed,
+                        Error: discoveryError.Message))
+                    .ToArray());
         }
 
+        var candidates = discovery.Candidates;
         var indexedPackages = new List<PackageIndexData>(candidates.Count);
         var errors = new List<IndexRunError>();
 
@@ -120,6 +131,7 @@ internal sealed class IndexCoordinator(
             startedAt: startedAt,
             packages: indexedPackages,
             errors: errors,
+            pruneRemovedPackages: true,
             cancellationToken: cancellationToken);
 
         var status = indexedPackages.Count == 0 && errors.Count > 0
@@ -142,6 +154,88 @@ internal sealed class IndexCoordinator(
             Added: publish.Added,
             Updated: publish.Updated,
             Deleted: publish.Deleted,
-            Errors: errors);
+            Errors: errors,
+            Packages: BuildPackageStatuses(
+                source,
+                discovery.Availability,
+                indexedPackages,
+                errors,
+                publish));
+    }
+
+    private static IReadOnlyList<IndexRunPackageStatus> BuildPackageStatuses(
+        IndexSourceDefinition source,
+        IReadOnlyList<PackageAvailability> availability,
+        IReadOnlyList<PackageIndexData> indexedPackages,
+        IReadOnlyList<IndexRunError> errors,
+        IndexPublishResult publish)
+    {
+        var availableById = availability.ToDictionary(
+            item => item.PackageId,
+            item => item.AvailableVersions,
+            StringComparer.OrdinalIgnoreCase);
+        var indexedById = indexedPackages
+            .GroupBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<string>)group
+                    .Select(package => package.Version)
+                    .OrderByDescending(version => version, StringComparer.Ordinal)
+                    .ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+        var errorById = errors
+            .Where(error => error.PackageId is not null)
+            .GroupBy(error => error.PackageId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Message, StringComparer.OrdinalIgnoreCase);
+        var addedIds = publish.Added
+            .Select(package => package.PackageId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var updatedIds = publish.Updated
+            .Select(package => package.PackageId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var statuses = new List<IndexRunPackageStatus>();
+        foreach (var package in source.Packages)
+        {
+            var available = availableById.GetValueOrDefault(package.PackageId, 0);
+            var indexedVersions = indexedById.GetValueOrDefault(package.PackageId, []);
+            var error = errorById.GetValueOrDefault(package.PackageId);
+            var status = available == 0
+                ? IndexRunPackageStatusKind.NotFound
+                : indexedVersions.Count == 0 && error is not null
+                    ? IndexRunPackageStatusKind.Failed
+                    : addedIds.Contains(package.PackageId)
+                        ? IndexRunPackageStatusKind.Added
+                        : updatedIds.Contains(package.PackageId)
+                            ? IndexRunPackageStatusKind.Updated
+                            : IndexRunPackageStatusKind.Unchanged;
+
+            statuses.Add(new IndexRunPackageStatus(
+                PackageId: package.PackageId,
+                Environment: source.Environment,
+                AvailableVersions: available,
+                IndexedVersions: indexedVersions,
+                Status: status,
+                Error: error));
+        }
+
+        var configuredIds = source.Packages
+            .Select(package => package.PackageId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var deletedId in publish.Deleted
+                     .Select(package => package.PackageId)
+                     .Where(id => !configuredIds.Contains(id))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            statuses.Add(new IndexRunPackageStatus(
+                PackageId: deletedId,
+                Environment: source.Environment,
+                AvailableVersions: 0,
+                IndexedVersions: [],
+                Status: IndexRunPackageStatusKind.Deleted,
+                Error: null));
+        }
+
+        return statuses;
     }
 }

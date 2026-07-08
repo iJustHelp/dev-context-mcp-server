@@ -58,7 +58,6 @@ internal sealed class QueryDocsHandler(
                 databasePath: settings.DatabasePath,
                 libraryId: libraryId,
                 environmentOrder: settings.EnvironmentOrder,
-                sourceOrder: settings.SourceOrder,
                 requestedVersion: request.Version,
                 projectVersion: request.ProjectVersion,
                 cancellationToken: timeout.Token);
@@ -316,7 +315,6 @@ internal sealed class QueryDocsHandler(
             LibraryId = new LibraryId(
                 selection.Library.PackageId,
                 selection.Library.Environment).ToString(),
-            SourceId = selection.Library.SourceName,
             Environment = selection.Library.Environment,
             Version = version.Version.Version,
             VersionSelectionReason = version.Reason

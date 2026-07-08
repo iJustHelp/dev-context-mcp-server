@@ -132,6 +132,7 @@ internal sealed partial class SqliteIndexStore : IIndexStore
         DateTimeOffset startedAt,
         IReadOnlyList<PackageIndexData> packages,
         IReadOnlyList<IndexRunError> errors,
+        bool pruneRemovedPackages,
         CancellationToken cancellationToken)
     {
         var resolvedPath = ResolveDatabasePath(databasePath);
@@ -204,12 +205,18 @@ internal sealed partial class SqliteIndexStore : IIndexStore
         }
 
         var deleted = new List<PackageIdentityKey>();
-        deleted.AddRange(await DeleteConfiguredPackagesAsync(
-            connection: connection,
-            transaction: transaction,
-            sourceId: sourceId,
-            packageIds: source.DeletedPackageIds,
-            cancellationToken: cancellationToken));
+        if (pruneRemovedPackages)
+        {
+            deleted.AddRange(await DeleteRemovedPackagesAsync(
+                connection: connection,
+                transaction: transaction,
+                sourceId: sourceId,
+                keepPackageIds: source.Packages
+                    .Select(package => package.PackageId)
+                    .ToArray(),
+                cancellationToken: cancellationToken));
+        }
+
         deleted.AddRange(await PruneStoredPackageVersionsAsync(
             connection: connection,
             transaction: transaction,

@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddApplication();
         services.AddRetrievalInfrastructure();
+        services.AddIndexSnapshotInfrastructure();
         services.AddSingleton(provider =>
         {
             var value = provider.GetRequiredService<IOptions<DevContextMcpOptions>>().Value;
@@ -35,7 +36,6 @@ public static class DependencyInjection
             return new RetrievalSettings(
                 DatabasePath: Path.GetFullPath(value.DatabasePath, AppContext.BaseDirectory),
                 EnvironmentOrder: retrieval.EnvironmentOrder.ToArray(),
-                SourceOrder: retrieval.SourceOrder.ToArray(),
                 Limits: new RetrievalLimits(
                     DefaultMaxResults: retrieval.DefaultMaxResults,
                     MaxResults: retrieval.MaxResults,

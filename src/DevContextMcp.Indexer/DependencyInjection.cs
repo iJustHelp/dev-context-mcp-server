@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddSingleton<IndexerRunner>();
         services.AddIndexer();
         services.AddIndexingInfrastructure();
+        services.AddIndexSnapshotInfrastructure();
 
         return services;
     }

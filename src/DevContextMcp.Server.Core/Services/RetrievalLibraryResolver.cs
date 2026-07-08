@@ -4,8 +4,8 @@ using DevContextMcp.Server.Core.Models;
 namespace DevContextMcp.Server.Core.Services;
 
 /// <summary>
-/// Resolves a library reference to a single best selection, applying environment and source
-/// priority order and delegating version selection to the version resolver.
+/// Resolves a library reference to a single best selection, applying environment priority order
+/// and delegating version selection to the version resolver.
 /// </summary>
 internal sealed class RetrievalLibraryResolver(
     INuGetReadStore store,
@@ -16,7 +16,6 @@ internal sealed class RetrievalLibraryResolver(
         string databasePath,
         LibraryId libraryId,
         IReadOnlyList<string> environmentOrder,
-        IReadOnlyList<string> sourceOrder,
         string? requestedVersion,
         string? projectVersion,
         CancellationToken cancellationToken)
@@ -71,7 +70,6 @@ internal sealed class RetrievalLibraryResolver(
             .ThenBy(candidate => candidate.Version?.WarningCodes.Contains(
                 "recommended_version_not_indexed",
                 StringComparer.Ordinal) ?? false)
-            .ThenBy(candidate => OrderIndex(sourceOrder, candidate.Library.SourceName))
             .ThenBy(candidate => candidate.Library.Environment, StringComparer.Ordinal)
             .ThenBy(candidate => candidate.Library.SourceName, StringComparer.Ordinal)
             .First();
