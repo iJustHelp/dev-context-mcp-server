@@ -81,8 +81,10 @@ public sealed class NuGetRetrievalPipelineTests
                 item.Text.Contains("Version 2.0.0", StringComparison.Ordinal));
             Assert.DoesNotContain(docs.Data.Fragments, item =>
                 item.Text.Contains("Version 1.2.3", StringComparison.Ordinal));
-            Assert.All(docs.Evidence, item => Assert.StartsWith("nuget://", item.CitationUri));
-            Assert.All(docs.Evidence, item => Assert.Null(item.Text));
+            Assert.All(docs.Data!.Fragments, item =>
+                Assert.StartsWith("nuget://", item.CitationUri, StringComparison.Ordinal));
+            Assert.Null(docs.Evidence);
+            Assert.Null(docs.Citations);
 
             var symbol = await provider.GetRequiredService<IGetSymbolHandler>()
                 .HandleAsync(

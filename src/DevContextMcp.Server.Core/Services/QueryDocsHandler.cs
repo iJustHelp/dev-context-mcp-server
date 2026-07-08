@@ -196,16 +196,6 @@ internal sealed class QueryDocsHandler(
                 };
             }
 
-            var citations = selected
-                .Select(item => new Citation
-                {
-                    Uri = item.Uri,
-                    Label = item.Title,
-                    Location = item.Location
-                })
-                .GroupBy(citation => citation.Uri, StringComparer.Ordinal)
-                .Select(group => group.First())
-                .ToArray();
             return new QueryDocsResponse
             {
                 Status = ToolResultStatus.Ok,
@@ -232,14 +222,6 @@ internal sealed class QueryDocsHandler(
                         .ToArray()
                 },
                 ResolvedContext = context,
-                Evidence = selected
-                    .Select(item => RetrievalHandlerSupport.ToEvidenceMetadata(
-                        kind: item.Kind,
-                        title: item.Title,
-                        score: item.Score,
-                        citationUri: item.Uri))
-                    .ToArray(),
-                Citations = citations,
                 Warnings = warnings
             };
         }

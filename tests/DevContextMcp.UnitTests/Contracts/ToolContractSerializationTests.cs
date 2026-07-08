@@ -34,8 +34,8 @@ public sealed class ToolContractSerializationTests
         Assert.Equal("not_found", root.GetProperty("status").GetString());
         Assert.Empty(root.GetProperty("data").GetProperty("matches").EnumerateArray());
         Assert.Equal(JsonValueKind.Null, root.GetProperty("resolvedContext").ValueKind);
-        Assert.Empty(root.GetProperty("evidence").EnumerateArray());
-        Assert.Empty(root.GetProperty("citations").EnumerateArray());
+        Assert.False(root.TryGetProperty("evidence", out _));
+        Assert.False(root.TryGetProperty("citations", out _));
         Assert.Empty(root.GetProperty("warnings").EnumerateArray());
 
         var error = Assert.Single(root.GetProperty("errors").EnumerateArray());
@@ -78,5 +78,47 @@ public sealed class ToolContractSerializationTests
         Assert.Equal(ToolResultStatus.Ok, deserializedResponse.Status);
         Assert.Equal("qa", deserializedResponse.ResolvedContext!.Environment);
         Assert.Equal("4.2.0", deserializedResponse.ResolvedContext!.Version);
+    }
+
+    [Fact]
+    public void OkQueryDocsResponseOmitsEvidenceAndCitations()
+    {
+        var response = new QueryDocsResponse
+        {
+            Status = ToolResultStatus.Ok,
+            Data = new QueryDocsResult
+            {
+                Fragments =
+                [
+                    new DocumentFragment
+                    {
+                        Title = "README.md",
+                        Text = "Install the package via NuGet.",
+                        CitationUri = "nuget://qa/Company.Package/1.0.0/artifact/README.md"
+                    }
+                ]
+            },
+            ResolvedContext = new ResolvedContext
+            {
+                LibraryId = "nuget:qa/Company.Package",
+                Environment = "qa",
+                SourceId = "qa-feed",
+                Version = "1.0.0",
+                VersionSelectionReason = "requested"
+            }
+        };
+
+        var json = JsonSerializer.Serialize(response, SerializerOptions);
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("ok", root.GetProperty("status").GetString());
+        Assert.False(root.TryGetProperty("evidence", out _));
+        Assert.False(root.TryGetProperty("citations", out _));
+        Assert.StartsWith(
+            "nuget://",
+            root.GetProperty("data").GetProperty("fragments")[0].GetProperty("citationUri").GetString(),
+            StringComparison.Ordinal);
     }
 }

@@ -51,6 +51,12 @@ internal static class AnalyticsEndpoints
             .WithName("GetRecent")
             .Produces<RecentCallsResponse>()
             .Produces<ApiError>(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/recent/{id}", GetRecentDetailAsync)
+            .WithName("GetRecentDetail")
+            .Produces<RecentCallDetail>()
+            .Produces<ApiError>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> GetSummaryAsync(
@@ -166,6 +172,32 @@ internal static class AnalyticsEndpoints
         var resolvedLimit = Math.Clamp(limit ?? DefaultRecentLimit, 1, MaxRecentLimit);
         var calls = await store.GetRecentAsync(ResolvePath(options.Value), window, resolvedLimit, cancellationToken);
         return Results.Json(new RecentCallsResponse(calls));
+    }
+
+    private static async Task<IResult> GetRecentDetailAsync(
+        string id,
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        IToolInvocationReadStore store,
+        IOptions<DevContextMcpOptions> options,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return Results.BadRequest(new ApiError("id is required."));
+        }
+
+        if (!TryBuildWindow(from, to, out var window, out var error))
+        {
+            return Results.BadRequest(new ApiError(error!));
+        }
+
+        var detail = await store.GetRecentDetailAsync(
+            ResolvePath(options.Value),
+            window,
+            id,
+            cancellationToken);
+        return detail is null ? Results.NotFound() : Results.Json(detail);
     }
 
     private static bool TryBuildWindow(

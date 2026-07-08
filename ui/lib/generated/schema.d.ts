@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analytics/recent/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetRecentDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -226,9 +242,46 @@ export interface components {
             durationMs: number;
             status: string;
             toolResultStatus: string;
+            hasDetail: boolean;
         };
         RecentCallsResponse: {
             calls: components["schemas"]["RecentCall"][];
+        };
+        RecentCallDetail: {
+            id: string;
+            toolName: string;
+            userName: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: double */
+            durationMs: number;
+            status: string;
+            toolResultStatus: string;
+            errorType?: string | null;
+            detail?: components["schemas"]["ToolInvocationResultDetail"] | null;
+        };
+        ToolInvocationResultDetail: {
+            errors?: components["schemas"]["ToolInvocationErrorDetail"][];
+            resolvedContext?: components["schemas"]["ToolInvocationResolvedContextDetail"] | null;
+            request?: components["schemas"]["ToolInvocationPayloadDetail"] | null;
+            response?: components["schemas"]["ToolInvocationPayloadDetail"] | null;
+        };
+        ToolInvocationPayloadDetail: {
+            json: string;
+            truncated: boolean;
+            /** Format: int32 */
+            originalUtf8Bytes: number;
+        };
+        ToolInvocationErrorDetail: {
+            code: string;
+            message: string;
+        };
+        ToolInvocationResolvedContextDetail: {
+            libraryId?: string | null;
+            sourceId?: string | null;
+            environment?: string | null;
+            version?: string | null;
+            versionSelectionReason?: string | null;
         };
         StatusBreakdown: {
             /** Format: int64 */
@@ -522,6 +575,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiError"];
                 };
+            };
+        };
+    };
+    GetRecentDetail: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentCallDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

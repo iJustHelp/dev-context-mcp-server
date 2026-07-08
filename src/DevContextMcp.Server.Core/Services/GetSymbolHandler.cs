@@ -176,23 +176,6 @@ internal sealed class GetSymbolHandler(
                 Status = ToolResultStatus.Ok,
                 Data = new GetSymbolResult { Symbol = details },
                 ResolvedContext = Context(selection, version),
-                Evidence =
-                [
-                    RetrievalHandlerSupport.ToEvidenceMetadata(
-                        kind: "symbol",
-                        title: details.FullyQualifiedName,
-                        score: 1,
-                        citationUri: details.CitationUri!)
-                ],
-                Citations =
-                [
-                    new Citation
-                    {
-                        Uri = details.CitationUri!,
-                        Label = details.FullyQualifiedName,
-                        Location = winner.Symbol.XmlDocumentationMember
-                    }
-                ],
                 Warnings = warnings
             };
         }

@@ -34,9 +34,9 @@ internal sealed class SqliteAnalyticsStore
             """
             INSERT OR IGNORE INTO tool_invocations
                 (id, tool_name, user_name, started_at, duration_ms, status, tool_result_status,
-                 error_type, request_bytes, response_bytes)
+                 error_type, request_bytes, response_bytes, result_detail_json)
             VALUES ($id, $tool, $user, $started, $duration, $status, $toolResultStatus,
-                    $error, $request, $response);
+                    $error, $request, $response, $detail);
             """;
 
         var id = command.Parameters.Add("$id", SqliteType.Text);
@@ -49,6 +49,7 @@ internal sealed class SqliteAnalyticsStore
         var error = command.Parameters.Add("$error", SqliteType.Text);
         var request = command.Parameters.Add("$request", SqliteType.Integer);
         var response = command.Parameters.Add("$response", SqliteType.Integer);
+        var detail = command.Parameters.Add("$detail", SqliteType.Text);
 
         foreach (var record in records)
         {
@@ -62,6 +63,7 @@ internal sealed class SqliteAnalyticsStore
             error.Value = (object?)record.ErrorType ?? DBNull.Value;
             request.Value = (object?)record.RequestBytes ?? DBNull.Value;
             response.Value = (object?)record.ResponseBytes ?? DBNull.Value;
+            detail.Value = (object?)record.ResultDetailJson ?? DBNull.Value;
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
 
@@ -455,10 +457,84 @@ internal sealed class SqliteAnalyticsStore
                 StartedAt: ParseTimestamp(reader.GetString(3)),
                 DurationMs: reader.GetDouble(4),
                 Status: reader.GetString(5),
-                ToolResultStatus: reader.GetString(6)));
+                ToolResultStatus: reader.GetString(6),
+                HasDetail: AnalyticsDetailJson.HasDetail(
+                    reader.GetString(5),
+                    reader.GetString(6))));
         }
 
         return calls;
+    }
+
+    public async Task<RecentCallDetail?> GetRecentDetailAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        string id,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenReadAsync(databasePath, cancellationToken);
+        if (connection is null)
+        {
+            return null;
+        }
+
+        var hasToolResultStatus = await HasColumnAsync(
+            connection,
+            "tool_invocations",
+            "tool_result_status",
+            cancellationToken);
+        var hasResultDetailJson = await HasColumnAsync(
+            connection,
+            "tool_invocations",
+            "result_detail_json",
+            cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            hasToolResultStatus
+                ? hasResultDetailJson
+                    ? """
+                SELECT id, tool_name, user_name, started_at, duration_ms, status, tool_result_status,
+                       error_type, result_detail_json
+                FROM tool_invocations
+                WHERE id = $id
+                  AND started_at >= $from AND started_at < $to;
+                """
+                    : """
+                SELECT id, tool_name, user_name, started_at, duration_ms, status, tool_result_status,
+                       error_type, NULL
+                FROM tool_invocations
+                WHERE id = $id
+                  AND started_at >= $from AND started_at < $to;
+                """
+                : """
+            SELECT id, tool_name, user_name, started_at, duration_ms, status, status,
+                   error_type, NULL
+            FROM tool_invocations
+            WHERE id = $id
+              AND started_at >= $from AND started_at < $to;
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        AddWindow(command, window);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        var transportStatus = reader.GetString(5);
+        var toolResultStatus = reader.GetString(6);
+        return new RecentCallDetail(
+            Id: reader.GetString(0),
+            ToolName: reader.GetString(1),
+            UserName: reader.GetString(2),
+            StartedAt: ParseTimestamp(reader.GetString(3)),
+            DurationMs: reader.GetDouble(4),
+            Status: transportStatus,
+            ToolResultStatus: toolResultStatus,
+            ErrorType: reader.IsDBNull(7) ? null : reader.GetString(7),
+            Detail: AnalyticsDetailJson.Deserialize(
+                reader.IsDBNull(8) ? null : reader.GetString(8)));
     }
 
     private static async Task<StatusBreakdown> ReadStatusCountsAsync(
@@ -630,6 +706,14 @@ internal sealed class SqliteAnalyticsStore
             await ExecuteAsync(
                 connection,
                 "ALTER TABLE tool_invocations ADD COLUMN tool_result_status TEXT NOT NULL DEFAULT 'ok';",
+                cancellationToken);
+        }
+
+        if (!await HasColumnAsync(connection, "tool_invocations", "result_detail_json", cancellationToken))
+        {
+            await ExecuteAsync(
+                connection,
+                "ALTER TABLE tool_invocations ADD COLUMN result_detail_json TEXT NULL;",
                 cancellationToken);
         }
     }

@@ -11,7 +11,7 @@ namespace DevContextMcp.Server.Tools;
 
 /// <summary>
 /// Wraps tool invocations to log request/response payloads (size-bounded) and timing at debug level,
-/// and to capture one metadata-only analytics event per invocation.
+/// and to capture one analytics event per invocation.
 /// </summary>
 internal sealed class ToolInvocationLogger(
     IOptions<DevContextMcpOptions> options,
@@ -42,6 +42,7 @@ internal sealed class ToolInvocationLogger(
         CancellationToken cancellationToken)
     {
         var invocationId = Guid.NewGuid().ToString("N");
+        var maxPayloadBytes = options.Value.ToolLogging.MaxPayloadBytes;
         var debugEnabled = IsDebugEnabled();
         long? requestBytes = null;
         if (debugEnabled)
@@ -62,8 +63,20 @@ internal sealed class ToolInvocationLogger(
             var response = await invoke(cancellationToken);
             var elapsedMilliseconds = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
             long? responseBytes = null;
-            if (debugEnabled)
+            var toolResultStatus = ToWireStatus(GetToolResultStatus(response));
+            var notOk = !string.Equals(toolResultStatus, "ok", StringComparison.Ordinal);
+            if (debugEnabled || notOk)
             {
+                if (notOk && !debugEnabled)
+                {
+                    LogPayload(
+                        direction: "request",
+                        toolName: toolName,
+                        invocationId: invocationId,
+                        payload: request,
+                        elapsedMilliseconds: null);
+                }
+
                 LogPayload(
                     direction: "response",
                     toolName: toolName,
@@ -71,6 +84,7 @@ internal sealed class ToolInvocationLogger(
                     payload: response,
                     elapsedMilliseconds: elapsedMilliseconds);
                 responseBytes = MeasureBytes(response);
+                requestBytes ??= MeasureBytes(request);
             }
 
             RecordAnalytics(
@@ -79,10 +93,17 @@ internal sealed class ToolInvocationLogger(
                 startedAtUtc,
                 elapsedMilliseconds,
                 AnalyticsStatus.Success,
-                ToWireStatus(GetToolResultStatus(response)),
+                toolResultStatus,
                 errorType: null,
                 requestBytes,
-                responseBytes);
+                responseBytes,
+                ToolInvocationDetailCapture.SerializeResultDetail(
+                    request,
+                    response,
+                    maxPayloadBytes,
+                    AnalyticsStatus.Success,
+                    toolResultStatus,
+                    errorType: null));
             return response;
         }
         catch (OperationCanceledException)
@@ -95,6 +116,12 @@ internal sealed class ToolInvocationLogger(
                 toolName,
                 invocationId,
                 elapsedMilliseconds);
+            LogPayload(
+                direction: "request",
+                toolName: toolName,
+                invocationId: invocationId,
+                payload: request,
+                elapsedMilliseconds: null);
             RecordAnalytics(
                 toolName,
                 invocationId,
@@ -103,8 +130,15 @@ internal sealed class ToolInvocationLogger(
                 AnalyticsStatus.Canceled,
                 ToWireStatus(ToolResultStatus.Error),
                 errorType: null,
-                requestBytes,
-                responseBytes: null);
+                requestBytes ?? MeasureBytes(request),
+                responseBytes: null,
+                ToolInvocationDetailCapture.SerializeResultDetail<TRequest, object?>(
+                    request,
+                    response: null,
+                    maxPayloadBytes,
+                    AnalyticsStatus.Canceled,
+                    ToWireStatus(ToolResultStatus.Error),
+                    errorType: null));
             throw;
         }
         catch (Exception exception)
@@ -117,6 +151,12 @@ internal sealed class ToolInvocationLogger(
                 toolName,
                 invocationId,
                 elapsedMilliseconds);
+            LogPayload(
+                direction: "request",
+                toolName: toolName,
+                invocationId: invocationId,
+                payload: request,
+                elapsedMilliseconds: null);
             RecordAnalytics(
                 toolName,
                 invocationId,
@@ -125,8 +165,15 @@ internal sealed class ToolInvocationLogger(
                 AnalyticsStatus.Error,
                 ToWireStatus(ToolResultStatus.Error),
                 errorType: exception.GetType().Name,
-                requestBytes,
-                responseBytes: null);
+                requestBytes ?? MeasureBytes(request),
+                responseBytes: null,
+                ToolInvocationDetailCapture.SerializeResultDetail<TRequest, object?>(
+                    request,
+                    response: null,
+                    maxPayloadBytes,
+                    AnalyticsStatus.Error,
+                    ToWireStatus(ToolResultStatus.Error),
+                    errorType: exception.GetType().Name));
             throw;
         }
     }
@@ -140,7 +187,8 @@ internal sealed class ToolInvocationLogger(
         string toolResultStatus,
         string? errorType,
         long? requestBytes,
-        long? responseBytes)
+        long? responseBytes,
+        string? resultDetailJson)
     {
         if (!analyticsRecorder.Enabled)
         {
@@ -159,7 +207,8 @@ internal sealed class ToolInvocationLogger(
                 ToolResultStatus: toolResultStatus,
                 ErrorType: errorType,
                 RequestBytes: requestBytes,
-                ResponseBytes: responseBytes));
+                ResponseBytes: responseBytes,
+                ResultDetailJson: resultDetailJson));
         }
         catch
         {

@@ -126,6 +126,33 @@ public sealed class QueryDocsSimulatedCallsTests(QueryDocsCallFixture fixture)
         Assert.Contains(response.Data.Fragments, f =>
             f.Text.Contains("Initialize", StringComparison.OrdinalIgnoreCase)
             || f.Text.Contains("Install", StringComparison.OrdinalIgnoreCase));
+        Assert.Null(response.Evidence);
+        Assert.Null(response.Citations);
+    }
+
+    [Fact]
+    public async Task SimulatedCall_OkResponseOmitsEvidenceAndCitationsFromJson()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var result = await fixture.Server.Client.CallToolAsync(
+            "query_docs",
+            new Dictionary<string, object?>
+            {
+                ["libraryId"] = fixture.LibraryId,
+                ["question"] = "authentication"
+            },
+            cancellationToken: timeout.Token);
+
+        using var document = JsonDocument.Parse(result.StructuredContent!.Value.GetRawText());
+        var root = document.RootElement;
+
+        Assert.Equal("ok", root.GetProperty("status").GetString());
+        Assert.False(root.TryGetProperty("evidence", out _));
+        Assert.False(root.TryGetProperty("citations", out _));
+        Assert.StartsWith(
+            "nuget://",
+            root.GetProperty("data").GetProperty("fragments")[0].GetProperty("citationUri").GetString(),
+            StringComparison.Ordinal);
     }
 
     [Fact]

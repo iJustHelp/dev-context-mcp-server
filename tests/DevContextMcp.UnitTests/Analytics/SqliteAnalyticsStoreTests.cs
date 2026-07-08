@@ -293,83 +293,99 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         Assert.Equal(1, actual.TotalCalls);
     }
 
-    // Purpose: returns null when the analytics database does not exist
+    // Purpose: marks ok rows as not clickable and non-ok rows as having detail
     [Fact]
-    public async Task GetIndexSnapshotAsync_DatabaseMissing_ReturnsNull()
+    public async Task GetRecentAsync_WithSeededEvents_SetsHasDetail()
     {
+        // arrange
+        await SeedAsync();
+
         // act
-        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
+        var actual = await _target.GetRecentAsync(_databasePath, Window, 50, CancellationToken.None);
 
         // assert
-        Assert.False(File.Exists(_databasePath));
+        var okCall = Assert.Single(actual, call => call.Id == "p1");
+        Assert.False(okCall.HasDetail);
+        Assert.True(Assert.Single(actual, call => call.Id == "q2").HasDetail);
+        Assert.True(Assert.Single(actual, call => call.Id == "q5").HasDetail);
+    }
+
+    // Purpose: returns null when the requested call id is not found
+    [Fact]
+    public async Task GetRecentDetailAsync_MissingId_ReturnsNull()
+    {
+        // arrange
+        await SeedAsync();
+
+        // act
+        var actual = await _target.GetRecentDetailAsync(
+            _databasePath,
+            Window,
+            "missing",
+            CancellationToken.None);
+
+        // assert
         Assert.Null(actual);
     }
 
-    // Purpose: round-trips the last-run snapshot, preserving per-package fields
+    // Purpose: round-trips stored detail JSON for a not-ok call
     [Fact]
-    public async Task ReplaceAsync_ThenGet_RoundTripsSnapshot()
+    public async Task GetRecentDetailAsync_WithStoredDetail_ReturnsParsedDetail()
     {
         // arrange
-        var snapshot = new IndexSnapshot(
-            GeneratedAt: Base,
-            Status: "partial_success",
-            Packages:
+        const string detailJson =
+            """{"errors":[{"code":"library_not_found","message":"Library was not found."}],"resolvedContext":{"libraryId":"nuget:qa/Demo.Cities","sourceId":null,"environment":"qa","version":"1.0.0","versionSelectionReason":"recommended"}}""";
+        await _target.AppendAsync(
+            _databasePath,
             [
-                new IndexSnapshotPackage("Demo.Cities", "qa", 5, ["2.8.1", "1.8.8"], "added", null),
-                new IndexSnapshotPackage("Demo.Broken", "qa", 0, [], "failed", "discovery failed"),
-            ]);
+                Record(
+                    "q2",
+                    "query_docs",
+                    "alice",
+                    Base,
+                    20,
+                    AnalyticsStatus.Success,
+                    "not_found",
+                    null,
+                    detailJson),
+            ],
+            CancellationToken.None);
 
         // act
-        await _target.ReplaceAsync(_databasePath, snapshot, CancellationToken.None);
-        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
+        var actual = await _target.GetRecentDetailAsync(
+            _databasePath,
+            Window,
+            "q2",
+            CancellationToken.None);
 
         // assert
         Assert.NotNull(actual);
-        Assert.Equal(Base, actual.GeneratedAt);
-        Assert.Equal("partial_success", actual.Status);
-        Assert.Collection(
-            actual.Packages,
-            broken =>
-            {
-                Assert.Equal("Demo.Broken", broken.PackageId);
-                Assert.Equal(0, broken.AvailableVersions);
-                Assert.Empty(broken.IndexedVersions);
-                Assert.Equal("failed", broken.Status);
-                Assert.Equal("discovery failed", broken.Error);
-            },
-            cities =>
-            {
-                Assert.Equal("Demo.Cities", cities.PackageId);
-                Assert.Equal(5, cities.AvailableVersions);
-                Assert.Equal(["2.8.1", "1.8.8"], cities.IndexedVersions);
-                Assert.Equal("added", cities.Status);
-                Assert.Null(cities.Error);
-            });
+        Assert.Equal("not_found", actual.ToolResultStatus);
+        Assert.NotNull(actual.Detail);
+        var error = Assert.Single(actual.Detail!.Errors);
+        Assert.Equal("library_not_found", error.Code);
+        Assert.Equal("Library was not found.", error.Message);
+        Assert.Equal("nuget:qa/Demo.Cities", actual.Detail.ResolvedContext!.LibraryId);
     }
 
-    // Purpose: a new run fully replaces the previous snapshot, keeping only one run
+    // Purpose: returns transport error type even when detail JSON is absent
     [Fact]
-    public async Task ReplaceAsync_Twice_KeepsOnlyLatestRun()
+    public async Task GetRecentDetailAsync_WithErrorType_ReturnsErrorType()
     {
         // arrange
-        await _target.ReplaceAsync(
-            _databasePath,
-            new IndexSnapshot(Base, "succeeded",
-                [new IndexSnapshotPackage("Old.Package", "qa", 1, ["1.0.0"], "added", null)]),
-            CancellationToken.None);
+        await SeedAsync();
 
         // act
-        await _target.ReplaceAsync(
+        var actual = await _target.GetRecentDetailAsync(
             _databasePath,
-            new IndexSnapshot(Base.AddHours(1), "succeeded",
-                [new IndexSnapshotPackage("New.Package", "prod", 2, ["2.0.0"], "added", null)]),
+            Window,
+            "q5",
             CancellationToken.None);
-        var actual = await _target.GetAsync(_databasePath, CancellationToken.None);
 
         // assert
         Assert.NotNull(actual);
-        Assert.Equal(Base.AddHours(1), actual.GeneratedAt);
-        Assert.Equal("New.Package", Assert.Single(actual.Packages).PackageId);
+        Assert.Equal(nameof(InvalidOperationException), actual!.ErrorType);
+        Assert.Equal("error", actual.ToolResultStatus);
     }
 
     private Task SeedAsync() =>
@@ -393,8 +409,20 @@ public sealed class SqliteAnalyticsStoreTests : IDisposable
         double durationMs,
         string status,
         string toolResultStatus,
-        string? errorType) =>
-        new(id, tool, user, startedAt, durationMs, status, toolResultStatus, errorType, null, null);
+        string? errorType,
+        string? resultDetailJson = null) =>
+        new(
+            id,
+            tool,
+            user,
+            startedAt,
+            durationMs,
+            status,
+            toolResultStatus,
+            errorType,
+            null,
+            null,
+            resultDetailJson);
 
     public void Dispose()
     {

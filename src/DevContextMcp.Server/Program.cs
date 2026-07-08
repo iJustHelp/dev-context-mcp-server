@@ -53,7 +53,7 @@ static async Task RunHttpAsync(string[] args)
         2. Call `list_versions` and select a version compatible with the current project. Prefer the project's referenced version when known.
         3. Use `query_docs` for implementation guidance, examples, warnings, and usage patterns.
         4. Use `get_symbol` only for a specific public type or member.
-        5. Preserve citation URIs and mention important warnings, missing documentation, or insufficient evidence.
+        5. Preserve `citationUri` values from `data.fragments`, `data.symbols`, and `data.symbol`, and mention important warnings, missing documentation, or insufficient evidence.
 
         Do not invent APIs when results are `not_found`, `insufficient_evidence`, or `not_ready`. Clearly state uncertainty and recommend inspecting the local repository for additional evidence.
         """;

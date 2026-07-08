@@ -40,4 +40,10 @@ public interface IToolInvocationReadStore
         AnalyticsWindow window,
         int limit,
         CancellationToken cancellationToken);
+
+    Task<RecentCallDetail?> GetRecentDetailAsync(
+        string databasePath,
+        AnalyticsWindow window,
+        string id,
+        CancellationToken cancellationToken);
 }

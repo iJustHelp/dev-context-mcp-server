@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { RecentCall } from "@/lib/types";
+import { useCallback, useMemo, useState } from "react";
+import { RecentCallDetailPanel } from "@/components/RecentCallDetailPanel";
+import type { AnalyticsQuery, RecentCall, RecentCallDetail } from "@/lib/types";
 import { statusColor } from "@/lib/colors";
 import { formatCount, formatDateTime, formatMs } from "@/lib/format";
 
@@ -24,17 +25,23 @@ export function RecentCallsTable({
   calls,
   totalCalls,
   limit,
+  query,
   onLimitChange,
 }: {
   calls: RecentCall[];
   totalCalls: number;
   limit: number;
+  query: AnalyticsQuery;
   onLimitChange: (limit: number) => void;
 }) {
   const [sort, setSort] = useState<SortState>({
     key: "startedAt",
     direction: "desc",
   });
+  const [selectedCall, setSelectedCall] = useState<RecentCall>();
+  const [detail, setDetail] = useState<RecentCallDetail>();
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string>();
 
   const rows = useMemo(
     () =>
@@ -42,6 +49,51 @@ export function RecentCallsTable({
         compareValues(sortValue(left, sort.key), sortValue(right, sort.key), sort.direction),
       ),
     [calls, sort],
+  );
+
+  const closeDetail = useCallback(() => {
+    setSelectedCall(undefined);
+    setDetail(undefined);
+    setDetailError(undefined);
+    setDetailLoading(false);
+  }, []);
+
+  const openDetail = useCallback(
+    async (call: RecentCall) => {
+      if (!call.hasDetail) {
+        return;
+      }
+
+      setSelectedCall(call);
+      setDetail(undefined);
+      setDetailError(undefined);
+      setDetailLoading(true);
+
+      try {
+        const search = new URLSearchParams({
+          from: query.from,
+          to: query.to,
+        });
+        const response = await fetch(
+          `/api/analytics/recent/${encodeURIComponent(call.id)}?${search.toString()}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) {
+          throw new Error(
+            response.status === 404
+              ? "Call detail was not found for the selected time range."
+              : `Failed to load call detail (${response.status}).`,
+          );
+        }
+
+        setDetail((await response.json()) as RecentCallDetail);
+      } catch (caught) {
+        setDetailError(caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [query.from, query.to],
   );
 
   return (
@@ -91,7 +143,18 @@ export function RecentCallsTable({
             </thead>
             <tbody>
               {rows.map((call) => (
-                <tr key={call.id}>
+                <tr
+                  key={call.id}
+                  className={call.hasDetail ? "data-table-row-clickable" : undefined}
+                  tabIndex={call.hasDetail ? 0 : undefined}
+                  onClick={() => void openDetail(call)}
+                  onKeyDown={(event) => {
+                    if (call.hasDetail && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      void openDetail(call);
+                    }
+                  }}
+                >
                   <td>{formatDateTime(call.startedAt)}</td>
                   <td>{call.toolName}</td>
                   <td>{call.userName}</td>
@@ -109,6 +172,15 @@ export function RecentCallsTable({
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedCall && (
+        <RecentCallDetailPanel
+          detail={detail}
+          loading={detailLoading}
+          error={detailError}
+          onClose={closeDetail}
+        />
       )}
     </div>
   );

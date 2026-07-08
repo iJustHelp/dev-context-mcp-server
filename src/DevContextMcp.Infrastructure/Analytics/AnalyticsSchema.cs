@@ -22,7 +22,8 @@ internal static class AnalyticsSchema
             tool_result_status TEXT NOT NULL DEFAULT 'ok',
             error_type     TEXT    NULL,
             request_bytes  INTEGER NULL,
-            response_bytes INTEGER NULL
+            response_bytes INTEGER NULL,
+            result_detail_json TEXT NULL
         );
 
         CREATE INDEX IF NOT EXISTS ix_ti_started ON tool_invocations(started_at);
