@@ -1,20 +1,18 @@
 using DevContextMcp.Indexer.Configuration;
-using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
-using DevContextMcp.Server.Core.Infrastructure;
-using DevContextMcp.Server.Core.Models.Context;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DevContextMcp.Indexer;
 
 /// <summary>
-/// Drives a single indexing run from configuration and logs the resulting summaries and reports.
+/// Drives a single indexing run: indexes every configured source, publishes the run snapshot,
+/// and logs the run report. Returns whether the run succeeded.
 /// </summary>
 internal sealed class IndexerRunner(
     IOptions<IndexerOptions> options,
     IIndexCoordinator indexCoordinator,
-    IIndexSnapshotWriteStore snapshotStore,
+    IIndexRunSnapshotPublisher snapshotPublisher,
     ILogger<IndexerRunner> logger)
 {
     public async Task<bool> RunAsync(CancellationToken cancellationToken)
@@ -28,23 +26,14 @@ internal sealed class IndexerRunner(
         try
         {
             var result = await indexCoordinator.IndexAllAsync(cancellationToken);
-            await WriteSnapshotAsync(result, cancellationToken);
-            var changedSummaries = result.Summaries.Where(summary =>
-                !summary.Status.Equals("succeeded", StringComparison.Ordinal)
-                ||
-                summary.Added.Count > 0 ||
-                summary.Updated.Count > 0 ||
-                summary.Deleted.Count > 0);
-            
-            foreach (var summary in changedSummaries)
+            await snapshotPublisher.PublishAsync(result, cancellationToken);
+
+            foreach (var entry in IndexRunReport.Build(result))
             {
-                LogSummary(summary);
+                logger.Log(entry.Level, "{IndexerReport}", entry.Message);
             }
 
-            LogIndexedLibraries(result.IndexedLibraries);
-
-            return result.Summaries.All(summary =>
-                summary.Status.Equals("succeeded", StringComparison.Ordinal));
+            return result.Succeeded;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -56,104 +45,4 @@ internal sealed class IndexerRunner(
             return false;
         }
     }
-
-    private async Task WriteSnapshotAsync(
-        IndexRunResult result,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var statuses = result.Summaries.Select(summary => summary.Status).ToArray();
-            var overall = statuses.All(status => status == "succeeded")
-                ? "succeeded"
-                : statuses.All(status => status == "failed")
-                    ? "failed"
-                    : "partial_success";
-
-            var snapshot = new IndexSnapshot(
-                GeneratedAt: DateTimeOffset.UtcNow,
-                Status: overall,
-                Packages: result.Summaries
-                    .SelectMany(summary => summary.Packages ?? [])
-                    .Select(package => new IndexSnapshotPackage(
-                        PackageId: package.PackageId,
-                        Environment: package.Environment,
-                        AvailableVersions: package.AvailableVersions,
-                        IndexedVersions: package.IndexedVersions,
-                        Status: package.Status,
-                        Error: package.Error))
-                    .ToArray());
-
-            var databasePath = Path.GetFullPath(
-                options.Value.Analytics.DatabasePath,
-                AppContext.BaseDirectory);
-            await snapshotStore.ReplaceAsync(databasePath, snapshot, cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Failed to write the indexing snapshot.");
-        }
-    }
-
-    private void LogSummary(IndexRunSummary summary)
-    {
-        var logLevel = summary.Status switch
-        {
-            "succeeded" => LogLevel.Information,
-            "partial_success" => LogLevel.Warning,
-            _ => LogLevel.Error
-        };
-        var report = FormatSummary(summary);
-        logger.Log(logLevel, "{IndexerReport}", report);
-    }
-
-    private static string FormatSummary(IndexRunSummary summary) =>
-        $@"
-        Environment: {(!string.IsNullOrWhiteSpace(summary.Environment) ? summary.Environment : summary.SourceName)}
-        Status: {summary.Status}
-        NuGets
-            Total: {summary.Discovered}
-            Indexed: {summary.Indexed}
-            Errors: {summary.Errors.Count}
-            Added ({summary.Added.Count}): {FormatPackages(summary.Added)}
-            Updated ({summary.Updated.Count}): {FormatPackages(summary.Updated)}
-            Deleted ({summary.Deleted.Count}):{FormatPackages(summary.Deleted)}
-        ";
-
-    private static string FormatPackages(
-        IReadOnlyList<PackageIdentityKey> packages) =>
-        packages.Count == 0
-            ? ""
-            : string.Join(
-                "; ",
-                packages
-                    .OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(package => package.PackageId, StringComparer.Ordinal)
-                    .ThenBy(package => package.Version, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(package => package.Version, StringComparer.Ordinal)
-                    .Select(package => $"        {package.PackageId} {package.Version}"));
-     
-
-    private void LogIndexedLibraries(IReadOnlyList<IndexedLibrary> libraries)
-    {
-        var blocks = libraries.Select(library =>
-            $"{library.PackageId} versions ({library.Environments.Sum(environment => environment.Versions.Count)})" +
-            Environment.NewLine +
-            string.Join(
-                Environment.NewLine,
-                library.Environments.Select(environment =>
-                    $"    {environment.Environment} ({environment.Versions.Count}): " +
-                    string.Join(", ", environment.Versions))));
-
-        var report = $"{Environment.NewLine}Indexed NuGets{Environment.NewLine}{Environment.NewLine}" +
-            (libraries.Count == 0
-                ? "(none)"
-                : string.Join($"{Environment.NewLine}{Environment.NewLine}", blocks));
-        logger.LogInformation("{IndexedLibraryReport}", report += $"{Environment.NewLine}-----------------------------------------------------------------------------");
-    }
-
 }

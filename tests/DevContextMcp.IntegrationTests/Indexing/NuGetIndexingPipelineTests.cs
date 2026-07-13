@@ -26,7 +26,7 @@ public sealed class NuGetIndexingPipelineTests
             var firstResult = await coordinator.IndexAllAsync(CancellationToken.None);
             var first = Assert.Single(firstResult.Summaries);
 
-            Assert.Equal("succeeded", first.Status);
+            Assert.Equal(IndexRunStatus.Succeeded, first.Status);
             Assert.Equal(1, first.Discovered);
             Assert.Equal(1, first.Indexed);
             Assert.Equal(1, first.Changed);
@@ -90,7 +90,7 @@ public sealed class NuGetIndexingPipelineTests
             var failedResult = await coordinator.IndexAllAsync(CancellationToken.None);
             var failed = Assert.Single(failedResult.Summaries);
 
-            Assert.Equal("failed", failed.Status);
+            Assert.Equal(IndexRunStatus.Failed, failed.Status);
             Assert.Single(failed.Errors);
             Assert.Empty(failed.Added);
             Assert.Empty(failed.Updated);
@@ -425,7 +425,7 @@ public sealed class NuGetIndexingPipelineTests
                     .IndexAllAsync(CancellationToken.None);
                 var summary = Assert.Single(result.Summaries);
 
-                Assert.Equal("succeeded", summary.Status);
+                Assert.Equal(IndexRunStatus.Succeeded, summary.Status);
                 Assert.Equal(1, summary.Discovered);
                 Assert.Equal(1, summary.Indexed);
                 Assert.Equal(0, summary.Changed);

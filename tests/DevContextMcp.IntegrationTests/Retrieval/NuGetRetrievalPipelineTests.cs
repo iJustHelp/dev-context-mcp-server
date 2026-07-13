@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Server.Core.Contracts.Common;
 using DevContextMcp.Server.Core.Contracts.GetSymbol;
 using DevContextMcp.Server.Core.Contracts.ListVersions;
@@ -37,7 +38,7 @@ public sealed class NuGetRetrievalPipelineTests
             var indexResult = await coordinator.IndexAllAsync(CancellationToken.None);
             var indexed = Assert.Single(indexResult.Summaries);
             Assert.True(
-                string.Equals(indexed.Status, "succeeded", StringComparison.Ordinal),
+                indexed.Status == IndexRunStatus.Succeeded,
                 string.Join(Environment.NewLine, indexed.Errors.Select(error => $"{error.Code}: {error.Message}")));
             Assert.Equal(2, indexed.Indexed);
             var indexedLibrary = Assert.Single(indexResult.IndexedLibraries);

@@ -67,7 +67,7 @@ internal sealed class IndexCoordinator(
             return new IndexRunSummary(
                 SourceName: source.Name,
                 Environment: source.Environment,
-                Status: "failed",
+                Status: IndexRunStatus.Failed,
                 StartedAt: startedAt,
                 CompletedAt: completedAt,
                 Discovered: 0,
@@ -134,9 +134,7 @@ internal sealed class IndexCoordinator(
             pruneRemovedPackages: true,
             cancellationToken: cancellationToken);
 
-        var status = indexedPackages.Count == 0 && errors.Count > 0
-            ? "failed"
-            : errors.Count > 0 ? "partial_success" : "succeeded";
+        var status = IndexRunStatuses.FromOutcome(indexedPackages.Count, errors.Count);
 
         return new IndexRunSummary(
             SourceName: source.Name,

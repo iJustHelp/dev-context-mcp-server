@@ -19,7 +19,6 @@ public sealed record ToolInvocationErrorDetail(string Code, string Message);
 /// </summary>
 public sealed record ToolInvocationResolvedContextDetail(
     string? LibraryId,
-    string? SourceId,
     string? Environment,
     string? Version,
     string? VersionSelectionReason);

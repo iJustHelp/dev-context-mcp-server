@@ -150,7 +150,6 @@ internal static class ToolInvocationDetailCapture
         }
 
         if (context.LibraryId is null
-            && context.SourceId is null
             && context.Environment is null
             && context.Version is null
             && context.VersionSelectionReason is null)
@@ -160,7 +159,6 @@ internal static class ToolInvocationDetailCapture
 
         return new ToolInvocationResolvedContextDetail(
             context.LibraryId,
-            context.SourceId,
             context.Environment,
             context.Version,
             context.VersionSelectionReason);

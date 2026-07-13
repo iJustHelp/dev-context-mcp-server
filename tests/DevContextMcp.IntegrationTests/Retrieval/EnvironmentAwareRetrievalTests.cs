@@ -1,4 +1,5 @@
 using DevContextMcp.Indexer;
+using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
 using DevContextMcp.IntegrationTests.Indexing;
 using DevContextMcp.Server;
@@ -45,7 +46,7 @@ public sealed class EnvironmentAwareRetrievalTests
                 .IndexAllAsync(CancellationToken.None);
             var summaries = result.Summaries;
             Assert.Equal(2, summaries.Count);
-            Assert.All(summaries, summary => Assert.Equal("succeeded", summary.Status));
+            Assert.All(summaries, summary => Assert.Equal(IndexRunStatus.Succeeded, summary.Status));
             var indexedLibrary = Assert.Single(result.IndexedLibraries);
             Assert.Equal(FixtureNuGetPackage.PackageId, indexedLibrary.PackageId);
             Assert.Equal(["production", "qa"], indexedLibrary.Environments

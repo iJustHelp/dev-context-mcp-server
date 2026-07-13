@@ -2,288 +2,198 @@ using DevContextMcp.Indexer;
 using DevContextMcp.Indexer.Configuration;
 using DevContextMcp.Indexer.Core.Models;
 using DevContextMcp.Indexer.Core.Services;
-using DevContextMcp.Server.Core.Infrastructure;
-using DevContextMcp.Server.Core.Models.Context;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace DevContextMcp.UnitTests.Indexing;
 
 public sealed class IndexerRunnerTests
 {
-    [Fact]
-    public async Task NoConfiguredSourcesSucceedsWithoutInvokingCoordinator()
+    private readonly Mock<IIndexCoordinator> _indexCoordinator = new();
+    private readonly Mock<IIndexRunSnapshotPublisher> _snapshotPublisher = new();
+    private readonly IndexerOptions _options = new IndexerOptions
     {
-        var coordinator = new UnexpectedCoordinator();
-        var executor = new IndexerRunner(
-            Options.Create(new IndexerOptions()),
-            coordinator,
-            new NullSnapshotStore(),
-            NullLogger<IndexerRunner>.Instance);
-
-        var succeeded = await executor.RunAsync(CancellationToken.None);
-
-        Assert.True(succeeded);
-        Assert.False(coordinator.WasCalled);
-    }
-
-    [Theory]
-    [InlineData("succeeded", true)]
-    [InlineData("partial_success", false)]    
-    [InlineData("failed", false)]
-    public async Task ResultReflectsRunStatus(string status, bool expected)
-    {
-        var runner = CreateRunner(new StubCoordinator(
+        NugetPackages =
         [
-            Summary(status)
-        ]));
+            new NuGetPackageSourceOptions
+            {
+                Name = "test",
+                Environment = "test",
+                ServiceIndex = "fixture"
+            }
+        ]
+    };
 
-        var succeeded = await runner.RunAsync(CancellationToken.None);
+    private readonly IndexerRunner _target;
 
-        Assert.Equal(expected, succeeded);
+    public IndexerRunnerTests()
+    {
+        _target = new IndexerRunner(
+            Options.Create(_options),
+            _indexCoordinator.Object,
+            _snapshotPublisher.Object,
+            NullLogger<IndexerRunner>.Instance);
     }
 
+    // Purpose: skips indexing entirely when no NuGet source is configured
     [Fact]
-    public async Task ExceptionReturnsFailure()
+    public async Task RunAsync_NoConfiguredSources_SucceedsWithoutIndexing()
     {
-        var runner = CreateRunner(new StubCoordinator(
-            exception: new InvalidOperationException("failure")));
+        // arrange
+        _options.NugetPackages.Clear();
 
-        var succeeded = await runner.RunAsync(CancellationToken.None);
+        // act
+        var actual = await _target.RunAsync(CancellationToken.None);
 
-        Assert.False(succeeded);
+        // assert
+        Assert.True(actual);
+        _indexCoordinator.Verify(
+            coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+        _snapshotPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                It.IsAny<IndexRunResult>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyNoOtherCalls();
     }
 
-    [Fact]
-    public async Task CancellationIsPropagated()
+    // Purpose: the exit result follows the aggregated run status
+    [Theory]
+    [InlineData(IndexRunStatus.Succeeded, true)]
+    [InlineData(IndexRunStatus.PartialSuccess, false)]
+    [InlineData(IndexRunStatus.Failed, false)]
+    public async Task RunAsync_RunCompletes_ResultReflectsRunStatus(
+        IndexRunStatus status,
+        bool expected)
     {
+        // arrange
+        SetupRun(new IndexRunResult([Summary(status)], []));
+
+        // act
+        var actual = await _target.RunAsync(CancellationToken.None);
+
+        // assert
+        Assert.Equal(expected, actual);
+        VerifyRunPublished();
+        VerifyNoOtherCalls();
+    }
+
+    // Purpose: publishes the snapshot of the completed run
+    [Fact]
+    public async Task RunAsync_RunCompletes_PublishesSnapshot()
+    {
+        // arrange
+        var result = new IndexRunResult([Summary(IndexRunStatus.Succeeded)], []);
+        SetupRun(result);
+
+        // act
+        var actual = await _target.RunAsync(CancellationToken.None);
+
+        // assert
+        Assert.True(actual);
+        _indexCoordinator.Verify(
+            coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+        _snapshotPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                It.Is<IndexRunResult>(published => ReferenceEquals(published, result)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        VerifyNoOtherCalls();
+    }
+
+    // Purpose: returns failure and publishes nothing when the coordinator throws
+    [Fact]
+    public async Task RunAsync_WhenCoordinatorThrows_ReturnsFailure()
+    {
+        // arrange
+        _indexCoordinator
+            .Setup(coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("failure"));
+
+        // act
+        var actual = await _target.RunAsync(CancellationToken.None);
+
+        // assert
+        Assert.False(actual);
+        _indexCoordinator.Verify(
+            coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+        _snapshotPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                It.IsAny<IndexRunResult>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyNoOtherCalls();
+    }
+
+    // Purpose: propagates cancellation rather than reporting a failed run
+    [Fact]
+    public async Task RunAsync_WhenCancelled_PropagatesException()
+    {
+        // arrange
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
-        var runner = CreateRunner(new StubCoordinator(
-            exception: new OperationCanceledException(cancellation.Token)));
+        await cancellation.CancelAsync();
+        _indexCoordinator
+            .Setup(coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException(cancellation.Token));
 
+        // act
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            runner.RunAsync(cancellation.Token));
+            _target.RunAsync(cancellation.Token));
+
+        // assert
+        _indexCoordinator.Verify(
+            coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+        _snapshotPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                It.IsAny<IndexRunResult>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyNoOtherCalls();
     }
 
-    [Fact]
-    public async Task SummaryListsSortedPackageChangesAndEmptySections()
+    private void SetupRun(IndexRunResult result) =>
+        _indexCoordinator
+            .Setup(coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+    private void VerifyRunPublished()
     {
-        var logger = new CapturingLogger();
-        var summary = new IndexRunSummary(
-            SourceName: "fixture",
-            Status: "succeeded",
-            Environment: "qa",
-            StartedAt: DateTimeOffset.UtcNow,
-            CompletedAt: DateTimeOffset.UtcNow,
-            Discovered: 4,
-            Indexed: 4,
-            Changed: 3,
-            Unchanged: 1,
-            Added: [
-                new PackageIdentityKey("Zulu.Package", "2.0.0"),
-                new PackageIdentityKey("Alpha.Package", "1.0.0")
-            ],
-            Updated: [new PackageIdentityKey("Updated.Package", "3.0.0")],
-            Deleted: [],
-            Errors: []);
-        var runner = CreateRunner(new StubCoordinator([summary]), logger);
-
-        var succeeded = await runner.RunAsync(CancellationToken.None);
-
-        Assert.True(succeeded);
-        var message = Assert.Single(
-            logger.Messages,
-            item => item.Contains("Environment", StringComparison.Ordinal));
-        Assert.Contains("Added (2):", message);
-        Assert.Contains("Alpha.Package 1.0.0", message);
-        Assert.Contains("Zulu.Package 2.0.0", message);
-        Assert.Contains("Updated (1):", message);
-        Assert.Contains("Updated.Package 3.0.0", message);
-        Assert.Contains("Deleted (0):", message);
-        Assert.DoesNotContain("Changed:", message);
-        Assert.DoesNotContain("Unchanged:", message);
+        _indexCoordinator.Verify(
+            coordinator => coordinator.IndexAllAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+        _snapshotPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                It.IsAny<IndexRunResult>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
-    [Fact]
-    public async Task UnchangedSummaryIsNotPrinted()
+    private void VerifyNoOtherCalls()
     {
-        var logger = new CapturingLogger();
-        var summary = new IndexRunSummary(
+        _indexCoordinator.VerifyNoOtherCalls();
+        _snapshotPublisher.VerifyNoOtherCalls();
+    }
+
+    private static IndexRunSummary Summary(IndexRunStatus status) =>
+        new IndexRunSummary(
             SourceName: "fixture",
-            Status: "succeeded",
+            Status: status,
             Environment: "qa",
             StartedAt: DateTimeOffset.UtcNow,
             CompletedAt: DateTimeOffset.UtcNow,
             Discovered: 1,
-            Indexed: 1,
-            Changed: 0,
-            Unchanged: 1,
-            Added: [],
+            Indexed: status == IndexRunStatus.Failed ? 0 : 1,
+            Changed: status == IndexRunStatus.Succeeded ? 1 : 0,
+            Unchanged: 0,
+            Added: status == IndexRunStatus.Succeeded
+                ? [new PackageIdentityKey("Fixture.Package", "1.0.0")]
+                : [],
             Updated: [],
             Deleted: [],
             Errors: []);
-        var runner = CreateRunner(new StubCoordinator([summary]), logger);
-
-        var succeeded = await runner.RunAsync(CancellationToken.None);
-
-        Assert.True(succeeded);
-        Assert.DoesNotContain(
-            logger.Messages,
-            message => message.Contains("Environment", StringComparison.Ordinal));
-        Assert.Contains(
-            logger.Messages,
-            message => message.Contains("Indexed NuGets", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task InventoryIsPrintedAfterSummaries()
-    {
-        var logger = new CapturingLogger();
-        var failedSummary = Summary("failed") with
-        {
-            Errors = [new IndexRunError("fixture_error", "Fixture failure.")]
-        };
-        var runner = CreateRunner(
-            new StubCoordinator(
-                [failedSummary],
-                [
-                    new IndexedLibrary(
-                        "Demo.Cities",
-                        [
-                            new IndexedLibraryEnvironment("prod", ["1.0.1", "1.0.0"]),
-                            new IndexedLibraryEnvironment("qa", ["1.1.0"])
-                        ])
-                ]),
-            logger);
-
-        var succeeded = await runner.RunAsync(CancellationToken.None);
-
-        Assert.False(succeeded);
-        var summaryIndex = logger.Messages.FindIndex(message =>
-            message.Contains("Environment", StringComparison.Ordinal));
-        var inventoryIndex = logger.Messages.FindIndex(message =>
-            message.Contains("Indexed NuGets", StringComparison.Ordinal));
-        Assert.True(inventoryIndex > summaryIndex);
-
-        var inventory = logger.Messages[inventoryIndex];
-        Assert.Contains("Demo.Cities versions (3)", inventory);
-        Assert.Contains("    prod (2): 1.0.1, 1.0.0", inventory);
-        Assert.Contains("    qa (1): 1.1.0", inventory);
-    }
-
-    [Fact]
-    public async Task EmptyInventoryPrintsNone()
-    {
-        var logger = new CapturingLogger();
-        var runner = CreateRunner(new StubCoordinator([]), logger);
-
-        var succeeded = await runner.RunAsync(CancellationToken.None);
-
-        Assert.True(succeeded);
-        var inventory = Assert.Single(
-            logger.Messages,
-            message => message.Contains("Indexed NuGets", StringComparison.Ordinal));
-        Assert.Contains("(none)", inventory);
-    }
-
-    private static IndexerRunner CreateRunner(
-        IIndexCoordinator coordinator,
-        ILogger<IndexerRunner>? logger = null) =>
-        new(
-            Options.Create(new IndexerOptions
-            {
-                NugetPackages =
-                [
-                    new NuGetPackageSourceOptions
-                    {
-                        Name = "test",
-                        Environment = "test",
-                        ServiceIndex = "fixture"
-                    }
-                ]
-            }),
-            coordinator,
-            new NullSnapshotStore(),
-            logger ?? NullLogger<IndexerRunner>.Instance);
-
-    private sealed class NullSnapshotStore : IIndexSnapshotWriteStore
-    {
-        public Task ReplaceAsync(
-            string databasePath,
-            IndexSnapshot snapshot,
-            CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    private static IndexRunSummary Summary(string status) =>
-        new(
-            "fixture",
-            status,
-            "qa",
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow,
-            1,
-            status == "failed" ? 0 : 1,
-            status == "succeeded" ? 1 : 0,
-            0,
-            status == "succeeded"
-                ? [new PackageIdentityKey("Fixture.Package", "1.0.0")]
-                : [],
-            [],
-            [],
-            []);
-
-    private sealed class UnexpectedCoordinator : IIndexCoordinator
-    {
-        public bool WasCalled { get; private set; }
-
-        public Task<IndexRunResult> IndexAllAsync(
-            CancellationToken cancellationToken)
-        {
-            WasCalled = true;
-            throw new InvalidOperationException("Coordinator should not be called.");
-        }
-    }
-
-    private sealed class StubCoordinator(
-        IReadOnlyList<IndexRunSummary>? summaries = null,
-        IReadOnlyList<IndexedLibrary>? indexedLibraries = null,
-        Exception? exception = null) : IIndexCoordinator
-    {
-        public Task<IndexRunResult> IndexAllAsync(
-            CancellationToken cancellationToken)
-        {
-            if (exception is not null)
-            {
-                throw exception;
-            }
-
-            return Task.FromResult(new IndexRunResult(
-                summaries ?? [],
-                indexedLibraries ?? []));
-        }
-    }
-
-    private sealed class CapturingLogger : ILogger<IndexerRunner>
-    {
-        public List<string> Messages { get; } = [];
-
-        public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull =>
-            null;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(
-            LogLevel logLevel,
-            EventId eventId,
-            TState state,
-            Exception? exception,
-            Func<TState, Exception?, string> formatter)
-        {
-            Messages.Add(formatter(state, exception));
-        }
-    }
-
 }

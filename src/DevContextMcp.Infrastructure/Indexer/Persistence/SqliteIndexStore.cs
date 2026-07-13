@@ -235,9 +235,9 @@ internal sealed partial class SqliteIndexStore : IIndexStore
 
         var completedAt = DateTimeOffset.UtcNow;
         var changed = added.Count + updated.Count;
-        var status = packages.Count == 0 && errors.Count > 0
-            ? "failed"
-            : errors.Count > 0 ? "partial_success" : "succeeded";
+        var status = IndexRunStatuses
+            .FromOutcome(packages.Count, errors.Count)
+            .ToPersistedValue();
         var runId = StableId(
             sourceId,
             startedAt.ToString("O", CultureInfo.InvariantCulture),

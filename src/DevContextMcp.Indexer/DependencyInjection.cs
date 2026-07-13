@@ -27,6 +27,7 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddSingleton<IIndexingConfigurationProvider, OptionsIndexingConfigurationProvider>();
+        services.AddSingleton<IIndexRunSnapshotPublisher, IndexRunSnapshotPublisher>();
         services.AddSingleton<IndexerRunner>();
         services.AddIndexer();
         services.AddIndexingInfrastructure();

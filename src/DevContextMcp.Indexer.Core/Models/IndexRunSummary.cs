@@ -5,7 +5,7 @@ namespace DevContextMcp.Indexer.Core.Models;
 /// </summary>
 public sealed record IndexRunSummary(
     string SourceName,
-    string Status,
+    IndexRunStatus Status,
     string Environment,
     DateTimeOffset StartedAt,
     DateTimeOffset CompletedAt,
@@ -17,4 +17,11 @@ public sealed record IndexRunSummary(
     IReadOnlyList<PackageIdentityKey> Updated,
     IReadOnlyList<PackageIdentityKey> Deleted,
     IReadOnlyList<IndexRunError> Errors,
-    IReadOnlyList<IndexRunPackageStatus>? Packages = null);
+    IReadOnlyList<IndexRunPackageStatus>? Packages = null)
+{
+    /// <summary>
+    /// True when the source added, updated, or deleted at least one package version.
+    /// </summary>
+    public bool HasChanges =>
+        Added.Count > 0 || Updated.Count > 0 || Deleted.Count > 0;
+}
