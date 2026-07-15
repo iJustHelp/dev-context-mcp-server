@@ -9,10 +9,10 @@ timestamp: 2026-07-15T00:00:00Z
 
 # HTTP API (non-MCP)
 
-Beyond the MCP endpoint, [DevContextMcp.Server](/projects/server.md) exposes a
-small read-only REST API used by the [dashboard UI](/dashboard-ui.md): a
+Beyond the MCP endpoint, [DevContextMcp.Server](projects/server.md) exposes a
+small read-only REST API used by the [dashboard UI](dashboard-ui.md): a
 **Context** group describing the current index, and an **Analytics** group over
-the [analytics database](/analytics.md). All analytics endpoints are read-only,
+the [analytics database](analytics.md). All analytics endpoints are read-only,
 default their time window to the last 24 hours, and return `400` with an
 `ApiError` body on invalid parameters.
 
@@ -42,7 +42,7 @@ earlier than `to`, otherwise `400`.
 | `GET /recent/{id}` | — | `RecentCallDetail`, or `404` when not found |
 
 The analytics database path is resolved from `Analytics.DatabasePath`
-(see [Server Configuration](/server-configuration.md)).
+(see [Server Configuration](server-configuration.md)).
 
 # Examples
 
@@ -55,8 +55,8 @@ GET /api/analytics/recent?limit=100
 GET /api/analytics/recent/{id}
 ```
 
-See [Analytics](/analytics.md) for how these values are captured and stored, and
-[Dashboard UI](/dashboard-ui.md) for the client that consumes them.
+See [Analytics](analytics.md) for how these values are captured and stored, and
+[Dashboard UI](dashboard-ui.md) for the client that consumes them.
 
 # Citations
 

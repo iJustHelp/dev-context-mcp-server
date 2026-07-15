@@ -26,7 +26,7 @@ services, including version-selection policy.
 transport implementations.
 
 Consumed by [DevContextMcp.Infrastructure](./infrastructure.md) and
-[DevContextMcp.Server](./server.md). See [Architecture & Dependency Rules](/architecture.md).
+[DevContextMcp.Server](./server.md). See [Architecture & Dependency Rules](../architecture.md).
 
 # Citations
 

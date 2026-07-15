@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 Two xUnit projects cover the solution: fast isolated unit tests and end-to-end
 integration tests (some launching the real executables as child processes). This
-expands the summary in [Projects: Tests](/projects/tests.md).
+expands the summary in [Projects: Tests](projects/tests.md).
 
 # Schema
 
@@ -38,9 +38,9 @@ expands the summary in [Projects: Tests](/projects/tests.md).
 | Startup / config | `Startup/StartupDiagnosticsTests.cs`, `InvalidConfigurationTests.cs`. |
 | Context & analytics | `Context/ContextEndpointsTests.cs`, `Analytics/`. |
 
-Architecture tests enforce the dependency graph in [Architecture & Dependency Rules](/architecture.md);
-idempotency tests back the guarantees in [Data Flows](/data-flows.md); safety
-tests back the [Security & Safety Model](/security-model.md).
+Architecture tests enforce the dependency graph in [Architecture & Dependency Rules](architecture.md);
+idempotency tests back the guarantees in [Data Flows](data-flows.md); safety
+tests back the [Security & Safety Model](security-model.md).
 
 # Citations
 

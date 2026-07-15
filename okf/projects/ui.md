@@ -13,8 +13,8 @@ timestamp: 2026-07-15T00:00:00Z
 
 A local Next.js (App Router, TypeScript) dashboard that visualizes MCP analytics
 and the current index inventory. Its server-side route handlers proxy to the
-.NET host's [HTTP API](/http-api.md), so the browser only talks to its own
-origin. Full design in [Dashboard UI](/dashboard-ui.md).
+.NET host's [HTTP API](../http-api.md), so the browser only talks to its own
+origin. Full design in [Dashboard UI](../dashboard-ui.md).
 
 # Schema
 
@@ -36,8 +36,8 @@ npm install
 npm run dev      # http://localhost:3000 (requires the .NET server on :2222 with analytics enabled)
 ```
 
-See [Dashboard UI](/dashboard-ui.md) for pages, proxy routes, and data flow, and
-[HTTP API](/http-api.md) for the endpoints it consumes.
+See [Dashboard UI](../dashboard-ui.md) for pages, proxy routes, and data flow, and
+[HTTP API](../http-api.md) for the endpoints it consumes.
 
 # Citations
 

@@ -27,7 +27,7 @@ and replies with a greeting.
 ping  →  { "message": "Hi, alice!", "user": "alice" }
 ```
 
-The same `X-User-Name` header attributes tool calls in [Analytics](/analytics.md).
+The same `X-User-Name` header attributes tool calls in [Analytics](../analytics.md).
 
 # Citations
 

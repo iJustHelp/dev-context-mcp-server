@@ -31,7 +31,7 @@ References all five source projects. Covers:
 * Child-process tests verifying Indexer CLI exit codes and Host stdio/HTTP behavior.
 * Idempotency tests verifying canonical rows stay unique while run history grows.
 
-See [Architecture & Dependency Rules](/architecture.md) for the dependency graph these tests enforce.
+See [Architecture & Dependency Rules](../architecture.md) for the dependency graph these tests enforce.
 
 # Citations
 

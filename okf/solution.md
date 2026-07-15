@@ -28,15 +28,15 @@ openable citations.
 
 Index production (Indexer) and MCP retrieval (Server) are separate processes:
 
-* [DevContextMcp.Indexer](/projects/indexer.md) is the *sole writer* to the SQLite database.
-* [DevContextMcp.Server](/projects/server.md) opens the same database *read-only* and never contacts NuGet feeds during retrieval.
+* [DevContextMcp.Indexer](projects/indexer.md) is the *sole writer* to the SQLite database.
+* [DevContextMcp.Server](projects/server.md) opens the same database *read-only* and never contacts NuGet feeds during retrieval.
 
 Only one Indexer process may write to a given database at a time.
 
 ## Related
 
-See [Technology Stack](/tech-stack.md), [Architecture & Dependency Rules](/architecture.md),
-[Data Flows](/data-flows.md), and [MCP Surface](/mcp-surface.md).
+See [Technology Stack](tech-stack.md), [Architecture & Dependency Rules](architecture.md),
+[Data Flows](data-flows.md), and [MCP Surface](mcp-surface.md).
 
 # Citations
 

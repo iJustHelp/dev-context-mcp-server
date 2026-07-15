@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 The `demo/` folder provides a self-contained, controlled dataset so indexing and
 retrieval can be exercised without private feeds. It backs the checked-in demo
-configuration described in [Indexer Configuration](/indexer-configuration.md).
+configuration described in [Indexer Configuration](indexer-configuration.md).
 
 # Schema
 
@@ -32,7 +32,7 @@ configuration described in [Indexer Configuration](/indexer-configuration.md).
 
 Together these demonstrate multi-environment and multi-version resolution. The
 demo database is produced by running the indexer against this data — see
-[Operations](/operations.md).
+[Operations](operations.md).
 
 # Citations
 

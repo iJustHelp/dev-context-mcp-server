@@ -19,12 +19,12 @@ Project roles:
 
 | Project | Role | Type |
 |---------|------|------|
-| [DevContextMcp.Server.Core](/projects/server-core.md) | application | library |
-| [DevContextMcp.Indexer.Core](/projects/indexer-core.md) | indexer-domain | library |
-| [DevContextMcp.Infrastructure](/projects/infrastructure.md) | infrastructure | library |
-| [DevContextMcp.Server](/projects/server.md) | host | executable |
-| [DevContextMcp.Indexer](/projects/indexer.md) | indexer-cli | executable |
-| [Tests](/projects/tests.md) | tests | test |
+| [DevContextMcp.Server.Core](projects/server-core.md) | application | library |
+| [DevContextMcp.Indexer.Core](projects/indexer-core.md) | indexer-domain | library |
+| [DevContextMcp.Infrastructure](projects/infrastructure.md) | infrastructure | library |
+| [DevContextMcp.Server](projects/server.md) | host | executable |
+| [DevContextMcp.Indexer](projects/indexer.md) | indexer-cli | executable |
+| [Tests](projects/tests.md) | tests | test |
 
 Dependency rules (enforced by architecture tests; arrows read "depends on"):
 
@@ -54,7 +54,7 @@ DI registration entry points:
 Retrieval and indexing use separate registration methods so the Host never
 composes index writers.
 
-See [Data Flows](/data-flows.md) for how the layers interact at runtime.
+See [Data Flows](data-flows.md) for how the layers interact at runtime.
 
 # Citations
 

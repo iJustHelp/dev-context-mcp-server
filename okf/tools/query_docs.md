@@ -25,7 +25,7 @@ isolated to a single selected version.
 
 **Output:** `QueryDocsResponse` → `QueryDocsResult` with ordered `Fragments` and
 `Symbols`, each carrying a `citationUri`. Version is chosen per
-[Version & Environment Resolution](/version-resolution.md); results are bounded by
+[Version & Environment Resolution](../version-resolution.md); results are bounded by
 the response budget (`response_truncated` warning when trimmed).
 
 # Examples

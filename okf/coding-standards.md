@@ -12,7 +12,7 @@ timestamp: 2026-07-15T00:00:00Z
 Company coding standards are delivered as project agent skills (under
 `.claude/skills/` and mirrored in `.agents/skills/`), not through the MCP index.
 Most vendored skills are third-party; the four repo-authored, company-standard
-skills are below. See [Operations](/operations.md) for the surrounding conventions.
+skills are below. See [Operations](operations.md) for the surrounding conventions.
 
 # Schema
 

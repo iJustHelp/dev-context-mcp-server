@@ -1,8 +1,8 @@
 # MCP Tools
 
-The MCP tools exposed by [DevContextMcp.Server](/projects/server.md). Each is a
+The MCP tools exposed by [DevContextMcp.Server](../projects/server.md). Each is a
 thin wrapper that builds a typed request and delegates to a Core handler; all
-return the common envelope described in [Retrieval Contracts](/retrieval-contracts.md).
+return the common envelope described in [Retrieval Contracts](../retrieval-contracts.md).
 Tool names are pinned in `ToolRegistrationCatalog.cs`.
 
 ## Tools

@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 DevContextMcp uses two SQLite databases:
 
-* **Documentation index** (`database/docs.db`) — written only by [DevContextMcp.Indexer](/projects/indexer.md), read only by [DevContextMcp.Server](/projects/server.md). Schema **version 1**, stamped into `PRAGMA user_version`. There are **no in-place migrations**; bump the version and rebuild the index when the schema changes. The read store refuses any database older than its expected version.
+* **Documentation index** (`database/docs.db`) — written only by [DevContextMcp.Indexer](projects/indexer.md), read only by [DevContextMcp.Server](projects/server.md). Schema **version 1**, stamped into `PRAGMA user_version`. There are **no in-place migrations**; bump the version and rebuild the index when the schema changes. The read store refuses any database older than its expected version.
 * **Analytics** — self-creating and owned solely by the host (Server). Schema **version 3**, stamped into `PRAGMA user_version`. Uses `CREATE TABLE IF NOT EXISTS`.
 
 # Schema
@@ -232,9 +232,9 @@ Single-row snapshot metadata (`CHECK (id = 1)`).
 | status | TEXT | NOT NULL |
 | error | TEXT | NULL |
 
-See [Data Flows](/data-flows.md) for how these tables are written and read,
-[Analytics](/analytics.md) for the analytics capture and snapshot lifecycle, and
-[DevContextMcp.Infrastructure](/projects/infrastructure.md) for the persistence code.
+See [Data Flows](data-flows.md) for how these tables are written and read,
+[Analytics](analytics.md) for the analytics capture and snapshot lifecycle, and
+[DevContextMcp.Infrastructure](projects/infrastructure.md) for the persistence code.
 
 # Citations
 

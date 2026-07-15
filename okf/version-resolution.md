@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 For `query_docs` and `get_symbol`, retrieval resolves one library and one version
 before searching. Evidence is never combined across versions or environments.
-This complements the ordered summary in [MCP Surface](/mcp-surface.md).
+This complements the ordered summary in [MCP Surface](mcp-surface.md).
 
 # Schema
 
@@ -48,7 +48,7 @@ Resolves a `LibraryId` to a single best selection:
 2. Find matching libraries, optionally filtered by environment.
 3. Resolve a version per candidate (above).
 4. Order by: has-version → environment priority (`EnvironmentOrder` from
-   [Server Configuration](/server-configuration.md)) → recommended-version-warning
+   [Server Configuration](server-configuration.md)) → recommended-version-warning
    → environment/source name.
 
 An environment-qualified id never falls back to another environment. Returns a

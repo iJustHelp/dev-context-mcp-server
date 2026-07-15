@@ -9,18 +9,18 @@ timestamp: 2026-07-15T00:00:00Z
 
 # Analytics Subsystem
 
-[DevContextMcp.Server](/projects/server.md) records every MCP tool call into a
+[DevContextMcp.Server](projects/server.md) records every MCP tool call into a
 separate, host-owned analytics database and publishes a snapshot of the last
 indexing run. The subsystem is deliberately best-effort: analytics failures are
 logged and never surface to tool callers. See the
-[Database Schema](/database-schema.md) for the analytics tables and the
-[HTTP API](/http-api.md) for how the data is served.
+[Database Schema](database-schema.md) for the analytics tables and the
+[HTTP API](http-api.md) for how the data is served.
 
 # Schema
 
 ## Capture pipeline
 
-1. A tool invocation is wrapped by the invocation logger (see [MCP Tools](/tools/index.md)),
+1. A tool invocation is wrapped by the invocation logger (see [MCP Tools](tools/index.md)),
    which enqueues a `ToolInvocationRecord` onto the in-process `AnalyticsRecorder`
    channel.
 2. `AnalyticsWriterHostedService` (a `BackgroundService`) drains the channel,
@@ -44,7 +44,7 @@ One class implementing four contracts: `IToolInvocationWriteStore`,
 
 ## Index-run snapshot lifecycle
 
-- After an indexing run, [DevContextMcp.Indexer](/projects/indexer.md) calls
+- After an indexing run, [DevContextMcp.Indexer](projects/indexer.md) calls
   `IIndexRunSnapshotPublisher.PublishAsync(IndexRunResult)`, projecting the run
   into an `IndexSnapshot` (generated-at, run status, and per-package environment,
   available-vs-indexed versions, status, and error).

@@ -10,7 +10,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 # Schema
 
-Tools exposed by [DevContextMcp.Server](/projects/server.md):
+Tools exposed by [DevContextMcp.Server](projects/server.md):
 
 | Tool | Purpose | Important inputs |
 |------|---------|------------------|
@@ -55,9 +55,9 @@ For `query_docs` and `get_symbol`, one version is selected in this order:
 The selected version must already be in the local index. Evidence from
 different package versions is never combined.
 
-See [MCP Tools](/tools/index.md) for per-tool inputs/outputs, [Retrieval Contracts](/retrieval-contracts.md)
-for the response envelope and status codes, [Version & Environment Resolution](/version-resolution.md)
-for selection mechanics, and [Data Flows](/data-flows.md) for the retrieval path behind these tools.
+See [MCP Tools](tools/index.md) for per-tool inputs/outputs, [Retrieval Contracts](retrieval-contracts.md)
+for the response envelope and status codes, [Version & Environment Resolution](version-resolution.md)
+for selection mechanics, and [Data Flows](data-flows.md) for the retrieval path behind these tools.
 
 # Citations
 

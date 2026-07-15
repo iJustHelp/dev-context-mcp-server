@@ -11,8 +11,8 @@ timestamp: 2026-07-15T00:00:00Z
 
 Package archives are treated as untrusted input. The indexer never loads or
 executes package assemblies; it inspects them through metadata APIs and bounds
-every extraction step. See [Data Flows](/data-flows.md) for where these guards
-sit in the indexing pipeline and [Indexer Configuration](/indexer-configuration.md)
+every extraction step. See [Data Flows](data-flows.md) for where these guards
+sit in the indexing pipeline and [Indexer Configuration](indexer-configuration.md)
 for the configured limit values.
 
 # Schema
@@ -67,7 +67,7 @@ extraction and uses metadata-only extraction for symbols.
   interface for future approved credential providers.
 
 See the tests `ArchiveSafetyValidatorTests` and `MetadataSymbolExtractorTests`
-in [Testing Strategy](/testing-strategy.md).
+in [Testing Strategy](testing-strategy.md).
 
 # Citations
 

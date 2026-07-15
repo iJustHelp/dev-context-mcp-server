@@ -28,8 +28,8 @@ timestamp: 2026-07-15T00:00:00Z
 * The HTTP transport is deliberately restricted to an unauthenticated loopback `http://` address — suitable for local development, not shared-network use.
 * The Server never loads or executes package assemblies; symbols are read via metadata APIs.
 
-See [Architecture & Dependency Rules](/architecture.md) for where each package is referenced,
-and [Operations](/operations.md) for build/test/run commands.
+See [Architecture & Dependency Rules](architecture.md) for where each package is referenced,
+and [Operations](operations.md) for build/test/run commands.
 
 # Citations
 

@@ -42,7 +42,7 @@ time. Recurring execution is delegated to an external scheduler.
 dotnet run --project .\src\DevContextMcp.Indexer\DevContextMcp.Indexer.csproj
 ```
 
-See [Data Flows](/data-flows.md) for the write path.
+See [Data Flows](../data-flows.md) for the write path.
 
 # Citations
 

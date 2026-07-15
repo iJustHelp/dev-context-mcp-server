@@ -9,13 +9,13 @@ timestamp: 2026-07-15T00:00:00Z
 
 # Indexer Configuration
 
-Configuration for [DevContextMcp.Indexer](/projects/indexer.md) comes from two
+Configuration for [DevContextMcp.Indexer](projects/indexer.md) comes from two
 places: the `DevContextMcp` section of `appsettings.json` (plus normal .NET
 configuration overrides), and external per-package policy JSON files loaded from
 `IndexerSource.NugetsPath` at startup.
 
 Configuration is the source of truth: the package policy files present for an
-environment define exactly what is indexed. See [Data Flows](/data-flows.md) for
+environment define exactly what is indexed. See [Data Flows](data-flows.md) for
 how reconciliation prunes packages that are no longer configured.
 
 # Schema
@@ -135,7 +135,7 @@ Never put feed credentials or API tokens in package-policy files or the
 checked-in settings; source authentication is isolated behind an infrastructure
 interface.
 
-See [Operations](/operations.md) to run the indexer and [Database Schema](/database-schema.md)
+See [Operations](operations.md) to run the indexer and [Database Schema](database-schema.md)
 for what it writes.
 
 # Citations

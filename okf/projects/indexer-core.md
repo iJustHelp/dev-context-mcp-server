@@ -29,7 +29,7 @@ The inner indexing feature boundary:
 archive-processing, or SQLite implementation packages.
 
 Implemented by [DevContextMcp.Infrastructure](./infrastructure.md) and composed by
-[DevContextMcp.Indexer](./indexer.md). See [Data Flows](/data-flows.md).
+[DevContextMcp.Indexer](./indexer.md). See [Data Flows](../data-flows.md).
 
 # Citations
 

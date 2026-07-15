@@ -35,7 +35,7 @@ The MCP executable and retrieval composition root:
 dotnet run --project .\src\DevContextMcp.Server\DevContextMcp.Server.csproj
 ```
 
-See [MCP Surface](/mcp-surface.md) for the exposed tools and [Data Flows](/data-flows.md) for the read path.
+See [MCP Surface](../mcp-surface.md) for the exposed tools and [Data Flows](../data-flows.md) for the read path.
 
 # Citations
 

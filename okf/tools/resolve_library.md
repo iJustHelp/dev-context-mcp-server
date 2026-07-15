@@ -25,7 +25,7 @@ Finds indexed NuGet packages by name or concept and returns stable library IDs.
 
 **Output:** `ResolveLibraryResponse` → `ResolveLibraryResult.Matches`, each a
 `LibraryMatch` (`libraryId`, `kind`, `displayName`, `environment`, `description`,
-`confidence`). See [Retrieval Contracts](/retrieval-contracts.md) for the envelope.
+`confidence`). See [Retrieval Contracts](../retrieval-contracts.md) for the envelope.
 
 # Examples
 

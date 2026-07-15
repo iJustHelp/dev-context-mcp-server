@@ -18,7 +18,7 @@ Lists the indexed versions of a library and identifies the recommended version.
 | `libraryId` | string | — | Stable library identifier returned by [resolve_library](./resolve_library.md). |
 
 **Output:** `ListVersionsResponse` — indexed versions plus the recommended
-version. See [Version & Environment Resolution](/version-resolution.md) for how
+version. See [Version & Environment Resolution](../version-resolution.md) for how
 the recommended version is chosen.
 
 # Examples

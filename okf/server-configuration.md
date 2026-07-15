@@ -9,7 +9,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 # Server Configuration
 
-Configuration for [DevContextMcp.Server](/projects/server.md) comes from the
+Configuration for [DevContextMcp.Server](projects/server.md) comes from the
 `DevContextMcp` section of `appsettings.json` (plus normal .NET configuration
 overrides). The host opens the SQLite index read-only and never contacts NuGet
 feeds; it must point at the same database the indexer writes.
@@ -91,9 +91,9 @@ MCP protocol. Default level `Information`; `DevContextMcp.Server.Tools` raised t
 }
 ```
 
-See [MCP Surface](/mcp-surface.md) for the tools this server exposes,
-[Indexer Configuration](/indexer-configuration.md) for the writer side, and
-[Database Schema](/database-schema.md) for the databases it reads and writes.
+See [MCP Surface](mcp-surface.md) for the tools this server exposes,
+[Indexer Configuration](indexer-configuration.md) for the writer side, and
+[Database Schema](database-schema.md) for the databases it reads and writes.
 
 # Citations
 

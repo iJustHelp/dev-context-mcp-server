@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 Finds and describes a public type or member. Accepts fully qualified, simple, or
 partial names; when a lookup is ambiguous it returns bounded candidates instead
-of silently choosing one (`AmbiguousSymbolLimit`, see [Server Configuration](/server-configuration.md)).
+of silently choosing one (`AmbiguousSymbolLimit`, see [Server Configuration](../server-configuration.md)).
 
 # Schema
 
@@ -25,7 +25,7 @@ of silently choosing one (`AmbiguousSymbolLimit`, see [Server Configuration](/se
 
 **Output:** `GetSymbolResponse` describing the public type/member (indexed
 signature and XML documentation), with a `citationUri`. Version selection follows
-[Version & Environment Resolution](/version-resolution.md).
+[Version & Environment Resolution](../version-resolution.md).
 
 # Examples
 

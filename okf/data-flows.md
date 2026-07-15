@@ -10,7 +10,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 ## Indexing (write path)
 
-**Writer:** [DevContextMcp.Indexer](/projects/indexer.md) (sole writer).
+**Writer:** [DevContextMcp.Indexer](projects/indexer.md) (sole writer).
 
 1. Read configured sources and external package-policy files.
 2. Discover package versions per feed.
@@ -26,13 +26,13 @@ duplicated.
 **Safety limits:** package size, document size, archive entry count,
 extracted-size, compression ratio, and path-traversal validation. Package
 archives are treated as untrusted input; assemblies are inspected via metadata
-APIs, never loaded. See [Security & Safety Model](/security-model.md) for details.
+APIs, never loaded. See [Security & Safety Model](security-model.md) for details.
 
-After a run, the result is projected into an index-run snapshot — see [Analytics](/analytics.md).
+After a run, the result is projected into an index-run snapshot — see [Analytics](analytics.md).
 
 ## Retrieval (read path)
 
-**Reader:** [DevContextMcp.Server](/projects/server.md) (read-only).
+**Reader:** [DevContextMcp.Server](projects/server.md) (read-only).
 
 1. MCP client sends a request (stdio or Streamable HTTP).
 2. A Host tool maps it to a typed retrieval request contract.
@@ -44,7 +44,7 @@ After a run, the result is projected into an index-run snapshot — see [Analyti
 cross environments. All evidence is isolated to one selected package version;
 evidence from different versions is never combined.
 
-See [MCP Surface](/mcp-surface.md) for the request/response contracts and citation URIs.
+See [MCP Surface](mcp-surface.md) for the request/response contracts and citation URIs.
 
 # Citations
 

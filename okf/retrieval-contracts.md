@@ -12,7 +12,7 @@ timestamp: 2026-07-15T00:00:00Z
 Every MCP documentation tool returns a common envelope with a machine-readable
 status, so agents can branch on outcome without parsing prose. Tool-level errors
 are returned as data on the envelope rather than as protocol errors. See
-[MCP Tools](/tools/index.md) for the per-tool payloads and [MCP Surface](/mcp-surface.md)
+[MCP Tools](tools/index.md) for the per-tool payloads and [MCP Surface](mcp-surface.md)
 for the tool list.
 
 # Schema
@@ -50,7 +50,7 @@ Produced by `RetrievalHandlerSupport` and the per-tool handlers:
 - `insufficient_evidence`: nothing cleared `MinimumEvidenceScore`, or a query timeout.
 - `error`: `index_unavailable` (mapped from `IndexUnavailableException`).
 - Warnings: `response_truncated` (from `ResponseBudget` enforcing max count/bytes),
-  `recommended_version_not_indexed` (see [Version Resolution](/version-resolution.md)).
+  `recommended_version_not_indexed` (see [Version Resolution](version-resolution.md)).
 
 # Citations
 

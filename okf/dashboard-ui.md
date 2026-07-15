@@ -11,7 +11,7 @@ timestamp: 2026-07-15T00:00:00Z
 
 `ui/` is a local Next.js (App Router, TypeScript) dashboard that visualizes MCP
 server analytics and the current index inventory. Its **server-side route
-handlers proxy** to the .NET server's [HTTP API](/http-api.md), so the browser
+handlers proxy** to the .NET server's [HTTP API](http-api.md), so the browser
 only ever talks to the dashboard's own origin — never directly to the .NET host,
 so no CORS configuration is required. It implements Stage 3 of `design/ver 2.0`.
 
@@ -71,7 +71,7 @@ browser ──► /api/analytics/* (Next.js route handler)
 ```
 
 Send an `X-User-Name` header when generating traffic so the user audit populates.
-See [HTTP API](/http-api.md) and [Analytics](/analytics.md).
+See [HTTP API](http-api.md) and [Analytics](analytics.md).
 
 # Citations
 
