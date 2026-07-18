@@ -10,7 +10,7 @@ namespace DevContextMcp.Infrastructure.Indexer.Processing;
 /// Splits documentation into searchable, size-bounded records while preserving
 /// XML member names and natural text boundaries when possible.
 /// </summary>
-internal sealed partial class DocumentChunker(IContentHasher hasher) : IDocumentChunker
+internal sealed partial class DocumentChunker(IContentHasher hasher)
 {
     public IReadOnlyList<DocumentChunkRecord> Chunk(
         string path,

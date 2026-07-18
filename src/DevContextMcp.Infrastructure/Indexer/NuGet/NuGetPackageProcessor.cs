@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using DevContextMcp.Indexer.Core.Infrastructure;
 using DevContextMcp.Indexer.Core.Models;
+using DevContextMcp.Infrastructure.Indexer.Processing;
 using NuGet.Packaging;
 
 namespace DevContextMcp.Infrastructure.Indexer.NuGet;
@@ -9,10 +10,17 @@ namespace DevContextMcp.Infrastructure.Indexer.NuGet;
 /// <summary>
 /// Processes a downloaded .nupkg into indexable metadata, documents, symbols, and dependencies.
 /// </summary>
-internal sealed class NuGetPackageProcessor(
-    IDocumentChunker documentChunker,
-    IContentHasher contentHasher) : IPackageProcessor
+internal sealed class NuGetPackageProcessor : IPackageProcessor
 {
+    private readonly IContentHasher _contentHasher;
+    private readonly DocumentChunker _documentChunker;
+
+    public NuGetPackageProcessor()
+    {
+        _contentHasher = new Sha256ContentHasher();
+        _documentChunker = new DocumentChunker(_contentHasher);
+    }
+
     public async Task<PackageIndexData> ProcessAsync(
         PackageVersionCandidate candidate,
         DownloadedPackage package,
@@ -55,9 +63,9 @@ internal sealed class NuGetPackageProcessor(
                 artifacts.Add(new ArtifactRecord(
                     Path: path,
                     Kind: kind,
-                    ContentHash: contentHasher.Hash(bytes),
+                    ContentHash: _contentHasher.Hash(bytes),
                     Size: bytes.LongLength));
-                documents.AddRange(documentChunker.Chunk(
+                documents.AddRange(_documentChunker.Chunk(
                     path: path,
                     kind: kind,
                     content: content,
@@ -74,7 +82,7 @@ internal sealed class NuGetPackageProcessor(
             artifacts.Add(new ArtifactRecord(
                 Path: path,
                 Kind: "managed_assembly",
-                ContentHash: contentHasher.Hash(bytes),
+                ContentHash: _contentHasher.Hash(bytes),
                 Size: bytes.LongLength));
             symbols.AddRange(MetadataSymbolExtractor.Extract(bytes, path));
         }

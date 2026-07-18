@@ -55,7 +55,6 @@ public static class DependencyInjection
         this IServiceCollection services)
     {
         services.AddSingleton<IContentHasher, Sha256ContentHasher>();
-        services.AddSingleton<IDocumentChunker, DocumentChunker>();
         services.AddSingleton<
             INuGetSourceAuthenticationProvider,
             AnonymousNuGetSourceAuthenticationProvider>();
